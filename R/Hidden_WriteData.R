@@ -1,0 +1,119 @@
+#' Writes a data file in the format required for Java MCMC program
+#' @export
+#' @title Write Java MCMC format data file
+#' @name .WriteData
+#' @param data.file Desired path for .txt data file to be written to
+#' @param data Matrix of data to write - rows indiviuals, columns variables.
+#' @param predictors vector of predictors. Leave as the default NULL to include all variables available in the data.frame will be used.
+#' @param outcome.var Which column in data contains the binary outcome for logistic and survival data, or the integer count for
+#' Poisson data (default "Disease")
+#' @param times.var If survival data or Poisson data, the column in data which contains the follow-up times (default NULL)
+#' @param cluster.var If hierarchical data and random intercepts are required, the column in data contains the clustering variable (default NULL)
+#' @return NA
+#' @author Paul Newcombe
+.WriteData <- function(
+  data.file,
+  data,
+  predictors=NULL,
+  confounders=NULL,
+  outcome.var=NULL,
+  times.var=NULL,
+  cluster.var=NULL,
+  beta.priors=NULL,
+  model.space.priors
+) {
+	### Pre-processing
+  n.start <- nrow(data)
+  if (!is.null(predictors)) {
+    data <- data[, c(outcome.var, times.var, cluster.var, predictors)]
+  }
+	for (v in colnames(data)) {
+		data <- data[!is.na(data[,v]), ]
+	}
+  # Extract disease var
+	disease <- data[,outcome.var]
+	data <- data[, colnames(data)[!colnames(data)%in%c(outcome.var)] ]
+	# Extract survival times var
+	if (!is.null(times.var) ) {
+	  times <- data[,times.var]
+	  data <- data[, colnames(data)[!colnames(data)%in%times.var] ]
+	}
+	# Extract cluster var
+	if (!is.null(cluster.var) ) {
+	  clusters <- as.integer(as.factor(as.integer(data[,cluster.var])))	# This makes range 1,..nClusters
+	  data <- data[, colnames(data)[!colnames(data)%in%cluster.var] ]
+	  n.clusters <- length(unique(clusters))
+	}
+
+	V <- ncol(data)
+	N <- nrow(data)
+  cat(paste((n.start-N),"observations deleted due to missingness"))
+  
+	### Writing
+	# Model
+  if (is.null(times.var)) {
+    write("Logistic", file = data.file , ncolumns = 1)    
+  } else {
+    write("Weibull", file = data.file , ncolumns = 1)    
+  }
+	# V: Total number of variables
+	write(V, file = data.file , ncolumns = 1, append = T)
+  # Varnames: Variable names
+	write(colnames(data), file = data.file , ncolumns = V, append = T)
+  # VnoRJ: Total number of variables (from the beginning) to be fixed in the model
+	write(length(confounders), file = data.file , ncolumns = 1, append = T) 				# from which variable RJ is performed
+  # N: Number of individuals
+	write(N, file = data.file , ncolumns = 1, append = T)
+  # R: Number of clusters
+	if (!is.null(cluster.var) ) {
+		write( n.clusters, file = data.file , ncolumns = 1, append = T)				
+	} else {
+		write(0, file = data.file , ncolumns = 1, append = T)		
+	}
+  # N x V matrix of covariate values
+  data.quants <- floor(quantile(c(1:nrow(data)),probs=seq(0.1,1,0.1)))
+	for (i in 1:nrow(data)) {
+		write(t(data[i,]), file = data.file , ncolumns = V, append = T)
+    if (i %in% data.quants) {
+      cat("\nCovariates for",names(data.quants)[which(data.quants==i)],"of individuals written to a temporary data file")
+    }
+	}
+  # If R>0 the vector of cluster labels
+	if (!is.null(cluster.var) ) {
+		write(t(clusters), file = data.file , ncolumns = n.clusters, append = T)
+	}
+  # Vector of disease labels
+	write(t(as.integer(disease)), file = data.file , ncolumns = N, append = T)
+  if (!is.null(times.var)) {
+    write(t(times), file = data.file , ncolumns = N, append = T)    
+  }
+  
+  ### --- Fixed beta priors
+  use.unknown.priors <- TRUE
+  if (is.null(beta.priors)) {
+    write(0, file = data.file , ncolumns = 1, append = T)    
+  } else {
+    write(nrow(beta.priors), file = data.file , ncolumns = 1, append = T)
+    for (v in 1:nrow(beta.priors)) {
+      write( c(beta.priors[v,1],beta.priors[v,2]), file = data.file , ncolumns = 2, append = T)
+    }
+    if (nrow(beta.priors)==length(predictors)) {
+      use.unknown.priors <- FALSE
+    }
+  }
+  
+  ### --- Shared unknown beta priors
+  if (!use.unknown.priors) {
+    # Fixed priors provided for everything, no need for common unknown prior
+    write(0, file = data.file , ncolumns = 1, append = T)    
+  } else {
+    # Use common unknown priors for model space components
+    write(length(model.space.priors), file = data.file , ncolumns = 1, append = T)
+    if (length(model.space.priors)>1) {
+      for (c in 1:(length(model.space.priors)-1)) {
+        write(length(model.space.priors[[c]]$Variables), file = data.file , ncolumns = 1, append = T)      
+      }
+    }    
+  }
+  
+}

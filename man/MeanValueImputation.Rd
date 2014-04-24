@@ -1,0 +1,25 @@
+\name{MeanValueImputation}
+\alias{MeanValueImputation}
+\title{Mean value imputation}
+\usage{
+  MeanValueImputation(data, which.vars = NULL)
+}
+\arguments{
+  \item{data}{Data set to impute missingness in.}
+
+  \item{which.vars}{Which covaraites to perform the mean
+  value imputation for. If left NULL this is performed for
+  all covariates in the dataset.}
+}
+\value{
+  data Filled in dataset.
+}
+\description{
+  Replaces any missing data with mean values of the
+  covariate. NOTE: This is a VERY crude imputation method,
+  for exploratory purposes only.
+}
+\author{
+  Paul Newcombe
+}
+

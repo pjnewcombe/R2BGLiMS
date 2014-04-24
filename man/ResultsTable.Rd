@@ -1,0 +1,45 @@
+\name{ResultsTable}
+\alias{ResultsTable}
+\title{Summary results table}
+\usage{
+  ResultsTable(results, vars.to.include = NULL,
+    var.dictionary = NULL)
+}
+\arguments{
+  \item{results}{Reversible Jump results object from
+  running \code{\link{R2MHRJ}}.}
+
+  \item{vars.to.include}{Optional character vector
+  specifying a subset of variables to restrict output to.}
+
+  \item{normalised.sds}{If variables were normalised (e.g.
+  to facilitate use of a common unknown prior on their
+  effects), a named vector of their original sds can be
+  provided such that estimates returned may be interpreted
+  on the original scale.}
+
+  \item{var.dictionary}{Alternative covariate names. This
+  must be a character vector, named wtih the current
+  covariate names. This can consist of expression
+  functions, e.g. to achieve italics or superscripts when
+  passed to a plot function.}
+}
+\value{
+  Prints a summary results table
+}
+\description{
+  Creates a summary results table from a Java MCMC results
+  class object
+}
+\examples{
+library(R2BGLiMS)
+
+### --- Logistic regression with two model space prior components
+# Load results from the VA survival analysis (see R2MHRJ examples)
+data(VAResults)
+ResultsTable(VAResults)
+}
+\author{
+  Paul Newcombe
+}
+
