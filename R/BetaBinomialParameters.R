@@ -8,43 +8,25 @@
 #' @param sd Desired standard deviation around the selected covariates
 #' @return A list containing the estimated beta-binomial parameters `a' and `b'. 
 #' @author Paul Newcombe
-<<<<<<< HEAD
-=======
-# From a, b, n to mu/var
->>>>>>> 41f1c0a516fdd2dd4e0b463bb9aaf7829e877cb6
 GetBetaBinomParams <- function(n, mu, sd) {
   # Convert mean and variance (2nd moment about the mean) to moments about the origin
   m1 <- mu
   m2 <- sd^2 + mu^2
   # Below is expression in terms of moments about the origin
-<<<<<<< HEAD
   a <- (n*m1 - m2)/(n*(m2/m1 -m1 -1) + m1)
   b <- (n - m1)*(n - m2/m2) / ( n*(m2/m1 -m1 -1) + m1)
   return(params = list(a = a, b = b))
-=======
-  alpha <- (n*m1 - m2)/(n*(m2/m1 -m1 -1) + m1)
-  beta <- (n - m1)*(n - m2/m2) / ( n*(m2/m1 -m1 -1) + m1)
-  return(params = list(alpha = a, beta = b))
->>>>>>> 41f1c0a516fdd2dd4e0b463bb9aaf7829e877cb6
 }
 
 #' Derives the beta-binomial mean and standard deviation
 #' @export
 #' @title Derives the beta-binomial mean and standard deviation
-<<<<<<< HEAD
 #' @name GetBetaBinomMuSd
-=======
-#' @name GetBetaBinomParams
->>>>>>> 41f1c0a516fdd2dd4e0b463bb9aaf7829e877cb6
 #' @param n The total number of covariates in the analysis
 #' @param a Beta-binomial `a' or alpha parameter
 #' @param b Beta-binomial `b' or beta parameter
 #' @return A list containing the beta-binomial mean and standard deviation. 
 #' @author Paul Newcombe
-<<<<<<< HEAD
-=======
-# From a, b, n to mu/var
->>>>>>> 41f1c0a516fdd2dd4e0b463bb9aaf7829e877cb6
 GetBetaBinomMuSd <- function(n, a, b) {
   pi <- a/(a+b)
   ro <- 1/(a+b+1)
