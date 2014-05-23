@@ -4,7 +4,10 @@ export(.WriteData)
 export(AutocorrelationPlot)
 export(ChainPlots)
 export(GenerateSplines)
+<<<<<<< HEAD
 export(GetBetaBinomMuSd)
+=======
+>>>>>>> 41f1c0a516fdd2dd4e0b463bb9aaf7829e877cb6
 export(GetBetaBinomParams)
 export(ManhattanPlot)
 export(MeanValueImputation)
