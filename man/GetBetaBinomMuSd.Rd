@@ -1,0 +1,24 @@
+\name{GetBetaBinomMuSd}
+\alias{GetBetaBinomMuSd}
+\title{Derives the beta-binomial mean and standard deviation}
+\usage{
+  GetBetaBinomMuSd(n, a, b)
+}
+\arguments{
+  \item{n}{The total number of covariates in the analysis}
+
+  \item{a}{Beta-binomial `a' or alpha parameter}
+
+  \item{b}{Beta-binomial `b' or beta parameter}
+}
+\value{
+  A list containing the beta-binomial mean and standard
+  deviation.
+}
+\description{
+  Derives the beta-binomial mean and standard deviation
+}
+\author{
+  Paul Newcombe
+}
+

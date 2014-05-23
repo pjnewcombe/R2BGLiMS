@@ -12,6 +12,7 @@ Description: Facilitates use of a Java package for fitting Bayesian GLMs under
 License: GPL
 Collate:
     'AutocorrelationPlot.R'
+    'BetaBinomialParameters.R'
     'ChainPlots.R'
     'GenerateSplines.R'
     'Hidden_ReadResults.R'

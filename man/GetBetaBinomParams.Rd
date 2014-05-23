@@ -1,0 +1,27 @@
+\name{GetBetaBinomParams}
+\alias{GetBetaBinomParams}
+\title{Derives the beta-binomial parameters for target mean and standard deviation}
+\usage{
+  GetBetaBinomParams(n, mu, sd)
+}
+\arguments{
+  \item{n}{The total number of covariates in the analysis}
+
+  \item{mu}{Desired mean number of selected covariates}
+
+  \item{sd}{Desired standard deviation around the selected
+  covariates}
+}
+\value{
+  A list containing the estimated beta-binomial parameters
+  `a' and `b'.
+}
+\description{
+  Derives the beta-binomial parameters to target a mean and
+  standard deviation around the selected number of
+  predictors
+}
+\author{
+  Paul Newcombe
+}
+
