@@ -34,9 +34,10 @@ ChainPlots <- function(
         height=11)
   }
 
-  # Rename non-variables
-  cols.keep <- c("LogLikelihood", "alpha")
-  cols.new.names <- c("Log-likelihood", "Intercept")
+  ### --- Rename key model parameters (likelihood etc) and add dimension
+  results$results <- cbind("ModelDimension"=apply(results$results, MAR=1, function(x) sum(x!=0) ), results$results)
+  cols.keep <- c("ModelDimension", "LogLikelihood", "alpha")
+  cols.new.names <- c("Model Dimension", "Log-likelihood", "Intercept")
   if ("LogWeibullScale" %in% colnames(results$results)) {
     cols.keep <- c(cols.keep, "LogWeibullScale")
     cols.new.names <- c(cols.new.names, "Scale")
@@ -66,7 +67,7 @@ ChainPlots <- function(
   results$results <- results$results[,cols.keep]
   colnames(results$results) <- cols.new.names
   
-  # Plot
+  ### --- Plot
   if (!is.null(par.mfrow)) {
     par(mfrow=par.mfrow)
   } else {
