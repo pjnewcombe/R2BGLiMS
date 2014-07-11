@@ -41,6 +41,9 @@ ChainPlots <- function(
   if ("LogWeibullScale" %in% colnames(results$results)) {
     cols.keep <- c(cols.keep, "LogWeibullScale")
     cols.new.names <- c(cols.new.names, "Scale")
+  } else if ("LogGaussianResidual" %in% colnames(results$results)) {
+    cols.keep <- c(cols.keep, "LogGaussianResidual")
+    cols.new.names <- c(cols.new.names, "Residual")
   }
   if (results$args$nBetaHyperPriorComp>0) {
     cols.keep <- c(cols.keep, paste("LogBetaPriorSd",c(1:results$args$nBetaHyperPriorComp), sep="") )
@@ -54,7 +57,7 @@ ChainPlots <- function(
     predictors <- vars.to.include
   } else {
     predictors <- colnames(results$results)[!colnames(results$results)%in%c(
-      "LogWeibullScale", "alpha",
+      "LogWeibullScale", "LogGaussianResidual", "alpha",
       paste("LogBetaPriorSd",c(1:results$args$nBetaHyperPriorComp), sep=""),
       "LogLikelihood")]
   }

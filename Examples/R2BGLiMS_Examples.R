@@ -8,7 +8,7 @@ for (v in paste("V",c(1:9),sep="")) {
   biopsy[,v] <- (biopsy[,v]-mean(biopsy[,v],na.rm=T))/sd(biopsy[,v],na.rm=T)
 }
 biopsyResults <- R2BGLiMS(
-  data=biopsy, outcome.var="class",
+  likelihood="Logistic", data=biopsy, outcome.var="class",
   model.space.priors=list(
     list("Rate"=0.5, "Variables"=paste("V",c(1:3),sep="")),
     list("Rate"=0.1, "Variables"=paste("V",c(4:9),sep=""))
@@ -27,6 +27,7 @@ beta.priors <- data.frame(
   row.names=predictors)
 # Notice how survival analysis requires additionally flagging a "times.var"
 VAResults <- R2BGLiMS(
+  likelihood="Weibull",
   data=VA,
   outcome.var="status",
   times.var="stime",

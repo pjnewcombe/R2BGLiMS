@@ -77,6 +77,7 @@ ResultsTable <- function(
 	for (v in rownames(results.table) ) {
     if (!v %in% c(
       "LogWeibullScale",
+      "LogGaussianResidual",
       "alpha",
       paste("LogBetaPriorSd",c(1:results$args$nBetaHyperPriorComp),sep=""),
       "LogLikelihood",
@@ -85,9 +86,13 @@ ResultsTable <- function(
       results.table[v,"BF"] <- .BayesFactor( prior.probs[v], results.table[v,"PostProb"])      
     }
 		if (results$args$Likelihood %in% c("Weibull", "Logistic") ) {
-      # Exonentiate log-HRs or log-ORs
+      # Exponentiate log-HRs or log-ORs
       results.table[v,c("CrI_Lower", "Median", "CrI_Upper")] <- exp( quantile(results$results[,v],c(0.025, 0.5, 0.975)) )
       results.table[v,c("CrI_Lower_Present", "Median_Present", "CrI_Upper_Present")] <- exp( quantile(results$results[,v][results$results[,v]!=0],c(0.025, 0.5, 0.975) ) )
+    } else if (results$args$Likelihood %in% c("Gaussian", "GaussianMarg") ) {
+      # No exponentiation
+      results.table[v,c("CrI_Lower", "Median", "CrI_Upper")] <- quantile(results$results[,v],c(0.025, 0.5, 0.975))
+      results.table[v,c("CrI_Lower_Present", "Median_Present", "CrI_Upper_Present")] <- quantile(results$results[,v][results$results[,v]!=0],c(0.025, 0.5, 0.975) )
     }
 	}
 	

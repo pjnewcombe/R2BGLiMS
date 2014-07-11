@@ -56,6 +56,11 @@ PrettyResultsTable <- function(
     res.tab.keep <- c("LogWeibullScale", res.tab.keep)
     res.tab.new.names <- c("Scale", res.tab.new.names)
   }
+  if ("LogGaussianResidual" %in% rownames(res.tab)) {
+    res.tab.keep <- c("LogGaussianResidual", res.tab.keep)
+    res.tab["LogGaussianResidual",] <- exp(res.tab["LogGaussianResidual",])
+    res.tab.new.names <- c("Residual", res.tab.new.names)
+  }
   if (results$args$nBetaHyperPriorComp>0) {
     res.tab.keep <- c(res.tab.keep, paste("LogBetaPriorSd",c(1:results$args$nBetaHyperPriorComp), sep="") )
     if (results$args$nBetaHyperPriorComp==1) {
@@ -68,7 +73,7 @@ PrettyResultsTable <- function(
     predictors <- vars.to.include
   } else {
     predictors <- rownames(res.tab[!rownames(res.tab)%in%c(
-      "LogWeibullScale", "alpha",
+      "LogWeibullScale", "LogGaussianResidual", "alpha",
       paste("LogBetaPriorSd",c(1:results$args$nBetaHyperPriorComp), sep=""),
       "LogLikelihood"),])
   }

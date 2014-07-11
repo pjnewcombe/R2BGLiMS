@@ -14,7 +14,13 @@
 #' correspond to parameters and each row contains values from a particular itertation, with 0 indicating exclusion from the model.
 #' 
 #' @author Paul Newcombe
-.ReadResults <- function(results.file=NULL, mi.results.files=NULL, burnin.denominator=2,thin.factor=1,first.n.mil.its=NULL) {
+.ReadResults <- function(
+  results.file=NULL,
+  mi.results.files=NULL,
+  burnin.denominator=2,
+  thin.factor=1,
+  first.n.mil.its=NULL) {
+  cat("\n\nReading in the BGLiMS results file...\n")  
   if (is.null(results.file)) {
     results.file <- mi.results.files[1]
   }
@@ -92,5 +98,6 @@
   }
   
   # Correct number of saved iterations and return list
+  cat("... finished reading BGLiMS results.\n")
   return(resultsRead)
 }

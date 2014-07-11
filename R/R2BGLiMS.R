@@ -6,10 +6,15 @@
 #' @export
 #' @title Call BGLiMS from R
 #' @name R2BGLiMS
+#' @param likelihood Type of model to fit. Current options are "Logistic" (for binary data), "Weibull" (for survival data), 
+#' "Gaussian" (for continuous data), and "GaussianMarg" (for analysis of univariate associations from Gaussian linear 
+#' regressions).
 #' @param data Matrix or dataframe containing the data to analyse. Rows are indiviuals, and columns are variables, named in concordance
 #' with the following options.
 #' @param outcome.var Which column in data contains the binary outcome/survival status variable (default "Disease")
 #' @param times.var If survival data, the column in data which contains the event times (default NULL)
+#' @param block.indices If Guassian marginal tests are being analysed, the external xTx data may be divided
+#' into blocks, to simplify inversion. This vector should contain the indices of the block break points (default NULL)
 #' @param cluster.var If hierarchical data and random intercepts are required, the column in data contains the clustering variable (default NULL)
 #' @param confounders vector of confounders to fix in the model at all times, i.e. exclude from model selection (default NULL)
 #' @param model.selection Whether to use model selection (default is TRUE)
@@ -36,6 +41,8 @@
 #' This overrides the default use of N(0,1e6) confounder priors, but the predictors for which model selection is performed for
 #' are still assigned a common prior with unknown variance. 3) provide a beta.priors matrix including all confounders and predictors,
 #' thereby avoiding the use of a common prior with unkown variance across predictors for which model selection is performed for.
+#' @param g.prior Whether to use a g-prior for the beta's - i.e. a multivariate normal with correlation structure proportional
+#' to X'X^-1 (default = FALSE).
 #' @param n.mil Number of million iterations to run (default is 1)
 #' @param seed Which random number seed to use in the RJMCMC sampler (default is 1)
 #' @param alt.initial.values Whether to use the alternative set of initial values in the arguments file (default is FALSE)
@@ -43,6 +50,8 @@
 #' all output is written to a temporary directory and deleted).
 #' @param results.label Optional label to for algorithm output files (if you have specified results.path)
 #' @param args.file Optional path to an alternative arguments file to use instead of the default (default is used if left as NULL).
+#' @param debug.path Optional path to save the data and results files (rather than as temporary files) to
+#' help in debugging.
 #' 
 #' @return A Reversible Jump results object is returned. This is a list of two elements: "args" which records various modelling
 #' arguments used in the analysis, and "results" - a matrix containing all saved posterior samples from the analysis. Columns
@@ -61,24 +70,35 @@
 #' @example Examples/R2BGLiMS_Examples.R
 
 R2BGLiMS <- function(
+  likelihood=NULL,
   data=NULL,
   outcome.var=NULL,
   times.var=NULL,
+  block.indices=NULL,
   cluster.var=NULL,
   confounders=NULL,
   model.selection=TRUE,
   model.space.priors=NULL,
   beta.priors=NULL,
+  g.prior=FALSE,
   n.mil=1,
   seed=1,
   alt.initial.values=FALSE,
   results.path=NULL,
   results.label="R2BGLiMS",
-  args.file=NULL
+  args.file=NULL,
+  debug.path=NULL
 ) {
   ### --- Error messages
   try.java <- try(system("java -version"), silent=TRUE)
   if (try.java!=0) stop("Java is not installed and is required to run BGLiMS.\nPlease install from java.com/download.")  
+  if (is.null(likelihood)) stop("No likelihood, i.e. the model type, has been specified; please specify as Logistic,
+                                Weibull, Gaussian or GaussianMarg")
+  if (!is.null(likelihood)) {
+    if (!likelihood %in% c("Logistic", "Weibull", "Gaussian", "GaussianMarg")) {
+      stop("Likelihood must be specified as Logistic, Weibull, Gaussian or GaussianMarg")
+    }
+  }
   if (is.null(data)) stop("The data to analyse has not been specified")
   if (is.null(outcome.var)) stop("A binary outcome/survival status variable has not been specified")
   if (is.factor(data[,outcome.var])) {
@@ -86,7 +106,9 @@ R2BGLiMS <- function(
   } else if (is.character(data[,outcome.var])) {
     data[,outcome.var] <- as.integer(as.factor(data[,outcome.var]))-1    
   }
-  if (length(table(data[,outcome.var]))!=2) stop("Outcome variable must be binary")
+  if (likelihood %in% c("Logistic", "Weibull")) {
+    if (length(table(data[,outcome.var]))!=2) stop("Outcome variable must be binary")    
+  }
   if ((model.selection)&is.null(model.space.priors)) stop("Must specify a prior over the model space")
   if (!is.null(confounders)) {
     if (sum(confounders%in%colnames(data))!=length(confounders)) stop("One or more confounders are not present in the data")
@@ -209,17 +231,23 @@ R2BGLiMS <- function(
   now <-format(Sys.time(), "%b%d%H%M%S") # Used to ensure unique names in the temp directory
   if (is.null(data.file)) {
     cat("\nWriting temporary data files...\n")
-    clean.up.data <- TRUE
-    data.path <- paste(tempdir(),"/",results.label,"_Data_",now, sep="")
+    if (!is.null(debug.path)) {
+      data.path <- paste(debug.path,"/",results.label,"_Data_",now, sep="")      
+    } else {
+      clean.up.data <- TRUE
+      data.path <- paste(tempdir(),"/",results.label,"_Data_",now, sep="")      
+    }
     system(paste("mkdir ",data.path, sep=""))
     data.file <- paste(data.path, "/",results.label,".txt", sep="")
     .WriteData(
       data.file=data.file,
+      likelihood=likelihood,
       data=data,
       predictors=predictors,
       confounders=confounders, 
       outcome.var=outcome.var,
       times.var=times.var,
+      block.indices=block.indices,
       cluster.var=cluster.var,
       beta.priors=beta.priors,
       model.space.priors=model.space.priors)
@@ -228,9 +256,13 @@ R2BGLiMS <- function(
   
   ### --- Generate results root filenames
   if (is.null(results.path)) { # Will write to a temporary directory
-    results.path <- paste(tempdir(),"/",results.label,"_Results_",now, sep="")
+    if (!is.null(debug.path)) {
+      results.path <- paste(debug.path,"/",results.label,"_Results_",now, sep="")
+    } else {
+      results.path <- paste(tempdir(),"/",results.label,"_Results_",now, sep="")      
+      clean.up.results <- TRUE      
+    }
     system(paste("mkdir ",results.path, sep=""))
-    clean.up.results <- TRUE
   }
   results.root <- paste(results.path, results.label, sep="/")
   results.file <- paste(results.root,".txt",sep="")
@@ -249,6 +281,7 @@ R2BGLiMS <- function(
     format(n.output,sci=F)," ",
     seed," ",
     as.integer(model.selection)," ",
+    as.integer(g.prior)," ",
     as.integer(alt.initial.values)," ",
     n.mod.space.comps," ",
     modSpaceDistribution, sep=""
@@ -269,6 +302,8 @@ R2BGLiMS <- function(
   
   ### --- Run commands
   cat("\nCalling BGLiMS...\n\n")
+  cat("\nCommand: \n")
+  cat(comm, "\n")
   jobs <- list()  
   t1 <- proc.time()["elapsed"]
   system(comm)

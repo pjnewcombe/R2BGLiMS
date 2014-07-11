@@ -3,21 +3,27 @@
 #' @title Write Java MCMC format data file
 #' @name .WriteData
 #' @param data.file Desired path for .txt data file to be written to
+#' @param likelihood Type of model to fit. Current options are "Logistic" (for binary data), "Weibull" (for survival data), 
+#' and "Gaussian" (for continuous data).
 #' @param data Matrix of data to write - rows indiviuals, columns variables.
 #' @param predictors vector of predictors. Leave as the default NULL to include all variables available in the data.frame will be used.
 #' @param outcome.var Which column in data contains the binary outcome for logistic and survival data, or the integer count for
 #' Poisson data (default "Disease")
 #' @param times.var If survival data or Poisson data, the column in data which contains the follow-up times (default NULL)
+#' @param block.indices If Guassian marginal tests are being analysed, the external xTx data may be divided
+#' into blocks, to simplify inversion. This vector should contain the indices of the block break points (default NULL)
 #' @param cluster.var If hierarchical data and random intercepts are required, the column in data contains the clustering variable (default NULL)
 #' @return NA
 #' @author Paul Newcombe
 .WriteData <- function(
   data.file,
+  likelihood,
   data,
   predictors=NULL,
   confounders=NULL,
   outcome.var=NULL,
   times.var=NULL,
+  block.indices=NULL,
   cluster.var=NULL,
   beta.priors=NULL,
   model.space.priors
@@ -51,11 +57,7 @@
   
 	### Writing
 	# Model
-  if (is.null(times.var)) {
-    write("Logistic", file = data.file , ncolumns = 1)    
-  } else {
-    write("Weibull", file = data.file , ncolumns = 1)    
-  }
+  write(likelihood, file = data.file , ncolumns = 1)    
 	# V: Total number of variables
 	write(V, file = data.file , ncolumns = 1, append = T)
   # Varnames: Variable names
@@ -71,19 +73,37 @@
 		write(0, file = data.file , ncolumns = 1, append = T)		
 	}
   # N x V matrix of covariate values
-  data.quants <- floor(quantile(c(1:nrow(data)),probs=seq(0.1,1,0.1)))
-	for (i in 1:nrow(data)) {
-		write(t(data[i,]), file = data.file , ncolumns = V, append = T)
-    if (i %in% data.quants) {
-      cat("\nCovariates for",names(data.quants)[which(data.quants==i)],"of individuals written to a temporary data file")
+  cat("\n\nWriting a BGLiMS formatted datafile...\n")
+  # Block indices
+  if (likelihood %in% c("GaussianMarg")) {
+    if (is.null(block.indices)) {
+      block.indices <- c(1,V)
     }
-	}
+    write((length(block.indices)-1), file = data.file , ncolumns = 1, append = T)
+    write(block.indices, file = data.file , ncolumns = length(block.indices), append = T)
+    # xTx by block
+    for (b in 1:(length(block.indices)-1)) {
+      write.table(
+        data[block.indices[b]:(block.indices[b+1]-1),
+             block.indices[b]:(block.indices[b+1]-1)],
+        row.names=F, col.names=F, file = data.file,
+        append = T)
+    }
+  } else {
+    # Covariate data
+    write.table(data, row.names=F, col.names=F, file = data.file , append = T)    
+  }
+  cat("... finished writing datafile.\n")
   # If R>0 the vector of cluster labels
 	if (!is.null(cluster.var) ) {
 		write(t(clusters), file = data.file , ncolumns = n.clusters, append = T)
 	}
   # Vector of disease labels
-	write(t(as.integer(disease)), file = data.file , ncolumns = N, append = T)
+  if (likelihood %in% c("Logistic", "Weibull")) {
+    write(t(as.integer(disease)), file = data.file , ncolumns = N, append = T)    
+  } else if (likelihood %in% c("Gaussian", "GaussianMarg")) {
+    write(t(disease), file = data.file , ncolumns = N, append = T)        
+  }
   if (!is.null(times.var)) {
     write(t(times), file = data.file , ncolumns = N, append = T)    
   }

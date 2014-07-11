@@ -2,15 +2,23 @@
 \alias{R2BGLiMS}
 \title{Call BGLiMS from R}
 \usage{
-  R2BGLiMS(data = NULL, outcome.var = NULL,
-    times.var = NULL, cluster.var = NULL,
+  R2BGLiMS(likelihood = NULL, data = NULL,
+    outcome.var = NULL, times.var = NULL,
+    block.indices = NULL, cluster.var = NULL,
     confounders = NULL, model.selection = TRUE,
     model.space.priors = NULL, beta.priors = NULL,
-    n.mil = 1, seed = 1, alt.initial.values = FALSE,
-    results.path = NULL, results.label = "R2BGLiMS",
-    args.file = NULL)
+    g.prior = FALSE, n.mil = 1, seed = 1,
+    alt.initial.values = FALSE, results.path = NULL,
+    results.label = "R2BGLiMS", args.file = NULL,
+    debug.path = NULL)
 }
 \arguments{
+  \item{likelihood}{Type of model to fit. Current options
+  are "Logistic" (for binary data), "Weibull" (for survival
+  data), "Gaussian" (for continuous data), and
+  "GaussianMarg" (for analysis of univariate associations
+  from Gaussian linear regressions).}
+
   \item{data}{Matrix or dataframe containing the data to
   analyse. Rows are indiviuals, and columns are variables,
   named in concordance with the following options.}
@@ -21,6 +29,11 @@
 
   \item{times.var}{If survival data, the column in data
   which contains the event times (default NULL)}
+
+  \item{block.indices}{If Guassian marginal tests are being
+  analysed, the external xTx data may be divided into
+  blocks, to simplify inversion. This vector should contain
+  the indices of the block break points (default NULL)}
 
   \item{cluster.var}{If hierarchical data and random
   intercepts are required, the column in data contains the
@@ -75,6 +88,10 @@
   common prior with unkown variance across predictors for
   which model selection is performed for.}
 
+  \item{g.prior}{Whether to use a g-prior for the beta's -
+  i.e. a multivariate normal with correlation structure
+  proportional to X'X^-1 (default = FALSE).}
+
   \item{n.mil}{Number of million iterations to run (default
   is 1)}
 
@@ -96,6 +113,10 @@
   \item{args.file}{Optional path to an alternative
   arguments file to use instead of the default (default is
   used if left as NULL).}
+
+  \item{debug.path}{Optional path to save the data and
+  results files (rather than as temporary files) to help in
+  debugging.}
 }
 \value{
   A Reversible Jump results object is returned. This is a
@@ -133,7 +154,7 @@ for (v in paste("V",c(1:9),sep="")) {
   biopsy[,v] <- (biopsy[,v]-mean(biopsy[,v],na.rm=T))/sd(biopsy[,v],na.rm=T)
 }
 biopsyResults <- R2BGLiMS(
-  data=biopsy, outcome.var="class",
+  likelihood="Logistic", data=biopsy, outcome.var="class",
   model.space.priors=list(
     list("Rate"=0.5, "Variables"=paste("V",c(1:3),sep="")),
     list("Rate"=0.1, "Variables"=paste("V",c(4:9),sep=""))
@@ -152,6 +173,7 @@ beta.priors <- data.frame(
   row.names=predictors)
 # Notice how survival analysis requires additionally flagging a "times.var"
 VAResults <- R2BGLiMS(
+  likelihood="Weibull",
   data=VA,
   outcome.var="status",
   times.var="stime",
