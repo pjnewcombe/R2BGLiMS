@@ -13,8 +13,8 @@
 #' with the following options.
 #' @param outcome.var Which column in data contains the binary outcome/survival status variable (default "Disease")
 #' @param times.var If survival data, the column in data which contains the event times (default NULL)
-#' @param block.indices If Guassian marginal tests are being analysed, the external xTx data may be divided
-#' into blocks, to simplify inversion. This vector should contain the indices of the block break points (default NULL)
+#' @param xTx GaussianMarg ONLY: List containing each block's plug-in estimate for X'X.
+#' @param t GaussianMarg ONLY: Vector of quantities calculated from the summary statistics.
 #' @param cluster.var If hierarchical data and random intercepts are required, the column in data contains the clustering variable (default NULL)
 #' @param confounders vector of confounders to fix in the model at all times, i.e. exclude from model selection (default NULL)
 #' @param model.selection Whether to use model selection (default is TRUE)
@@ -74,7 +74,8 @@ R2BGLiMS <- function(
   data=NULL,
   outcome.var=NULL,
   times.var=NULL,
-  block.indices=NULL,
+  xTx=NULL,
+  t=NULL,
   cluster.var=NULL,
   confounders=NULL,
   model.selection=TRUE,
@@ -99,14 +100,14 @@ R2BGLiMS <- function(
       stop("Likelihood must be specified as Logistic, Weibull, Gaussian or GaussianMarg")
     }
   }
-  if (is.null(data)) stop("The data to analyse has not been specified")
-  if (is.null(outcome.var)) stop("A binary outcome/survival status variable has not been specified")
-  if (is.factor(data[,outcome.var])) {
-    data[,outcome.var] <- as.integer(data[,outcome.var])-1
-  } else if (is.character(data[,outcome.var])) {
-    data[,outcome.var] <- as.integer(as.factor(data[,outcome.var]))-1    
-  }
+  if (is.null(data)&is.null(xTx)) stop("The data to analyse has not been specified")
+  if (is.null(outcome.var)&is.null(t)) stop("A binary outcome/survival status variable has not been specified")
   if (likelihood %in% c("Logistic", "Weibull")) {
+    if (is.factor(data[,outcome.var])) {
+      data[,outcome.var] <- as.integer(data[,outcome.var])-1
+    } else if (is.character(data[,outcome.var])) {
+      data[,outcome.var] <- as.integer(as.factor(data[,outcome.var]))-1    
+    }    
     if (length(table(data[,outcome.var]))!=2) stop("Outcome variable must be binary")    
   }
   if ((model.selection)&is.null(model.space.priors)) stop("Must specify a prior over the model space")
@@ -137,16 +138,18 @@ R2BGLiMS <- function(
       if (!"Variables"%in%names(model.space.priors[[c]])) {
         stop("Each model.space.prior list(s) must contain an element named Variables, defining which covariates to search over")
       }
-      if (sum(model.space.priors[[c]]$Variables%in%colnames(data))!=length(model.space.priors[[c]]$Variables)) {
-        stop(paste("Not all variables in model space component",c,"are present in the data"))
-      }
-      # Sort out any factors
-      for (v in model.space.priors[[c]]$Variables) {
-        if (is.factor(data[,v])) {
-          data[,v] <- as.integer(data[,v])
-        } else if (is.character(data[,v])) {
-          data[,v] <- as.integer(as.factor(data[,v]))-1
+      if (!likelihood %in% c("GaussianMarg")) {
+        if (sum(model.space.priors[[c]]$Variables%in%colnames(data))!=length(model.space.priors[[c]]$Variables)) {
+          stop(paste("Not all variables in model space component",c,"are present in the data"))
         }
+        # Sort out any factors
+        for (v in model.space.priors[[c]]$Variables) {
+          if (is.factor(data[,v])) {
+            data[,v] <- as.integer(data[,v])
+          } else if (is.character(data[,v])) {
+            data[,v] <- as.integer(as.factor(data[,v]))-1
+          }
+        }        
       }
     }
   }
@@ -158,7 +161,9 @@ R2BGLiMS <- function(
     if (beta.priors.not.mat) stop("beta.priors must be a matrix or data frame")
     if (ncol(beta.priors)!=2) stop("beta.priors must have two columns - 1st for means, 2nd for SDs")
     if ( is.null(rownames(beta.priors)) ) stop("Rows of beta.priors must be named with corresponding variable names")
-    if (sum(rownames(beta.priors)%in%colnames(data))!=nrow(beta.priors)) stop("One or more variables in beta.priors are not present in the data")
+    if (!likelihood %in% c("GaussianMarg")) {
+      if (sum(rownames(beta.priors)%in%colnames(data))!=nrow(beta.priors)) stop("One or more variables in beta.priors are not present in the data")
+    }
   }
   
   ### --- Possible future options
@@ -226,6 +231,7 @@ R2BGLiMS <- function(
   }
   
   ### --- Write data files if not provided
+  t1 <- proc.time()["elapsed"]
   clean.up.data <- FALSE
   clean.up.results <- FALSE
   now <-format(Sys.time(), "%b%d%H%M%S") # Used to ensure unique names in the temp directory
@@ -247,12 +253,19 @@ R2BGLiMS <- function(
       confounders=confounders, 
       outcome.var=outcome.var,
       times.var=times.var,
-      block.indices=block.indices,
+      xTx=xTx,
+      t=t,
       cluster.var=cluster.var,
       beta.priors=beta.priors,
       model.space.priors=model.space.priors)
     cat("\n...finished writing temporary data files.\n")
   }
+  t2 <- proc.time()["elapsed"]
+  write.time <- t2-t1
+  hrs <-floor( (t2-t1)/(60*60) )
+  mins <- floor( (t2-t1-60*60*hrs)/60 )
+  secs <- round(t2-t1-hrs*60*60 - mins*60)
+  cat(paste("\nData written in",hrs,"hrs",mins,"mins and",secs,"seconds"))
   
   ### --- Generate results root filenames
   if (is.null(results.path)) { # Will write to a temporary directory
@@ -308,6 +321,7 @@ R2BGLiMS <- function(
   t1 <- proc.time()["elapsed"]
   system(comm)
   t2 <- proc.time()["elapsed"]
+  bglims.time <- t2-t1
   hrs <-floor( (t2-t1)/(60*60) )
   mins <- floor( (t2-t1-60*60*hrs)/60 )
   secs <- round(t2-t1-hrs*60*60 - mins*60)
@@ -315,10 +329,17 @@ R2BGLiMS <- function(
   
   ### --- Results processing
   cat("\nProcessing BGLiMS output...")
+  t1 <- proc.time()["elapsed"]
   results <- .ReadResults(
     results.file=results.file,
     first.n.mil.its=first.n.mil.its)
   ChainPlots(results, plot.file=plot.file)
+  t2 <- proc.time()["elapsed"]
+  results.processing.time <- t2-t1
+  hrs <-floor( (t2-t1)/(60*60) )
+  mins <- floor( (t2-t1-60*60*hrs)/60 )
+  secs <- round(t2-t1-hrs*60*60 - mins*60)
+  cat(paste("\nResults processed in",hrs,"hrs",mins,"mins and",secs,"seconds"))
   
   # Clean up
   cat("\nCleaning up...")
@@ -330,10 +351,13 @@ R2BGLiMS <- function(
   # Append extra information to results object
   results$args$model.selection <- model.selection
   results$args$mcmc.seed <- seed
-  results$args$run.time <- paste(hrs,"hrs, ",mins,"mins, ",secs,"secs", sep="")
   results$args$model.space.priors <- model.space.priors
   results$args$confounders <- confounders
   results$args$predictors <- predictors
+  results$run.times <- list()
+  results$run.times$write.time <- write.time
+  results$run.times$bglims.time <- bglims.time
+  results$run.times$results.processing.time <- results.processing.time
   
   return(results)
 }

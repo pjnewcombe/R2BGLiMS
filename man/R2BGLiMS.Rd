@@ -3,14 +3,13 @@
 \title{Call BGLiMS from R}
 \usage{
   R2BGLiMS(likelihood = NULL, data = NULL,
-    outcome.var = NULL, times.var = NULL,
-    block.indices = NULL, cluster.var = NULL,
-    confounders = NULL, model.selection = TRUE,
-    model.space.priors = NULL, beta.priors = NULL,
-    g.prior = FALSE, n.mil = 1, seed = 1,
-    alt.initial.values = FALSE, results.path = NULL,
-    results.label = "R2BGLiMS", args.file = NULL,
-    debug.path = NULL)
+    outcome.var = NULL, times.var = NULL, xTx = NULL,
+    t = NULL, cluster.var = NULL, confounders = NULL,
+    model.selection = TRUE, model.space.priors = NULL,
+    beta.priors = NULL, g.prior = FALSE, n.mil = 1,
+    seed = 1, alt.initial.values = FALSE,
+    results.path = NULL, results.label = "R2BGLiMS",
+    args.file = NULL, debug.path = NULL)
 }
 \arguments{
   \item{likelihood}{Type of model to fit. Current options
@@ -30,10 +29,11 @@
   \item{times.var}{If survival data, the column in data
   which contains the event times (default NULL)}
 
-  \item{block.indices}{If Guassian marginal tests are being
-  analysed, the external xTx data may be divided into
-  blocks, to simplify inversion. This vector should contain
-  the indices of the block break points (default NULL)}
+  \item{xTx}{GaussianMarg ONLY: List containing each
+  block's plug-in estimate for X'X.}
+
+  \item{t}{GaussianMarg ONLY: Vector of quantities
+  calculated from the summary statistics.}
 
   \item{cluster.var}{If hierarchical data and random
   intercepts are required, the column in data contains the

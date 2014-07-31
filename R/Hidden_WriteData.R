@@ -10,6 +10,8 @@
 #' @param outcome.var Which column in data contains the binary outcome for logistic and survival data, or the integer count for
 #' Poisson data (default "Disease")
 #' @param times.var If survival data or Poisson data, the column in data which contains the follow-up times (default NULL)
+#' @param xTx GaussianMarg ONLY: List containing each block's plug-in estimate for X'X.
+#' @param t GaussianMarg ONLY: Vector of quantities calculated from the summary statistics.
 #' @param block.indices If Guassian marginal tests are being analysed, the external xTx data may be divided
 #' into blocks, to simplify inversion. This vector should contain the indices of the block break points (default NULL)
 #' @param cluster.var If hierarchical data and random intercepts are required, the column in data contains the clustering variable (default NULL)
@@ -23,37 +25,50 @@
   confounders=NULL,
   outcome.var=NULL,
   times.var=NULL,
-  block.indices=NULL,
+  xTx=NULL,
+  t=NULL,
   cluster.var=NULL,
   beta.priors=NULL,
   model.space.priors
 ) {
 	### Pre-processing
-  n.start <- nrow(data)
-  if (!is.null(predictors)) {
-    data <- data[, c(outcome.var, times.var, cluster.var, predictors)]
+  if (!likelihood%in%c("GaussianMarg")) {
+    n.start <- nrow(data)
+    if (!is.null(predictors)) {
+      data <- data[, c(outcome.var, times.var, cluster.var, predictors)]
+    }
+    for (v in colnames(data)) {
+      data <- data[!is.na(data[,v]), ]
+    }
+    # Extract disease var
+    disease <- data[,outcome.var]
+    data <- data[, colnames(data)[!colnames(data)%in%c(outcome.var)] ]
+    # Extract survival times var
+    if (!is.null(times.var) ) {
+      times <- data[,times.var]
+      data <- data[, colnames(data)[!colnames(data)%in%times.var] ]
+    }
+    # Extract cluster var
+    if (!is.null(cluster.var) ) {
+      clusters <- as.integer(as.factor(as.integer(data[,cluster.var])))	# This makes range 1,..nClusters
+      data <- data[, colnames(data)[!colnames(data)%in%cluster.var] ]
+      n.clusters <- length(unique(clusters))
+    }
+    
+    V <- ncol(data)
+    N <- nrow(data)
+    var.names <- colnames(data)
+    cat(paste((n.start-N),"observations deleted due to missingness"))
+  } else {
+    V <- length(t)
+    N <- length(t)
+    var.names <- unlist(lapply(xTx,colnames))
+    block.sizes <- unlist(lapply(xTx,ncol))
+    block.indices <- rep(1,length(xTx)+1)
+    for (b in 1:length(xTx)) {
+      block.indices[b+1] <- block.indices[b] + block.sizes[b]
+    }
   }
-	for (v in colnames(data)) {
-		data <- data[!is.na(data[,v]), ]
-	}
-  # Extract disease var
-	disease <- data[,outcome.var]
-	data <- data[, colnames(data)[!colnames(data)%in%c(outcome.var)] ]
-	# Extract survival times var
-	if (!is.null(times.var) ) {
-	  times <- data[,times.var]
-	  data <- data[, colnames(data)[!colnames(data)%in%times.var] ]
-	}
-	# Extract cluster var
-	if (!is.null(cluster.var) ) {
-	  clusters <- as.integer(as.factor(as.integer(data[,cluster.var])))	# This makes range 1,..nClusters
-	  data <- data[, colnames(data)[!colnames(data)%in%cluster.var] ]
-	  n.clusters <- length(unique(clusters))
-	}
-
-	V <- ncol(data)
-	N <- nrow(data)
-  cat(paste((n.start-N),"observations deleted due to missingness"))
   
 	### Writing
 	# Model
@@ -61,7 +76,7 @@
 	# V: Total number of variables
 	write(V, file = data.file , ncolumns = 1, append = T)
   # Varnames: Variable names
-	write(colnames(data), file = data.file , ncolumns = V, append = T)
+	write(var.names, file = data.file , ncolumns = V, append = T)
   # VnoRJ: Total number of variables (from the beginning) to be fixed in the model
 	write(length(confounders), file = data.file , ncolumns = 1, append = T) 				# from which variable RJ is performed
   # N: Number of individuals
@@ -76,18 +91,23 @@
   cat("\n\nWriting a BGLiMS formatted datafile...\n")
   # Block indices
   if (likelihood %in% c("GaussianMarg")) {
-    if (is.null(block.indices)) {
-      block.indices <- c(1,V)
-    }
-    write((length(block.indices)-1), file = data.file , ncolumns = 1, append = T)
+#    if (is.null(block.indices)) {
+#      block.indices <- c(1,V)
+#    }
+#    write((length(block.indices)-1), file = data.file , ncolumns = 1, append = T)
+#    write(block.indices, file = data.file , ncolumns = length(block.indices), append = T)
+#    # xTx by block
+#    for (b in 1:(length(block.indices)-1)) {
+#      write.table(
+#        data[block.indices[b]:(block.indices[b+1]-1),
+#             block.indices[b]:(block.indices[b+1]-1)],
+#        row.names=F, col.names=F, file = data.file,
+#        append = T)
+#    }
+    write(length(xTx), file = data.file , ncolumns = 1, append = T)
     write(block.indices, file = data.file , ncolumns = length(block.indices), append = T)
-    # xTx by block
-    for (b in 1:(length(block.indices)-1)) {
-      write.table(
-        data[block.indices[b]:(block.indices[b+1]-1),
-             block.indices[b]:(block.indices[b+1]-1)],
-        row.names=F, col.names=F, file = data.file,
-        append = T)
+    for (b in 1:length(xTx)) {
+      write.table(xTx[[b]], row.names=F, col.names=F, file = data.file, append = T)
     }
   } else {
     # Covariate data
@@ -101,8 +121,10 @@
   # Vector of disease labels
   if (likelihood %in% c("Logistic", "Weibull")) {
     write(t(as.integer(disease)), file = data.file , ncolumns = N, append = T)    
-  } else if (likelihood %in% c("Gaussian", "GaussianMarg")) {
+  } else if (likelihood %in% c("Gaussian")) {
     write(t(disease), file = data.file , ncolumns = N, append = T)        
+  } else if (likelihood %in% c("GaussianMarg")) {
+    write(t(t), file = data.file , ncolumns = N, append = T)        
   }
   if (!is.null(times.var)) {
     write(t(times), file = data.file , ncolumns = N, append = T)    
