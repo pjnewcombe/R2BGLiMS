@@ -15,7 +15,7 @@
   all predictors}
 
   \item{results}{Reversible Jump results object from
-  running \code{\link{R2MHRJ}}.}
+  running \code{\link{R2BGLiMS}}.}
 
   \item{data}{Matrix or dataframe containing the data to
   analyse. Rows are indiviuals, and columns are variables,

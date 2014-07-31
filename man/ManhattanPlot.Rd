@@ -58,7 +58,7 @@
   mark labels (e.g. if there are many many variables)}
 
   \item{results}{Reversible Jump results object from
-  running \code{\link{R2MHRJ}}.}
+  running \code{\link{R2BGLiMS}}.}
 
   \item{vars.to.include}{Optional character vector
   specifying a subset of variables to restrict output to.}

@@ -6,7 +6,7 @@
 }
 \arguments{
   \item{results}{Reversible Jump results object from
-  running \code{\link{R2MHRJ}}.}
+  running \code{\link{R2BGLiMS}}.}
 }
 \value{
   Table of posterior probabilities and Bayes Factors for

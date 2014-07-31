@@ -32,7 +32,7 @@
   should be labelled (if width is a problem)}
 
   \item{results}{Reversible Jump results object from
-  running \code{\link{R2MHRJ}}.}
+  running \code{\link{R2BGLiMS}}.}
 }
 \value{
   Ordered table of best models, with corresponding

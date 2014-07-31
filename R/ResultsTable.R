@@ -5,7 +5,7 @@ NULL
 #' @export
 #' @title Summary results table
 #' @name ResultsTable
-#' @param results Reversible Jump results object from running \code{\link{R2MHRJ}}.
+#' @param results Reversible Jump results object from running \code{\link{R2BGLiMS}}.
 #' @param vars.to.include Optional character vector specifying a subset of variables
 #' to restrict output to.
 #' @param normalised.sds If variables were normalised (e.g. to facilitate use of a common

@@ -18,7 +18,7 @@ represented across all iterations as a black and white "heatmap".}
   probabilities at the top.}
 
   \item{results}{Reversible Jump results object from
-  running \code{\link{R2MHRJ}}.}
+  running \code{\link{R2BGLiMS}}.}
 
   \item{vars.to.include}{Optional character vector
   specifying a subset of variables to restrict output to.}

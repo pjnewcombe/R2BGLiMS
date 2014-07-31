@@ -1,15 +1,18 @@
 Package: R2BGLiMS
 Type: Package
-Title: R interface to the Java package BGLiMS (Bayesian Generalised Linear
+Title: R interface to the java package BGLiMS (Bayesian Generalised Linear
     Model Selection).
-Version: 0.1-24-04-2014
-Date: 24-04-2014
+Version: 0.1-31-07-2014
+Date: 31-07-2014
 Author: Paul J Newcombe <paul.newcombe@mrc-bsu.cam.ac.uk>
 Maintainer: Paul J Newcombe <paul.newcombe@mrc-bsu.cam.ac.uk>
-Description: Facilitates use of a Java package for fitting Bayesian GLMs under
-    model selection (BGLiMS). Currently supports Weibull regression (for
-    survival outcomes) and logistic regression (for binary outcomes).
-License: GPL
+Description: Provides an R interface to a Java package for fitting Bayesian
+    GLMs. Approximate posterior samples are drawn using an MCMC sampler with a
+    (Reversible Jump) Metropolis-Hastings acceptance ratio. Currently, Logistic
+    and Weibull regression models are available. - Allows models to be fitted
+    with random intercepts. - Allows model selection analyses via Reversible
+    Jump.
+License: GPL (>=2)
 Collate:
     'AutocorrelationPlot.R'
     'BetaBinomialParameters.R'
