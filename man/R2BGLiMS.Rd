@@ -105,7 +105,9 @@
   \item{results.path}{Optional path if wish to to save
   algorithm results output (when set to the default NULL
   all output is written to a temporary directory and
-  deleted).}
+  deleted). NOTE this must exist already. A folder will be
+  created in this path taking the name of `results.label'
+  below}
 
   \item{results.label}{Optional label to for algorithm
   output files (if you have specified results.path)}

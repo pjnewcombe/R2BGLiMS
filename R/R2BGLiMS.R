@@ -47,7 +47,8 @@
 #' @param seed Which random number seed to use in the RJMCMC sampler (default is 1)
 #' @param alt.initial.values Whether to use the alternative set of initial values in the arguments file (default is FALSE)
 #' @param results.path Optional path if wish to to save algorithm results output (when set to the default NULL 
-#' all output is written to a temporary directory and deleted).
+#' all output is written to a temporary directory and deleted). NOTE this must exist already. A folder will be created in this
+#' path taking the name of `results.label' below
 #' @param results.label Optional label to for algorithm output files (if you have specified results.path)
 #' @param args.file Optional path to an alternative arguments file to use instead of the default (default is used if left as NULL).
 #' @param debug.path Optional path to save the data and results files (rather than as temporary files) to
