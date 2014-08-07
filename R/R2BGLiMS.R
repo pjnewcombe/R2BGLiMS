@@ -243,7 +243,7 @@ R2BGLiMS <- function(
       clean.up.data <- TRUE
       data.path <- paste(tempdir(),"/",results.label,"_Data_",now, sep="")      
     }
-    system(paste("mkdir ",data.path, sep=""))
+    system(paste("mkdir '",data.path,"'", sep=""))
     data.file <- paste(data.path, "/",results.label,".txt", sep="")
     .WriteData(
       data.file=data.file,
@@ -275,7 +275,7 @@ R2BGLiMS <- function(
       results.path <- paste(tempdir(),"/",results.label,"_Results_",now, sep="")      
       clean.up.results <- TRUE      
     }
-    system(paste("mkdir ",results.path, sep=""))
+    system(paste("mkdir '",results.path,"'", sep=""))
   }
   results.root <- paste(results.path, results.label, sep="/")
   results.file <- paste(results.root,".txt",sep="")
