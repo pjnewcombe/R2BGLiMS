@@ -12,7 +12,6 @@ HierPrecPrior_GammaArg2 0.001
 WeibullScalePrior_GammaArg1 1
 WeibullScalePrior_GammaArg2 0.001
 
-Saturated_Initial_Model 0
 Alpha_Initial_Value 0
 Beta_Initial_Value 0
 BetaPriorSd_Initial_Value 0.1

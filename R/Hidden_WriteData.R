@@ -15,6 +15,8 @@
 #' @param block.indices If Guassian marginal tests are being analysed, the external xTx data may be divided
 #' into blocks, to simplify inversion. This vector should contain the indices of the block break points (default NULL)
 #' @param cluster.var If hierarchical data and random intercepts are required, the column in data contains the clustering variable (default NULL)
+#' @param initial.model Optionally, an initial model can be provided as a vector of 0's and 1's. Default is NULL
+#' and the null model is used. If set to 1, the saturated model is used.
 #' @return NA
 #' @author Paul Newcombe
 .WriteData <- function(
@@ -29,7 +31,8 @@
   t=NULL,
   cluster.var=NULL,
   beta.priors=NULL,
-  model.space.priors
+  model.space.priors,
+  initial.model=NULL
 ) {
 	### Pre-processing
   if (!likelihood%in%c("GaussianMarg")) {
@@ -91,19 +94,6 @@
   cat("\n\nWriting a BGLiMS formatted datafile...\n")
   # Block indices
   if (likelihood %in% c("GaussianMarg")) {
-#    if (is.null(block.indices)) {
-#      block.indices <- c(1,V)
-#    }
-#    write((length(block.indices)-1), file = data.file , ncolumns = 1, append = T)
-#    write(block.indices, file = data.file , ncolumns = length(block.indices), append = T)
-#    # xTx by block
-#    for (b in 1:(length(block.indices)-1)) {
-#      write.table(
-#        data[block.indices[b]:(block.indices[b+1]-1),
-#             block.indices[b]:(block.indices[b+1]-1)],
-#        row.names=F, col.names=F, file = data.file,
-#        append = T)
-#    }
     write(length(xTx), file = data.file , ncolumns = 1, append = T)
     write(block.indices, file = data.file , ncolumns = length(block.indices), append = T)
     for (b in 1:length(xTx)) {
@@ -158,4 +148,13 @@
     }    
   }
   
+  # Initial model
+  if (is.null(initial.model)) {
+    write(0, file = data.file , ncolumns = 1, append = T)    
+  } else if (length(initial.model)&initial.model==1) {
+    write(1, file = data.file , ncolumns = 1, append = T)    
+  } else {
+    write(2, file = data.file , ncolumns = 1, append = T)    
+    write(t(initial.model), file = data.file , ncolumns = length(initial.model), append = T)    
+  }  
 }

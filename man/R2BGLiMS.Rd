@@ -6,10 +6,11 @@
     outcome.var = NULL, times.var = NULL, xTx = NULL,
     t = NULL, cluster.var = NULL, confounders = NULL,
     model.selection = TRUE, model.space.priors = NULL,
-    beta.priors = NULL, g.prior = FALSE, n.mil = 1,
-    seed = 1, alt.initial.values = FALSE,
-    results.path = NULL, results.label = "R2BGLiMS",
-    args.file = NULL, debug.path = NULL)
+    initial.model = NULL, beta.priors = NULL,
+    g.prior = FALSE, n.mil = 1, seed = 1,
+    alt.initial.values = FALSE, results.path = NULL,
+    results.label = "R2BGLiMS", args.file = NULL,
+    debug.path = NULL)
 }
 \arguments{
   \item{likelihood}{Type of model to fit. Current options
@@ -63,6 +64,11 @@
   relative to "a" increase sparsity, whereas higher values
   of "a" encourage the inclusion of more covariates. a ~
   number of prior successes, b~number of prior failures.}
+
+  \item{initial.model}{Optionally, an initial model can be
+  provided as a vector of 0's and 1's. Default is NULL and
+  the null model is used. If set to 1, the saturated model
+  is used.}
 
   \item{beta.priors}{Optional matrix or data.frame
   containing two columns (1st:mean, 2nd:SD) describing

@@ -30,6 +30,8 @@
 #' beta-binomial model space prior, higher values of "b" relative to "a" increase sparsity,
 #' whereas higher values of "a" encourage the inclusion of more covariates. a ~ number of prior successes, b~number of prior
 #' failures.
+#' @param initial.model Optionally, an initial model can be provided as a vector of 0's and 1's. Default is NULL
+#' and the null model is used. If set to 1, the saturated model is used.
 #' @param beta.priors Optional matrix or data.frame containing two columns (1st:mean, 2nd:SD) describing normal priors for
 #' the beta coefficients of the confounders or confounders and predictors (i.e. log-ORs in the case of logistic regression).
 #' Rows of
@@ -81,6 +83,7 @@ R2BGLiMS <- function(
   confounders=NULL,
   model.selection=TRUE,
   model.space.priors=NULL,
+  initial.model=NULL,
   beta.priors=NULL,
   g.prior=FALSE,
   n.mil=1,
@@ -258,7 +261,8 @@ R2BGLiMS <- function(
       t=t,
       cluster.var=cluster.var,
       beta.priors=beta.priors,
-      model.space.priors=model.space.priors)
+      model.space.priors=model.space.priors,
+      initial.model=initial.model)
     cat("\n...finished writing temporary data files.\n")
   }
   t2 <- proc.time()["elapsed"]
