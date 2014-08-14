@@ -5,7 +5,7 @@ AlphaPriorSd 1000
 BetaPriorVar_InvGammaPrior_Shape 0.001
 BetaPriorVar_InvGammaPrior_Scale 0.001
 WhichHierPrecPrior 1
-HierPrecPrior_UnifArg1 0 
+HierPrecPrior_UnifArg1 0.01
 HierPrecPrior_UnifArg2 1
 HierPrecPrior_GammaArg1 0.001
 HierPrecPrior_GammaArg2 0.001
