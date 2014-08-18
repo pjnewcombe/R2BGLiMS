@@ -12,6 +12,8 @@
 #' @param times.var If survival data or Poisson data, the column in data which contains the follow-up times (default NULL)
 #' @param xTx GaussianMarg ONLY: List containing each block's plug-in estimate for X'X.
 #' @param t GaussianMarg ONLY: Vector of quantities calculated from the summary statistics.
+#' @param intercept.counts If Guassian marginal tests are being analysed, this option indicates whether to fit an intercept or 
+#' leave fixed at 0. Boolean, default is NULL
 #' @param block.indices If Guassian marginal tests are being analysed, the external xTx data may be divided
 #' into blocks, to simplify inversion. This vector should contain the indices of the block break points (default NULL)
 #' @param cluster.var If hierarchical data and random intercepts are required, the column in data contains the clustering variable (default NULL)
@@ -29,6 +31,7 @@
   times.var=NULL,
   xTx=NULL,
   t=NULL,
+  intercept.counts=NULL,
   cluster.var=NULL,
   beta.priors=NULL,
   model.space.priors,
@@ -94,10 +97,14 @@
   cat("\n\nWriting a BGLiMS formatted datafile...\n")
   # Block indices
   if (likelihood %in% c("GaussianMarg")) {
+    write(as.integer(!is.null(intercept.counts)), file = data.file , ncolumns = 1, append = T)
     write(length(xTx), file = data.file , ncolumns = 1, append = T)
     write(block.indices, file = data.file , ncolumns = length(block.indices), append = T)
     for (b in 1:length(xTx)) {
       write.table(xTx[[b]], row.names=F, col.names=F, file = data.file, append = T)
+    }
+    if (!is.null(intercept.counts)) {
+      write(intercept.counts, file = data.file , ncolumns = length(block.indices), append = T)      
     }
   } else {
     # Covariate data

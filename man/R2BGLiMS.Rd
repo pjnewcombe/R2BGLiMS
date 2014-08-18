@@ -4,13 +4,13 @@
 \usage{
   R2BGLiMS(likelihood = NULL, data = NULL,
     outcome.var = NULL, times.var = NULL, xTx = NULL,
-    t = NULL, cluster.var = NULL, confounders = NULL,
-    model.selection = TRUE, model.space.priors = NULL,
-    initial.model = NULL, beta.priors = NULL,
-    g.prior = FALSE, n.mil = 1, seed = 1,
-    alt.initial.values = FALSE, results.path = NULL,
-    results.label = "R2BGLiMS", args.file = NULL,
-    debug.path = NULL)
+    t = NULL, intercept.counts = NULL, cluster.var = NULL,
+    confounders = NULL, model.selection = TRUE,
+    model.space.priors = NULL, initial.model = NULL,
+    beta.priors = NULL, g.prior = FALSE, n.mil = 1,
+    seed = 1, alt.initial.values = FALSE,
+    results.path = NULL, results.label = "R2BGLiMS",
+    args.file = NULL, debug.path = NULL)
 }
 \arguments{
   \item{likelihood}{Type of model to fit. Current options
@@ -35,6 +35,14 @@
 
   \item{t}{GaussianMarg ONLY: Vector of quantities
   calculated from the summary statistics.}
+
+  \item{intercept.counts}{GaussianMarg ONLY: If you wish to
+  fit an intercept, please provide a vector of the plug in
+  X matrix column counts. This is equivalent to a vector of
+  length equal to the number of covariates, each element is
+  the MAF*2 (or the covariate mean) * n. For posssibly
+  quicker runtime leave NULL for an intercept free model
+  (assumes all covariates and outcome are normalised).}
 
   \item{cluster.var}{If hierarchical data and random
   intercepts are required, the column in data contains the
