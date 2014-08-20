@@ -151,8 +151,8 @@
   # Initial model
   if (is.null(initial.model)) {
     write(0, file = data.file , ncolumns = 1, append = T)    
-  } else if (length(initial.model)&initial.model==1) {
-    write(1, file = data.file , ncolumns = 1, append = T)    
+  } else if (length(initial.model)==1) {
+    write(initial.model, file = data.file , ncolumns = 1, append = T)    
   } else {
     write(2, file = data.file , ncolumns = 1, append = T)    
     write(t(initial.model), file = data.file , ncolumns = length(initial.model), append = T)    
