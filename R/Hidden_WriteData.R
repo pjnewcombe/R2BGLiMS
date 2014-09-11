@@ -12,6 +12,8 @@
 #' @param times.var If survival data or Poisson data, the column in data which contains the follow-up times (default NULL)
 #' @param xTx GaussianMarg ONLY: List containing each block's plug-in estimate for X'X.
 #' @param t GaussianMarg ONLY: Vector of quantities calculated from the summary statistics.
+#' @param N GaussianMarg ONLY: MUST specify how many individuals the marginal statistics have been calculated from. This is
+#' required for the correct likelihood calculation
 #' @param block.indices If Guassian marginal tests are being analysed, the external xTx data may be divided
 #' into blocks, to simplify inversion. This vector should contain the indices of the block break points (default NULL)
 #' @param cluster.var If hierarchical data and random intercepts are required, the column in data contains the clustering variable (default NULL)
@@ -29,6 +31,7 @@
   times.var=NULL,
   xTx=NULL,
   t=NULL,
+  N=NULL,
   cluster.var=NULL,
   beta.priors=NULL,
   model.space.priors,
@@ -64,7 +67,6 @@
     cat(paste((n.start-N),"observations deleted due to missingness"))
   } else {
     V <- length(t)
-    N <- length(t)
     var.names <- unlist(lapply(xTx,colnames))
     block.sizes <- unlist(lapply(xTx,ncol))
     block.indices <- rep(1,length(xTx)+1)
