@@ -11,12 +11,16 @@ HierPrecPrior_GammaArg1 0.001
 HierPrecPrior_GammaArg2 0.001
 WeibullScalePrior_GammaArg1 1
 WeibullScalePrior_GammaArg2 0.001
+WhichGaussianPrecisionPrior 0
+GaussianPrecisionPrior_GammaArg1 0.001
+GaussianPrecisionPrior_GammaArg2 0.001
 
 Alpha_Initial_Value 0
 Beta_Initial_Value 0
 BetaPriorSd_Initial_Value 0.1
 BetweenClusterSd_Initial_Value 0.1
 WeibullScale_Initial_Value 1
+GaussianResidual_Initial_Value 1
 
 Adaption_Bin 100
 Adaption_Iterations 100000

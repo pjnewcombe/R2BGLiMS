@@ -19,7 +19,9 @@
 #' required for the correct likelihood calculation
 #' @param cluster.var If hierarchical data and random intercepts are required, the column in data contains the clustering variable (default NULL)
 #' @param confounders vector of confounders to fix in the model at all times, i.e. exclude from model selection (default NULL)
-#' @param model.selection Whether to use model selection (default is TRUE)
+#' @param model.selection Whether to use model selection (default is TRUE). NB: Even if set to FALSE, please provide a 
+#' dummy model.space.priors argument (see below). This will not be used mathematically, but the package requires taking the list of variable
+#' names from the "Variables" element therein.
 #' @param model.space.priors Must be specified if model.selection is set to TRUE.
 #' A list with as many elements as desired model space components (one or more).
 #' Each element of the list is also a list, corresponding to a particular
@@ -54,9 +56,11 @@
 #' all output is written to a temporary directory and deleted). NOTE this must exist already. A folder will be created in this
 #' path taking the name of `results.label' below
 #' @param results.label Optional label to for algorithm output files (if you have specified results.path)
-#' @param args.file Optional path to an alternative arguments file to use instead of the default (default is used if left as NULL).
-#' @param debug.path Optional path to save the data and results files (rather than as temporary files) to
-#' help in debugging.
+#' @param args.file Optional path to an alternative arguments file - e.g. "/Users/pauln/Arguments/Arguments_Alt.txt". 
+#' If left as NULL, a default file located at BGLiMS/Arguments_Package.txt within the package directory is used. Note that
+#' this file can be used as a template. Currently this is not documented - please contact the package author, Paul Newcombe.
+#' @param debug.path Optional path to save the data and results files to (rather than as temporary files), for aid in
+#' debugging.
 #' 
 #' @return A Reversible Jump results object is returned. This is a list of two elements: "args" which records various modelling
 #' arguments used in the analysis, and "results" - a matrix containing all saved posterior samples from the analysis. Columns
@@ -117,7 +121,9 @@ R2BGLiMS <- function(
     }    
     if (length(table(data[,outcome.var]))!=2) stop("Outcome variable must be binary")    
   }
-  if ((model.selection)&is.null(model.space.priors)) stop("Must specify a prior over the model space")
+  if (is.null(model.space.priors)) stop("Must specify a prior over the model space (even if model selection
+                                        will not be used this is used to provide the list of covariate
+                                        names")
   if (!is.null(confounders)) {
     if (sum(confounders%in%colnames(data))!=length(confounders)) stop("One or more confounders are not present in the data")
     for (v in confounders) {

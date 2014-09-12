@@ -116,7 +116,7 @@
   } else if (likelihood %in% c("Gaussian")) {
     write(t(disease), file = data.file , ncolumns = N, append = T)        
   } else if (likelihood %in% c("GaussianMarg")) {
-    write(t(t), file = data.file , ncolumns = N, append = T)        
+    write(t(t), file = data.file , ncolumns = V, append = T)        
   }
   if (!is.null(times.var)) {
     write(t(times), file = data.file , ncolumns = N, append = T)    

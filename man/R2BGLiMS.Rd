@@ -50,7 +50,11 @@
   (default NULL)}
 
   \item{model.selection}{Whether to use model selection
-  (default is TRUE)}
+  (default is TRUE). NB: Even if set to FALSE, please
+  provide a dummy model.space.priors argument (see below).
+  This will not be used mathematically, but the package
+  requires taking the list of variable names from the
+  "Variables" element therein.}
 
   \item{model.space.priors}{Must be specified if
   model.selection is set to TRUE. A list with as many
@@ -124,12 +128,17 @@
   output files (if you have specified results.path)}
 
   \item{args.file}{Optional path to an alternative
-  arguments file to use instead of the default (default is
-  used if left as NULL).}
+  arguments file - e.g.
+  "/Users/pauln/Arguments/Arguments_Alt.txt". If left as
+  NULL, a default file located at
+  BGLiMS/Arguments_Package.txt within the package directory
+  is used. Note that this file can be used as a template.
+  Currently this is not documented - please contact the
+  package author, Paul Newcombe.}
 
   \item{debug.path}{Optional path to save the data and
-  results files (rather than as temporary files) to help in
-  debugging.}
+  results files to (rather than as temporary files), for
+  aid in debugging.}
 }
 \value{
   A Reversible Jump results object is returned. This is a
