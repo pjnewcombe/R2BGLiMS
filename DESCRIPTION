@@ -7,11 +7,11 @@ Date: 12-09-2014
 Author: Paul J Newcombe <paul.newcombe@mrc-bsu.cam.ac.uk>
 Maintainer: Paul J Newcombe <paul.newcombe@mrc-bsu.cam.ac.uk>
 Description: Provides an R interface to a Java package for fitting Bayesian
-    GLMs. Approximate posterior samples are drawn using an MCMC sampler with a
-    (Reversible Jump) Metropolis-Hastings acceptance ratio. Currently, Logistic
-    and Weibull regression models are available. - Allows models to be fitted
-    with random intercepts. - Allows model selection analyses via Reversible
-    Jump.
+    GLMs. Approximate posterior samples are drawn using an MCMC sampler
+    with a (Reversible Jump) Metropolis-Hastings acceptance ratio.
+    Currently, Logistic and Weibull regression models are available. -
+    Allows models to be fitted with random intercepts. - Allows model
+    selection analyses via Reversible Jump.
 License: GPL (>=2)
 Collate:
     'AutocorrelationPlot.R'

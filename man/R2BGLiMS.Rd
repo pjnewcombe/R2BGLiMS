@@ -4,13 +4,13 @@
 \usage{
   R2BGLiMS(likelihood = NULL, data = NULL,
     outcome.var = NULL, times.var = NULL, xTx = NULL,
-    t = NULL, N = NULL, cluster.var = NULL,
-    confounders = NULL, model.selection = TRUE,
-    model.space.priors = NULL, initial.model = NULL,
-    beta.priors = NULL, g.prior = FALSE, n.mil = 1,
-    seed = 1, alt.initial.values = FALSE,
-    results.path = NULL, results.label = "R2BGLiMS",
-    args.file = NULL, debug.path = NULL)
+    t = NULL, cluster.var = NULL, confounders = NULL,
+    model.selection = TRUE, model.space.priors = NULL,
+    initial.model = NULL, beta.priors = NULL,
+    g.prior = FALSE, n.mil = 1, seed = 1,
+    alt.initial.values = FALSE, results.path = NULL,
+    results.label = "R2BGLiMS", args.file = NULL,
+    debug.path = NULL)
 }
 \arguments{
   \item{likelihood}{Type of model to fit. Current options
@@ -35,11 +35,6 @@
 
   \item{t}{GaussianMarg ONLY: Vector of quantities
   calculated from the summary statistics.}
-
-  \item{N}{GaussianMarg ONLY: MUST specify how many
-  individuals the marginal statistics have been calculated
-  from. This is required for the correct likelihood
-  calculation}
 
   \item{cluster.var}{If hierarchical data and random
   intercepts are required, the column in data contains the

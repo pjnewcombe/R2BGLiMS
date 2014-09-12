@@ -15,8 +15,6 @@
 #' @param times.var If survival data, the column in data which contains the event times (default NULL)
 #' @param xTx GaussianMarg ONLY: List containing each block's plug-in estimate for X'X.
 #' @param t GaussianMarg ONLY: Vector of quantities calculated from the summary statistics.
-#' @param N GaussianMarg ONLY: MUST specify how many individuals the marginal statistics have been calculated from. This is
-#' required for the correct likelihood calculation
 #' @param cluster.var If hierarchical data and random intercepts are required, the column in data contains the clustering variable (default NULL)
 #' @param confounders vector of confounders to fix in the model at all times, i.e. exclude from model selection (default NULL)
 #' @param model.selection Whether to use model selection (default is TRUE). NB: Even if set to FALSE, please provide a 
@@ -85,7 +83,6 @@ R2BGLiMS <- function(
   times.var=NULL,
   xTx=NULL,
   t=NULL,
-  N=NULL,
   cluster.var=NULL,
   confounders=NULL,
   model.selection=TRUE,
@@ -269,7 +266,6 @@ R2BGLiMS <- function(
       times.var=times.var,
       xTx=xTx,
       t=t,
-      N=N,
       cluster.var=cluster.var,
       beta.priors=beta.priors,
       model.space.priors=model.space.priors,
