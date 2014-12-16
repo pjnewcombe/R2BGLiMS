@@ -1,0 +1,1 @@
+Provides an R interface to a Java package for fitting Bayesian GLMs. Approximate posterior samples are drawn using an MCMC sampler with a (Reversible Jump) Metropolis-Hastings acceptance ratio. Currently, Logistic and Weibull regression models are available. - Allows models to be fitted with random intercepts. - Allows model selection analyses via Reversible Jump.
