@@ -1,4 +1,5 @@
 #' Generates an autocorrelation plot from a Java MCMC results class object
+#' 
 #' @export
 #' @title Autocorrelation plot for model selection. Model inclusion of each predictor is
 #' represented across all iterations as a black and white "heatmap".
