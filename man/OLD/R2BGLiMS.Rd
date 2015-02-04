@@ -5,12 +5,13 @@
 \title{Call BGLiMS from R}
 \usage{
 R2BGLiMS(likelihood = NULL, data = NULL, outcome.var = NULL,
-  times.var = NULL, xTx = NULL, t = NULL, residual.var = NULL,
-  residual.var.n = NULL, cluster.var = NULL, confounders = NULL,
-  model.selection = TRUE, model.space.priors = NULL, max.model.dim = -1,
-  initial.model = NULL, beta.priors = NULL, g.prior = FALSE, n.mil = 1,
-  seed = 1, alt.initial.values = FALSE, results.path = NULL,
-  results.label = "R2BGLiMS", args.file = NULL, debug.path = NULL)
+  times.var = NULL, xTx = NULL, t = NULL,
+  trait.residual.precision = NULL, trait.residual.precision.n = NULL,
+  cluster.var = NULL, confounders = NULL, model.selection = TRUE,
+  model.space.priors = NULL, initial.model = NULL, beta.priors = NULL,
+  g.prior = FALSE, n.mil = 1, seed = 1, alt.initial.values = FALSE,
+  results.path = NULL, results.label = "R2BGLiMS", args.file = NULL,
+  debug.path = NULL)
 }
 \arguments{
 \item{likelihood}{Type of model to fit. Current options are "Logistic" (for binary data), "Weibull" (for survival data),
@@ -28,9 +29,9 @@ with the following options.}
 
 \item{t}{GaussianMarg ONLY: Vector of quantities calculated from the summary statistics.}
 
-\item{residual.var}{GaussianMarg ONLY: An estimate of the residual variance of the trait.}
+\item{trait.residual.precision}{GaussianMarg ONLY: An estimate of the residual precision of the trait.}
 
-\item{residual.var.n}{GaussianMarg ONLY: Sample size the residual variance estimate came from}
+\item{trait.residual.precision.n}{GaussianMarg ONLY: Sample size the residual precision estimate came from}
 
 \item{cluster.var}{If hierarchical data and random intercepts are required, the column in data contains the clustering variable (default NULL)}
 
@@ -52,8 +53,6 @@ be included - a vector of variable names in that component. Note that when choos
 beta-binomial model space prior, higher values of "b" relative to "a" increase sparsity,
 whereas higher values of "a" encourage the inclusion of more covariates. a ~ number of prior successes, b~number of prior
 failures.}
-
-\item{max.model.dim}{Optional specification of maximum model dimension (default -1 means no maximum is set)}
 
 \item{initial.model}{Optionally, an initial model can be provided as a vector of 0's and 1's. Default is NULL
 and the null model is used. If set to 1, the saturated model is used.}

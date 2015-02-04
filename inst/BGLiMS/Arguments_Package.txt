@@ -18,7 +18,7 @@ WhichGaussianPrecisionPrior 0
 GaussianResidualPrior_UnifArg1 0
 GaussianResidualPrior_UnifArg2 2
 GaussianPrecisionPrior_GammaArg1 0.001
-GaussianPrecisionPrior_GammaArg2 0.001
+GaussianPrecisionPrior_GammaArg2 1000
 
 Alpha_Initial_Value 0
 Beta_Initial_Value 0
@@ -37,6 +37,7 @@ Beta_Prec_Initial_Proposal_Sd 0.05
 ClusterIntercepts_Initial_Proposal_Sd 0.0001
 HierPrec_Initial_Proposal_Sd 0.05
 WeibullScale_Initial_ProposalSd 0.1
+LogGaussianResidual_Initial_ProposalSd 0.01
 BetaAdd_Initial_Proposal_Sd 0.1
 BetaSwap_Initial_Proposal_Sd 0.001
 

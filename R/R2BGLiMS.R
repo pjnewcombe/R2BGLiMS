@@ -15,6 +15,8 @@
 #' @param times.var If survival data, the column in data which contains the event times (default NULL)
 #' @param xTx GaussianMarg ONLY: List containing each block's plug-in estimate for X'X.
 #' @param t GaussianMarg ONLY: Vector of quantities calculated from the summary statistics.
+#' @param residual.var GaussianMarg ONLY: An estimate of the residual variance of the trait.
+#' @param residual.var.n GaussianMarg ONLY: Sample size the residual variance estimate came from
 #' @param cluster.var If hierarchical data and random intercepts are required, the column in data contains the clustering variable (default NULL)
 #' @param confounders vector of confounders to fix in the model at all times, i.e. exclude from model selection (default NULL)
 #' @param model.selection Whether to use model selection (default is TRUE). NB: Even if set to FALSE, please provide a 
@@ -32,6 +34,7 @@
 #' beta-binomial model space prior, higher values of "b" relative to "a" increase sparsity,
 #' whereas higher values of "a" encourage the inclusion of more covariates. a ~ number of prior successes, b~number of prior
 #' failures.
+#' @param max.model.dim Optional specification of maximum model dimension (default -1 means no maximum is set)
 #' @param initial.model Optionally, an initial model can be provided as a vector of 0's and 1's. Default is NULL
 #' and the null model is used. If set to 1, the saturated model is used.
 #' @param beta.priors Optional matrix or data.frame containing two columns (1st:mean, 2nd:SD) describing normal priors for
@@ -83,10 +86,13 @@ R2BGLiMS <- function(
   times.var=NULL,
   xTx=NULL,
   t=NULL,
+  residual.var=NULL,
+  residual.var.n=NULL,
   cluster.var=NULL,
   confounders=NULL,
   model.selection=TRUE,
   model.space.priors=NULL,
+  max.model.dim=-1,
   initial.model=NULL,
   beta.priors=NULL,
   g.prior=FALSE,
@@ -266,6 +272,8 @@ R2BGLiMS <- function(
       times.var=times.var,
       xTx=xTx,
       t=t,
+      residual.var=residual.var,
+      residual.var.n=residual.var.n,
       cluster.var=cluster.var,
       beta.priors=beta.priors,
       model.space.priors=model.space.priors,
@@ -308,6 +316,7 @@ R2BGLiMS <- function(
     as.integer(model.selection)," ",
     as.integer(g.prior)," ",
     as.integer(alt.initial.values)," ",
+    as.integer(max.model.dim)," ",
     n.mod.space.comps," ",
     modSpaceDistribution, sep=""
   )
