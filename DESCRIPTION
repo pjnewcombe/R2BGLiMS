@@ -1,7 +1,7 @@
 Package: R2BGLiMS
 Type: Package
-Title: R interface to the java package BGLiMS (Bayesian Generalised Linear
-    Model Selection).
+Title: R interface to the java package BGLiMS (Bayesian Generalised Linear Model
+    Selection).
 Version: 0.1-12-03-2015
 Date: 12-03-2015
 Author: Paul J Newcombe <paul.newcombe@mrc-bsu.cam.ac.uk>
@@ -17,8 +17,9 @@ Collate:
     'AutocorrelationPlot.R'
     'BetaBinomialParameters.R'
     'ChainPlots.R'
-    'GenerateSplines.R'
     'HiddenFunctions.R'
+    'EnumeratedApproximatePostProbs.R'
+    'GenerateSplines.R'
     'Hidden_ReadResults.R'
     'Hidden_WriteData.R'
     'ResultsTable.R'

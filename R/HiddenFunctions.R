@@ -11,6 +11,18 @@
   return(bayesFactor)
 }
 
+#' Calculates a Bayes Facotor, give a prior and posterior probabiltiies. Check2
+#' 
+#' @param k dimension to calculate probability for
+#' @param n total number of covariates
+#' @param a beta-binomial hyper parameter a
+#' @param b beta-binomial hyper parameter b
+#' @return Probability
+#' @author Paul Newcombe
+.BetaBinomialProbability <- function(k, n, a, b) {
+  choose(n, k)*beta( (k+a), (n-k+b) )/beta(a,b)
+}
+
 #' Calculates prior probabability of causality for a particular variable, when a Poisson prior is used for model space
 #' @param V total number of variables
 #' @param mu model space mean
