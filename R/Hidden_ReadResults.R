@@ -62,10 +62,46 @@
     }		
   }
   
+  ### Read in posterior scores for single SNP models
+  if (resultsRead$args$allModelScoresUpToDim>0) {
+    # Null and single dimension models
+    n.model.scores.dim1 <- (resultsRead$args$V - resultsRead$args$startRJ) + 1
+    skip.to.main.results=3+n.model.scores.dim1
+    resultsRead$model.scores <- read.table(
+      results.file,
+      skip = 3,
+      header=FALSE,
+      nrows=n.model.scores.dim1)
+    # Two dimension models
+    if (resultsRead$args$allModelScoresUpToDim>=2) {
+      n.model.scores.dim2 <- choose(resultsRead$args$V - resultsRead$args$startRJ,2)
+      model.scores.dim2 <- read.table(
+        results.file,
+        skip = 3+n.model.scores.dim1,
+        header=FALSE,
+        nrows=n.model.scores.dim2)
+      resultsRead$model.scores <- rbind(resultsRead$model.scores, model.scores.dim2)
+      skip.to.main.results <- skip.to.main.results + n.model.scores.dim2
+    }
+    if (resultsRead$args$allModelScoresUpToDim==3) {
+      n.model.scores.dim3 <- choose(resultsRead$args$V - resultsRead$args$startRJ,3)
+      model.scores.dim3 <- read.table(
+        results.file,
+        skip = 3+n.model.scores.dim1+n.model.scores.dim2,
+        header=FALSE,
+        nrows=n.model.scores.dim3)
+      resultsRead$model.scores <- rbind(resultsRead$model.scores, model.scores.dim3)
+      skip.to.main.results <- skip.to.main.results + n.model.scores.dim3
+    }
+    colnames(resultsRead$model.scores) <- c("Model", "PosteriorScore")
+  } else {
+    skip.to.main.results=3    
+  }
+  
   if (is.null(mi.results.files)) {
     resultsRead$results <- read.table(
       results.file,
-      skip = 3,
+      skip = skip.to.main.results,
       header=TRUE,
       nrows=n.rows.written)
     # Remove burnin  and thin if asked
@@ -82,7 +118,7 @@
     for (results.file.ch in mi.results.files) {
       results.ch <- read.table(
         results.file.ch,
-        skip = 3,
+        skip = skip.to.main.results,
         header=TRUE,
         nrows=n.rows.written)
       # Remove burnin  and thin if asked

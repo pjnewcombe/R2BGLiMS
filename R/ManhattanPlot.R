@@ -168,7 +168,7 @@ ManhattanPlot <- function(
   point.labs) {
   
   ## --- Initiate plot
-  plot(0,type="n",xlim=c(0, length(results.vec) ),
+  plot(0,type="n",xlim=c(1, length(results.vec) ),
        ylim=c(min(y.ticks), max(y.ticks)),axes=F,
        xlab="",ylab=y.lab, main=plot.title)
   

@@ -7,16 +7,37 @@
 #' @title Call BGLiMS from R
 #' @name R2BGLiMS
 #' @param likelihood Type of model to fit. Current options are "Logistic" (for binary data), "Weibull" (for survival data), 
-#' "Gaussian" (for continuous data), and "GaussianMarg" (for analysis of univariate associations from Gaussian linear 
-#' regressions).
+#' "Gaussian" (for continuous data), "GaussianMarg" (for analysis of univariate associations from Gaussian linear 
+#' regressions) and "GaussianMargConj" (for analysis under a marginal conjugate linear regression model).
 #' @param data Matrix or dataframe containing the data to analyse. Rows are indiviuals, and columns are variables, named in concordance
 #' with the following options.
 #' @param outcome.var Which column in data contains the binary outcome/survival status variable (default "Disease")
 #' @param times.var If survival data, the column in data which contains the event times (default NULL)
-#' @param xTx GaussianMarg ONLY: List containing each block's plug-in estimate for X'X.
-#' @param t GaussianMarg ONLY: Vector of quantities calculated from the summary statistics.
-#' @param residual.var GaussianMarg ONLY: An estimate of the residual variance of the trait.
-#' @param residual.var.n GaussianMarg ONLY: Sample size the residual variance estimate came from
+#' @param xTx GaussianMarg and GaussianMargConj ONLY: List containing each block's plug-in estimate for X'X.
+#' @param t GaussianMarg and GaussianMargConj ONLY: Vector of quantities calculated from the summary statistics.
+#' @param sigma2_invGamma_a GaussianMarg and GaussianMargConj ONLY: Inverse-Gamma parameter one for the residual
+#' precision. For the conjugate model this parameter is intergrated out, and this may be provided as in the
+#' Bottolo and Richardson 2010 notation. For an informative prior for the non-conjugate model
+#' (taking into account Java parameterisation) choose N/2.
+#' @param sigma2_invGamma_b GaussianMarg and GaussianMargConj ONLY: Inverse-Gamma parameter one for the residual
+#' precision. For the conjugate model this parameter is intergrated out, and this may be provided as in the
+#' Bottolo and Richardson 2010 notation. For an informative prior for the non-conjugate model
+#' (taking into account Java parameterisation) choose N/(2*variance estimate).
+#' @param g.prior GaussianMargConj ONLY: Whether to use a g-prior for the beta's - i.e. a multivariate normal 
+#' with correlation structure proportional to sigma^2*X'X^-1 or to use independence priors (default = FALSE).
+#' @param tau GaussianMargConj ONLY: Value to use for sparsity parameter tau (tau*sigma^2 parameterisation).
+#' Default residual.var.n. If modelling this parameter, this value is used to center the Zellner-Siow prior
+#' and as an intial value.
+#' @param model.tau GaussianMargConj ONLY: Whether to model tau or not (default FALSE). If set to true,
+#' then a Zellner-Siow prior is used, centred on the value provide by tau. The value provided in tau is also used as the
+#' initial value.
+#' @param tau.proposal.sd GaussianMargConj ONLY: When modelling tau an initial SD to use in the adaption
+#' of the proposal distribution. Under the conjugate model, tau makes use of the BGLiMS parameter `betaPriorSd'. Thus
+#' the parameters is used on a very different scale to normal and as such it is best to specify this seperately.
+#' Defaults to 0.05.
+#' @param all.model.scores.up.to.dim GaussianMargConj ONLY: When NOT modelling tau, whether to output the posterior scores
+#' for every possible model of dimension up to the integer specified. Currenly maximum allowed dimension is 2. Setting
+#' to default 0 means this is not carried out. Can be used as an alternative to running the RJMCMC.
 #' @param cluster.var If hierarchical data and random intercepts are required, the column in data contains the clustering variable (default NULL)
 #' @param confounders vector of confounders to fix in the model at all times, i.e. exclude from model selection (default NULL)
 #' @param model.selection Whether to use model selection (default is TRUE). NB: Even if set to FALSE, please provide a 
@@ -48,8 +69,6 @@
 #' This overrides the default use of N(0,1e6) confounder priors, but the predictors for which model selection is performed for
 #' are still assigned a common prior with unknown variance. 3) provide a beta.priors matrix including all confounders and predictors,
 #' thereby avoiding the use of a common prior with unkown variance across predictors for which model selection is performed for.
-#' @param g.prior Whether to use a g-prior for the beta's - i.e. a multivariate normal with correlation structure proportional
-#' to X'X^-1 (default = FALSE).
 #' @param n.mil Number of million iterations to run (default is 1)
 #' @param seed Which random number seed to use in the RJMCMC sampler (default is 1)
 #' @param alt.initial.values Whether to use the alternative set of initial values in the arguments file (default is FALSE)
@@ -86,8 +105,13 @@ R2BGLiMS <- function(
   times.var=NULL,
   xTx=NULL,
   t=NULL,
-  residual.var=NULL,
-  residual.var.n=NULL,
+  sigma2_invGamma_a=NULL,
+  sigma2_invGamma_b=NULL,
+  g.prior=FALSE,
+  tau=NULL,
+  model.tau=FALSE,
+  tau.proposal.sd=0.05,
+  all.model.scores.up.to.dim=0,
   cluster.var=NULL,
   confounders=NULL,
   model.selection=TRUE,
@@ -95,7 +119,6 @@ R2BGLiMS <- function(
   max.model.dim=-1,
   initial.model=NULL,
   beta.priors=NULL,
-  g.prior=FALSE,
   n.mil=1,
   seed=1,
   alt.initial.values=FALSE,
@@ -108,10 +131,10 @@ R2BGLiMS <- function(
   try.java <- try(system("java -version"), silent=TRUE)
   if (try.java!=0) stop("Java is not installed and is required to run BGLiMS.\nPlease install from java.com/download.")  
   if (is.null(likelihood)) stop("No likelihood, i.e. the model type, has been specified; please specify as Logistic,
-                                Weibull, Gaussian or GaussianMarg")
+                                Weibull, Gaussian, GaussianMarg or GaussianMargConj")
   if (!is.null(likelihood)) {
-    if (!likelihood %in% c("Logistic", "Weibull", "Gaussian", "GaussianMarg")) {
-      stop("Likelihood must be specified as Logistic, Weibull, Gaussian or GaussianMarg")
+    if (!likelihood %in% c("Logistic", "Weibull", "Gaussian", "GaussianMarg", "GaussianMargConj")) {
+      stop("Likelihood must be specified as Logistic, Weibull, Gaussian, GaussianMarg, or GaussianMargConj")
     }
   }
   if (is.null(data)&is.null(xTx)) stop("The data to analyse has not been specified")
@@ -154,7 +177,7 @@ R2BGLiMS <- function(
       if (!"Variables"%in%names(model.space.priors[[c]])) {
         stop("Each model.space.prior list(s) must contain an element named Variables, defining which covariates to search over")
       }
-      if (!likelihood %in% c("GaussianMarg")) {
+      if (!likelihood %in% c("GaussianMarg", "GaussianMargConj")) {
         if (sum(model.space.priors[[c]]$Variables%in%colnames(data))!=length(model.space.priors[[c]]$Variables)) {
           stop(paste("Not all variables in model space component",c,"are present in the data"))
         }
@@ -177,7 +200,7 @@ R2BGLiMS <- function(
     if (beta.priors.not.mat) stop("beta.priors must be a matrix or data frame")
     if (ncol(beta.priors)!=2) stop("beta.priors must have two columns - 1st for means, 2nd for SDs")
     if ( is.null(rownames(beta.priors)) ) stop("Rows of beta.priors must be named with corresponding variable names")
-    if (!likelihood %in% c("GaussianMarg")) {
+    if (!likelihood %in% c("GaussianMarg", "GaussianMargConj")) {
       if (sum(rownames(beta.priors)%in%colnames(data))!=nrow(beta.priors)) stop("One or more variables in beta.priors are not present in the data")
     }
   }
@@ -272,12 +295,18 @@ R2BGLiMS <- function(
       times.var=times.var,
       xTx=xTx,
       t=t,
-      residual.var=residual.var,
-      residual.var.n=residual.var.n,
+      sigma2_invGamma_a=sigma2_invGamma_a,
+      sigma2_invGamma_b=sigma2_invGamma_b,
+      g.prior=g.prior,
+      tau=tau,
+      model.tau=model.tau,
+      tau.proposal.sd=tau.proposal.sd,
+      all.model.scores.up.to.dim=all.model.scores.up.to.dim,
       cluster.var=cluster.var,
       beta.priors=beta.priors,
       model.space.priors=model.space.priors,
-      initial.model=initial.model)
+      initial.model=initial.model
+      )
     cat("\n...finished writing temporary data files.\n")
   }
   t2 <- proc.time()["elapsed"]

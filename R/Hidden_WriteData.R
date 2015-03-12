@@ -4,16 +4,39 @@
 #' @name .WriteData
 #' @param data.file Desired path for .txt data file to be written to
 #' @param likelihood Type of model to fit. Current options are "Logistic" (for binary data), "Weibull" (for survival data), 
-#' and "Gaussian" (for continuous data).
+#' "Gaussian" (for continuous data), "GaussianMarg" (for analysis of univariate associations from Gaussian linear 
+#' regressions) and "GaussianMargConj" (for analysis under a marginal conjugate linear regression model).
 #' @param data Matrix of data to write - rows indiviuals, columns variables.
 #' @param predictors vector of predictors. Leave as the default NULL to include all variables available in the data.frame will be used.
 #' @param outcome.var Which column in data contains the binary outcome for logistic and survival data, or the integer count for
 #' Poisson data (default "Disease")
 #' @param times.var If survival data or Poisson data, the column in data which contains the follow-up times (default NULL)
-#' @param xTx GaussianMarg ONLY: List containing each block's plug-in estimate for X'X.
-#' @param t GaussianMarg ONLY: Vector of quantities calculated from the summary statistics.
-#' @param residual.var GaussianMarg ONLY: An estimate of the residual variance of the trait.
-#' @param residual.var.n GaussianMarg ONLY: Sample size the residual variance estimate came from
+#' @param xTx GaussianMarg and GaussianMargConj ONLY: List containing each block's plug-in estimate for X'X.
+#' @param t GaussianMarg and GaussianMargConj ONLY: Vector of quantities calculated from the summary statistics.
+#' @param sigma2_invGamma_a GaussianMarg and GaussianMargConj ONLY: Inverse-Gamma parameter one for the residual
+#' precision. For the conjugate model this parameter is intergrated out, and this may be provided as in the
+#' Bottolo and Richardson 2010 notation. For an informative prior for the non-conjugate model
+#' (taking into account Java parameterisation) choose N/2.
+#' @param sigma2_invGamma_b GaussianMarg and GaussianMargConj ONLY: Inverse-Gamma parameter one for the residual
+#' precision. For the conjugate model this parameter is intergrated out, and this may be provided as in the
+#' Bottolo and Richardson 2010 notation. For an informative prior for the non-conjugate model
+#' (taking into account Java parameterisation) choose N/(2*variance estimate).
+#' @param g.prior GaussianMargConj ONLY: Whether to use a g-prior for the beta's - i.e. a multivariate normal 
+#' with correlation structure proportional to sigma^2*X'X^-1 or to use independence priors (default = FALSE).
+#' @param tau GaussianMargConj ONLY: Value to use for sparsity parameter tau (tau*sigma^2 parameterisation).
+#' Default residual.var.n. If modelling this parameter, this value is used to center the Zellner-Siow prior
+#' and as an intial value.
+#' @param model.tau GaussianMargConj ONLY: Whether to model tau or not (default FALSE). If set to true,
+#' then a Zellner-Siow prior is used, centred on the value provide by tau. The value provided in tau is also used as the
+#' initial value.
+#' @param tau.proposal.sd GaussianMargConj ONLY: When modelling tau an initial SD to use in the adaption
+#' of the proposal distribution. Under the conjugate model, tau makes use of the BGLiMS parameter `betaPriorSd'. Thus
+#' the parameters is used on a very different scale to normal and as such it is best to specify this seperately.
+#' Defaults to 0.05.
+#' @param all.model.scores.up.to.dim GaussianMargConj ONLY: When NOT modelling tau, whether to output the posterior scores
+#' for every possible model of dimension up to the integer specified. Currenly maximum allowed dimension is 2. Setting
+#' to default 0 means this is not carried out. Can be used as an alternative to running the RJMCMC.
+#' 
 #' @param block.indices If Guassian marginal tests are being analysed, the external xTx data may be divided
 #' into blocks, to simplify inversion. This vector should contain the indices of the block break points (default NULL)
 #' @param cluster.var If hierarchical data and random intercepts are required, the column in data contains the clustering variable (default NULL)
@@ -31,6 +54,13 @@
   times.var=NULL,
   xTx=NULL,
   t=NULL,
+  sigma2_invGamma_a=NULL,
+  sigma2_invGamma_b=NULL,
+  g.prior=FALSE,
+  tau=NULL,
+  model.tau=FALSE,
+  tau.proposal.sd=0.05,
+  all.model.scores.up.to.dim=0,
   residual.var=NULL,
   residual.var.n=NULL,  
   cluster.var=NULL,
@@ -39,7 +69,7 @@
   initial.model=NULL
 ) {
 	### Pre-processing
-  if (!likelihood%in%c("GaussianMarg")) {
+  if (!likelihood%in%c("GaussianMarg", "GaussianMargConj")) {
     n.start <- nrow(data)
     if (!is.null(predictors)) {
       data <- data[, c(outcome.var, times.var, cluster.var, predictors)]
@@ -97,13 +127,31 @@
   # N x V matrix of covariate values
   cat("\n\nWriting a BGLiMS formatted datafile...\n")
   # Block indices
-  if (likelihood %in% c("GaussianMarg")) {
-    write(residual.var, file = data.file , ncolumns = 1, append = T)
-    write(residual.var.n, file = data.file , ncolumns = 1, append = T)
+  if (likelihood %in% c("GaussianMarg", "GaussianMargConj")) {
+    write(sigma2_invGamma_a, file = data.file , ncolumns = 1, append = T)
+    write(sigma2_invGamma_b, file = data.file , ncolumns = 1, append = T)
+    if (likelihood %in% c("GaussianMargConj")) { # Conjugate prior structure options.
+      write(as.integer(g.prior), file = data.file , ncolumns = 1, append = T)
+      write(tau, file = data.file, ncolumns = 1, append = T)      
+      write(as.integer(model.tau), file = data.file , ncolumns = 1, append = T)      
+      write(tau.proposal.sd, file = data.file, ncolumns = 1, append = T)      
+      write(all.model.scores.up.to.dim, file = data.file , ncolumns = 1, append = T)
+    }
     write(length(xTx), file = data.file , ncolumns = 1, append = T)
     write(block.indices, file = data.file , ncolumns = length(block.indices), append = T)
-    for (b in 1:length(xTx)) {
-      write.table(xTx[[b]], row.names=F, col.names=F, file = data.file, append = T)
+    if (likelihood == "GaussianMarg") {
+      for (b in 1:length(xTx)) {
+        write.table(xTx[[b]], row.names=F, col.names=F, file = data.file, append = T)
+      }
+    } else if (likelihood == "GaussianMargConj") {
+      L_Inv <- list()      
+      for (b in 1:length(xTx)) {
+        cat("Taking Cholesky decomposition of block",b,"...\n")
+        L_Inv[[b]] <- chol(xTx[[b]])
+        L_Inv[[b]] <- solve(L_Inv[[b]]) # Take inverse. Check: id <- t(L[[b]]) %*% xTx[[b]] %*% L[[b]]
+        cat("...done")
+        write.table( (L_Inv[[b]] %*% xTx[[b]]), row.names=F, col.names=F, file = data.file, append = T)
+      }      
     }
   } else {
     # Covariate data
@@ -121,6 +169,14 @@
     write(t(disease), file = data.file , ncolumns = N, append = T)        
   } else if (likelihood %in% c("GaussianMarg")) {
     write(t(t), file = data.file , ncolumns = V, append = T)        
+  } else if (likelihood %in% c("GaussianMargConj")) {
+    # Multiply by inverse cholesky decomposition
+    L_InvT <- t
+    for (b in 1:length(xTx)) {
+      block.vars <- c(block.indices[b]:(block.indices[b+1]-1))
+      L_InvT[block.vars] <- L_Inv[[b]] %*% t[block.vars]
+    }
+    write(t(L_InvT), file = data.file , ncolumns = V, append = T)        
   }
   if (!is.null(times.var)) {
     write(t(times), file = data.file , ncolumns = N, append = T)    

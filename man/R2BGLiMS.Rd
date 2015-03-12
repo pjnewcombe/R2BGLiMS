@@ -5,17 +5,19 @@
 \title{Call BGLiMS from R}
 \usage{
 R2BGLiMS(likelihood = NULL, data = NULL, outcome.var = NULL,
-  times.var = NULL, xTx = NULL, t = NULL, residual.var = NULL,
-  residual.var.n = NULL, cluster.var = NULL, confounders = NULL,
+  times.var = NULL, xTx = NULL, t = NULL, sigma2_invGamma_a = NULL,
+  sigma2_invGamma_b = NULL, g.prior = FALSE, tau = NULL,
+  model.tau = FALSE, tau.proposal.sd = 0.05,
+  all.model.scores.up.to.dim = 0, cluster.var = NULL, confounders = NULL,
   model.selection = TRUE, model.space.priors = NULL, max.model.dim = -1,
-  initial.model = NULL, beta.priors = NULL, g.prior = FALSE, n.mil = 1,
-  seed = 1, alt.initial.values = FALSE, results.path = NULL,
+  initial.model = NULL, beta.priors = NULL, n.mil = 1, seed = 1,
+  alt.initial.values = FALSE, results.path = NULL,
   results.label = "R2BGLiMS", args.file = NULL, debug.path = NULL)
 }
 \arguments{
 \item{likelihood}{Type of model to fit. Current options are "Logistic" (for binary data), "Weibull" (for survival data),
-"Gaussian" (for continuous data), and "GaussianMarg" (for analysis of univariate associations from Gaussian linear
-regressions).}
+"Gaussian" (for continuous data), "GaussianMarg" (for analysis of univariate associations from Gaussian linear
+regressions) and "GaussianMargConj" (for analysis under a marginal conjugate linear regression model).}
 
 \item{data}{Matrix or dataframe containing the data to analyse. Rows are indiviuals, and columns are variables, named in concordance
 with the following options.}
@@ -24,13 +26,39 @@ with the following options.}
 
 \item{times.var}{If survival data, the column in data which contains the event times (default NULL)}
 
-\item{xTx}{GaussianMarg ONLY: List containing each block's plug-in estimate for X'X.}
+\item{xTx}{GaussianMarg and GaussianMargConj ONLY: List containing each block's plug-in estimate for X'X.}
 
-\item{t}{GaussianMarg ONLY: Vector of quantities calculated from the summary statistics.}
+\item{t}{GaussianMarg and GaussianMargConj ONLY: Vector of quantities calculated from the summary statistics.}
 
-\item{residual.var}{GaussianMarg ONLY: An estimate of the residual variance of the trait.}
+\item{sigma2_invGamma_a}{GaussianMarg and GaussianMargConj ONLY: Inverse-Gamma parameter one for the residual
+precision. For the conjugate model this parameter is intergrated out, and this may be provided as in the
+Bottolo and Richardson 2010 notation. For an informative prior for the non-conjugate model
+(taking into account Java parameterisation) choose N/2.}
 
-\item{residual.var.n}{GaussianMarg ONLY: Sample size the residual variance estimate came from}
+\item{sigma2_invGamma_b}{GaussianMarg and GaussianMargConj ONLY: Inverse-Gamma parameter one for the residual
+precision. For the conjugate model this parameter is intergrated out, and this may be provided as in the
+Bottolo and Richardson 2010 notation. For an informative prior for the non-conjugate model
+(taking into account Java parameterisation) choose N/(2*variance estimate).}
+
+\item{g.prior}{GaussianMargConj ONLY: Whether to use a g-prior for the beta's - i.e. a multivariate normal
+with correlation structure proportional to sigma^2*X'X^-1 or to use independence priors (default = FALSE).}
+
+\item{tau}{GaussianMargConj ONLY: Value to use for sparsity parameter tau (tau*sigma^2 parameterisation).
+Default residual.var.n. If modelling this parameter, this value is used to center the Zellner-Siow prior
+and as an intial value.}
+
+\item{model.tau}{GaussianMargConj ONLY: Whether to model tau or not (default FALSE). If set to true,
+then a Zellner-Siow prior is used, centred on the value provide by tau. The value provided in tau is also used as the
+initial value.}
+
+\item{tau.proposal.sd}{GaussianMargConj ONLY: When modelling tau an initial SD to use in the adaption
+of the proposal distribution. Under the conjugate model, tau makes use of the BGLiMS parameter `betaPriorSd'. Thus
+the parameters is used on a very different scale to normal and as such it is best to specify this seperately.
+Defaults to 0.05.}
+
+\item{all.model.scores.up.to.dim}{GaussianMargConj ONLY: When NOT modelling tau, whether to output the posterior scores
+for every possible model of dimension up to the integer specified. Currenly maximum allowed dimension is 2. Setting
+to default 0 means this is not carried out. Can be used as an alternative to running the RJMCMC.}
 
 \item{cluster.var}{If hierarchical data and random intercepts are required, the column in data contains the clustering variable (default NULL)}
 
@@ -69,9 +97,6 @@ which in turn assigned a InversGamma(0.001, 0.001) hyperprior. 2) Provide a beta
 This overrides the default use of N(0,1e6) confounder priors, but the predictors for which model selection is performed for
 are still assigned a common prior with unknown variance. 3) provide a beta.priors matrix including all confounders and predictors,
 thereby avoiding the use of a common prior with unkown variance across predictors for which model selection is performed for.}
-
-\item{g.prior}{Whether to use a g-prior for the beta's - i.e. a multivariate normal with correlation structure proportional
-to X'X^-1 (default = FALSE).}
 
 \item{n.mil}{Number of million iterations to run (default is 1)}
 
