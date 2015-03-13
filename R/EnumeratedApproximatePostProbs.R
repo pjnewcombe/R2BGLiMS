@@ -27,6 +27,7 @@ EnumeratedApproxPostProbs <- function(results,a=NULL,b=NULL,max.dim=NULL) {
   if (is.null(max.dim)) {
     max.dim <- results$args$allModelScoresUpToDim
   }
+  P <- length(results$args$model.space.priors[[1]]$Variables)
 
   # Setup approx probs and model dimensions
   approx.probs <- results$model.scores
@@ -37,28 +38,28 @@ EnumeratedApproxPostProbs <- function(results,a=NULL,b=NULL,max.dim=NULL) {
   model.dims <- model.dims[which(model.dims<=max.dim)]
   
   # Null model
-  prior.prob.0 <- .BetaBinomialProbability(k=0,n=length(snp.list),a=a,b=b)
+  prior.prob.0 <- .BetaBinomialProbability(k=0,n=P,a=a,b=b)
   approx.probs[approx.probs$Model=="Null","Prob"] <- exp(approx.probs[approx.probs$Model=="Null","PosteriorScore"])*prior.prob.0
   
   # Single SNP model
-  prior.prob.1 <- .BetaBinomialProbability(k=1,n=length(snp.list),a=a,b=b)
+  prior.prob.1 <- .BetaBinomialProbability(k=1,n=P,a=a,b=b)
   approx.probs[model.dims==1,"Prob"] <- exp(approx.probs[model.dims==1,"PosteriorScore"])*prior.prob.1
   
   # Dual SNP models
   if (max.dim>=2) {
-    prior.prob.2 <- .BetaBinomialProbability(k=2,n=length(snp.list),a=a,b=b)
+    prior.prob.2 <- .BetaBinomialProbability(k=2,n=P,a=a,b=b)
     approx.probs[model.dims==2,"Prob"] <- exp(approx.probs[model.dims==2,"PosteriorScore"])*prior.prob.2      
   }
   
   # Triple SNP models
   if (max.dim>=3) {
-    prior.prob.3 <- .BetaBinomialProbability(k=3,n=length(snp.list),a=a,b=b)
+    prior.prob.3 <- .BetaBinomialProbability(k=3,n=P,a=a,b=b)
     approx.probs[model.dims==3,"Prob"] <- exp(approx.probs[model.dims==3,"PosteriorScore"])*prior.prob.3      
   }
 
   # Quadruple SNP models
   if (max.dim>=4) {
-    prior.prob.4 <- .BetaBinomialProbability(k=4,n=length(snp.list),a=a,b=b)
+    prior.prob.4 <- .BetaBinomialProbability(k=4,n=P,a=a,b=b)
     approx.probs[model.dims==4,"Prob"] <- exp(approx.probs[model.dims==4,"PosteriorScore"])*prior.prob.4
   }
   

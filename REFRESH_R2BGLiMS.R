@@ -5,6 +5,7 @@ commit.message <- NULL
 #commit.message <- "Unnessary specification of N for the marginal model removed."
 
 ### --- Java code and arguments file
+setwd(paste(package.location,"/",package.name,sep=""))
 system("rm -rf inst/BGLiMS/*")
 system( paste("cp -rf '/Users/pauln/Dropbox/Work Projects/RJ Java Package/Java Code/BGLiMS/dist/'* inst/BGLiMS/", sep="") )
 system( paste("cp '/Users/pauln/Dropbox/Work Projects/RJ Java Package/Test/Arguments/Arguments_Package.txt' inst/BGLiMS/", sep="") )  
