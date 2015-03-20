@@ -19,7 +19,7 @@ the original analysis is used.}
 what was passed to R2BGLiMS). If left NULL the value passed to R2BGLiMS will be used.}
 }
 \value{
-Table of posterior probabilities and Bayes Factors for different model sizes
+A list containing all model and marginal approximate posterior probabilities
 }
 \description{
 Calulcates approximate posterior probabiltiies from a Reversible Jump Results object

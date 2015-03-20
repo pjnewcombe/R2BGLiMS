@@ -13,7 +13,7 @@ NULL
 #' the original analysis is used.
 #' @param max.dim Maxmimum dimension to truncate space too (can be less than or equal to
 #' what was passed to R2BGLiMS). If left NULL the value passed to R2BGLiMS will be used.
-#' @return Table of posterior probabilities and Bayes Factors for different model sizes 
+#' @return A list containing all model and marginal approximate posterior probabilities 
 #' @author Paul Newcombe
 EnumeratedApproxPostProbs <- function(results,a=NULL,b=NULL,max.dim=NULL) {
   
@@ -27,7 +27,8 @@ EnumeratedApproxPostProbs <- function(results,a=NULL,b=NULL,max.dim=NULL) {
   if (is.null(max.dim)) {
     max.dim <- results$args$allModelScoresUpToDim
   }
-  P <- length(results$args$model.space.priors[[1]]$Variables)
+  vars <- results$args$model.space.priors[[1]]$Variables
+  P <- length(vars)
 
   # Setup approx probs and model dimensions
   approx.probs <- results$model.scores
@@ -64,7 +65,13 @@ EnumeratedApproxPostProbs <- function(results,a=NULL,b=NULL,max.dim=NULL) {
   }
   
   # Normalise
-  approx.post.probs <- approx.probs$Prob/sum(approx.probs$Prob)  
-  names(approx.post.probs) <- approx.probs$Model
-  return(approx.post.probs)
+  model.probs <- approx.probs$Prob/sum(approx.probs$Prob)  
+  names(model.probs) <- approx.probs$Model
+  marg.probs <- rep(0,P)
+  names(marg.probs) <- vars
+  for (v in vars) {
+    marg.probs[v] <- sum(model.probs[grep(v,names(model.probs))])
+  }
+  
+  return(list("model.probs"=model.probs, "marg.probs"=marg.probs))
 }	
