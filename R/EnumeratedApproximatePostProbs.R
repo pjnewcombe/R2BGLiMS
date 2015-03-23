@@ -13,7 +13,7 @@ NULL
 #' the original analysis is used.
 #' @param max.dim Maxmimum dimension to truncate space too (can be less than or equal to
 #' what was passed to R2BGLiMS). If left NULL the value passed to R2BGLiMS will be used.
-#' @return A list containing all model and marginal approximate posterior probabilities 
+#' @return A list containing all model, marginal and dimension approximate posterior probabilities 
 #' @author Paul Newcombe
 EnumeratedApproxPostProbs <- function(results,a=NULL,b=NULL,max.dim=NULL) {
   
@@ -64,14 +64,22 @@ EnumeratedApproxPostProbs <- function(results,a=NULL,b=NULL,max.dim=NULL) {
     approx.probs[model.dims==4,"Prob"] <- exp(approx.probs[model.dims==4,"PosteriorScore"])*prior.prob.4
   }
   
-  # Normalise
+  # Normalise model probs
   model.probs <- approx.probs$Prob/sum(approx.probs$Prob)  
   names(model.probs) <- approx.probs$Model
+  
+  # Infer marginal probs
   marg.probs <- rep(0,P)
   names(marg.probs) <- vars
   for (v in vars) {
     marg.probs[v] <- sum(model.probs[grep(v,names(model.probs))])
   }
   
-  return(list("model.probs"=model.probs, "marg.probs"=marg.probs))
+  # Infer dimension probabilities
+  dim.probs <- c(1:max.dim)
+  for (i in 1:max.dim) {
+    dim.probs[i] = sum(model.probs[model.dims==i])
+  }
+  
+  return(list("model.probs"=model.probs, "marg.probs"=marg.probs, "dim.probs"=dim.probs))
 }	
