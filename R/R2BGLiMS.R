@@ -7,7 +7,7 @@
 #' @title Call BGLiMS from R
 #' @name R2BGLiMS
 #' @param likelihood Type of model to fit. Current options are "Logistic" (for binary data), "Weibull" (for survival data), 
-#' "Gaussian" (for continuous data), "GaussianMarg" (for analysis of univariate associations from Gaussian linear 
+#' "Gaussian" (for continuous data), "GaussianConj" (linear regression exploiting conjugate results), "GaussianMarg" (for analysis of univariate associations from Gaussian linear 
 #' regressions) and "GaussianMargConj" (for analysis under a marginal conjugate linear regression model).
 #' @param data Matrix or dataframe containing the data to analyse. Rows are indiviuals, and columns are variables, named in concordance
 #' with the following options.
@@ -15,27 +15,27 @@
 #' @param times.var If survival data, the column in data which contains the event times (default NULL)
 #' @param xTx GaussianMarg and GaussianMargConj ONLY: List containing each block's plug-in estimate for X'X.
 #' @param t GaussianMarg and GaussianMargConj ONLY: Vector of quantities calculated from the summary statistics.
-#' @param sigma2_invGamma_a GaussianMarg and GaussianMargConj ONLY: Inverse-Gamma parameter one for the residual
+#' @param sigma2_invGamma_a Guassian models ONLY: Inverse-Gamma parameter one for the residual
 #' precision. For the conjugate model this parameter is intergrated out, and this may be provided as in the
 #' Bottolo and Richardson 2010 notation. For an informative prior for the non-conjugate model
 #' (taking into account Java parameterisation) choose N/2.
-#' @param sigma2_invGamma_b GaussianMarg and GaussianMargConj ONLY: Inverse-Gamma parameter one for the residual
+#' @param sigma2_invGamma_b Guassian models ONLY: Inverse-Gamma parameter one for the residual
 #' precision. For the conjugate model this parameter is intergrated out, and this may be provided as in the
 #' Bottolo and Richardson 2010 notation. For an informative prior for the non-conjugate model
 #' (taking into account Java parameterisation) choose N/(2*variance estimate).
-#' @param g.prior GaussianMargConj ONLY: Whether to use a g-prior for the beta's - i.e. a multivariate normal 
+#' @param g.prior Gaussian conjugate models ONLY: Whether to use a g-prior for the beta's - i.e. a multivariate normal 
 #' with correlation structure proportional to sigma^2*X'X^-1 or to use independence priors (default = FALSE).
-#' @param tau GaussianMargConj ONLY: Value to use for sparsity parameter tau (tau*sigma^2 parameterisation).
+#' @param tau Gaussian conjugate models ONLY: Value to use for sparsity parameter tau (tau*sigma^2 parameterisation).
 #' Default residual.var.n. If modelling this parameter, this value is used to center the Zellner-Siow prior
 #' and as an intial value.
-#' @param model.tau GaussianMargConj ONLY: Whether to model tau or not (default FALSE). If set to true,
+#' @param model.tau Gaussian conjugate models ONLY: Whether to model tau or not (default FALSE). If set to true,
 #' then a Zellner-Siow prior is used, centred on the value provide by tau. The value provided in tau is also used as the
 #' initial value.
-#' @param tau.proposal.sd GaussianMargConj ONLY: When modelling tau an initial SD to use in the adaption
+#' @param tau.proposal.sd Gaussian conjugate models ONLY: When modelling tau an initial SD to use in the adaption
 #' of the proposal distribution. Under the conjugate model, tau makes use of the BGLiMS parameter `betaPriorSd'. Thus
 #' the parameters is used on a very different scale to normal and as such it is best to specify this seperately.
 #' Defaults to 0.05.
-#' @param all.model.scores.up.to.dim GaussianMargConj ONLY: When NOT modelling tau, whether to output the posterior scores
+#' @param all.model.scores.up.to.dim Gaussian conjugate models ONLY: When NOT modelling tau, whether to output the posterior scores
 #' for every possible model of dimension up to the integer specified. Currenly maximum allowed dimension is 2. Setting
 #' to default 0 means this is not carried out. Can be used as an alternative to running the RJMCMC.
 #' @param cluster.var If hierarchical data and random intercepts are required, the column in data contains the clustering variable (default NULL)
@@ -79,6 +79,7 @@
 #' @param args.file Optional path to an alternative arguments file - e.g. "/Users/pauln/Arguments/Arguments_Alt.txt". 
 #' If left as NULL, a default file located at BGLiMS/Arguments_Package.txt within the package directory is used. Note that
 #' this file can be used as a template. Currently this is not documented - please contact the package author, Paul Newcombe.
+#' @param do.chain.plot Whether to produce a PDF containing chain plots. Default FALSE.
 #' @param debug.path Optional path to save the data and results files to (rather than as temporary files), for aid in
 #' debugging.
 #' 
@@ -125,16 +126,17 @@ R2BGLiMS <- function(
   results.path=NULL,
   results.label="R2BGLiMS",
   args.file=NULL,
+  do.chain.plot=FALSE,
   debug.path=NULL
 ) {
   ### --- Error messages
   try.java <- try(system("java -version"), silent=TRUE)
   if (try.java!=0) stop("Java is not installed and is required to run BGLiMS.\nPlease install from java.com/download.")  
   if (is.null(likelihood)) stop("No likelihood, i.e. the model type, has been specified; please specify as Logistic,
-                                Weibull, Gaussian, GaussianMarg or GaussianMargConj")
+                                Weibull, Gaussian, GaussianConj, GaussianMarg or GaussianMargConj")
   if (!is.null(likelihood)) {
-    if (!likelihood %in% c("Logistic", "Weibull", "Gaussian", "GaussianMarg", "GaussianMargConj")) {
-      stop("Likelihood must be specified as Logistic, Weibull, Gaussian, GaussianMarg, or GaussianMargConj")
+    if (!likelihood %in% c("Logistic", "Weibull", "Gaussian", "GaussianConj", "GaussianMarg", "GaussianMargConj")) {
+      stop("Likelihood must be specified as Logistic, Weibull, Gaussian, GaussianConj, GaussianMarg, or GaussianMargConj")
     }
   }
   if (is.null(data)&is.null(xTx)) stop("The data to analyse has not been specified")
@@ -226,10 +228,6 @@ R2BGLiMS <- function(
   }
   
   ### --- Prior setup
-  # Model space priors must still be sent, to specify the variable list
-#  if (!model.selection) { # Still need to pass the java code a dummy model space info
-#    model.space.priors <- list(list("Rate"=1, "Variables"=NULL))
-#  }
   # Establish model space prior component sizes
   n.mod.space.comps <- length(model.space.priors)
   mod.space.comp.sizes <- NULL
@@ -331,8 +329,8 @@ R2BGLiMS <- function(
   plot.file <- paste(results.root,".pdf",sep="")    
   
   ### --- Generate commands
-  n.thin <- 100*n.mil
-  n.its <- n.mil*1000000
+  n.thin <- max(100*n.mil,1)
+  n.its <- n.mil*1e6
   n.output <- round(n.its/10)
   comm <- paste(
     "java -jar \"", bayesglm.jar, "\" \"",
@@ -383,7 +381,7 @@ R2BGLiMS <- function(
   results <- .ReadResults(
     results.file=results.file,
     first.n.mil.its=first.n.mil.its)
-  ChainPlots(results, plot.file=plot.file)
+  if (do.chain.plot) {ChainPlots(results, plot.file=plot.file)}
   t2 <- proc.time()["elapsed"]
   results.processing.time <- t2-t1
   hrs <-floor( (t2-t1)/(60*60) )
@@ -408,6 +406,9 @@ R2BGLiMS <- function(
   results$run.times$write.time <- write.time
   results$run.times$bglims.time <- bglims.time
   results$run.times$results.processing.time <- results.processing.time
+  if (all.model.scores.up.to.dim>0) {
+    results$approx.probs <- EnumeratedApproxPostProbs(results)
+  }
   
   return(results)
 }

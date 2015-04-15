@@ -40,32 +40,33 @@ EnumeratedApproxPostProbs <- function(results,a=NULL,b=NULL,max.dim=NULL) {
   
   # Null model
   prior.prob.0 <- .BetaBinomialProbability(k=0,n=P,a=a,b=b)
-  approx.probs[approx.probs$Model=="Null","Prob"] <- exp(approx.probs[approx.probs$Model=="Null","PosteriorScore"])*prior.prob.0
+  approx.probs[approx.probs$Model=="Null","Prob"] <- approx.probs[approx.probs$Model=="Null","PosteriorScore"] + log(prior.prob.0)
   
   # Single SNP model
   prior.prob.1 <- .BetaBinomialProbability(k=1,n=P,a=a,b=b)
-  approx.probs[model.dims==1,"Prob"] <- exp(approx.probs[model.dims==1,"PosteriorScore"])*prior.prob.1
+  approx.probs[model.dims==1,"Prob"] <- approx.probs[model.dims==1,"PosteriorScore"] + log(prior.prob.1)
   
   # Dual SNP models
   if (max.dim>=2) {
     prior.prob.2 <- .BetaBinomialProbability(k=2,n=P,a=a,b=b)
-    approx.probs[model.dims==2,"Prob"] <- exp(approx.probs[model.dims==2,"PosteriorScore"])*prior.prob.2      
+    approx.probs[model.dims==2,"Prob"] <- approx.probs[model.dims==2,"PosteriorScore"] + log(prior.prob.2)
   }
   
   # Triple SNP models
   if (max.dim>=3) {
     prior.prob.3 <- .BetaBinomialProbability(k=3,n=P,a=a,b=b)
-    approx.probs[model.dims==3,"Prob"] <- exp(approx.probs[model.dims==3,"PosteriorScore"])*prior.prob.3      
+    approx.probs[model.dims==3,"Prob"] <- approx.probs[model.dims==3,"PosteriorScore"] + log(prior.prob.3)
   }
 
   # Quadruple SNP models
   if (max.dim>=4) {
     prior.prob.4 <- .BetaBinomialProbability(k=4,n=P,a=a,b=b)
-    approx.probs[model.dims==4,"Prob"] <- exp(approx.probs[model.dims==4,"PosteriorScore"])*prior.prob.4
+    approx.probs[model.dims==4,"Prob"] <- approx.probs[model.dims==4,"PosteriorScore"] + log(prior.prob.4)
   }
   
   # Normalise model probs
-  model.probs <- approx.probs$Prob/sum(approx.probs$Prob)  
+  probs.norm <- approx.probs$Prob - mean(approx.probs$Prob)
+  model.probs <- exp(probs.norm) /sum(exp(probs.norm))
   names(model.probs) <- approx.probs$Model
   
   # Infer marginal probs

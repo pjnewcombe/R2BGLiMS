@@ -98,7 +98,7 @@
     cat(paste((n.start-N),"observations deleted due to missingness"))
   } else {
     V <- length(t)
-    N <- 99
+    N <- 1
     var.names <- unlist(lapply(xTx,colnames))
     block.sizes <- unlist(lapply(xTx,ncol))
     block.indices <- rep(1,length(xTx)+1)
@@ -126,17 +126,21 @@
 	}
   # N x V matrix of covariate values
   cat("\n\nWriting a BGLiMS formatted datafile...\n")
-  # Block indices
-  if (likelihood %in% c("GaussianMarg", "GaussianMargConj")) {
+  # All Guassian models
+  if (length(grep("Gaussian",likelihood))==1) {
     write(sigma2_invGamma_a, file = data.file , ncolumns = 1, append = T)
-    write(sigma2_invGamma_b, file = data.file , ncolumns = 1, append = T)
-    if (likelihood %in% c("GaussianMargConj")) { # Conjugate prior structure options.
-      write(as.integer(g.prior), file = data.file , ncolumns = 1, append = T)
-      write(tau, file = data.file, ncolumns = 1, append = T)      
-      write(as.integer(model.tau), file = data.file , ncolumns = 1, append = T)      
-      write(tau.proposal.sd, file = data.file, ncolumns = 1, append = T)      
-      write(all.model.scores.up.to.dim, file = data.file , ncolumns = 1, append = T)
-    }
+    write(sigma2_invGamma_b, file = data.file , ncolumns = 1, append = T)    
+  }
+  # Conjugate models
+  if (length(grep("Conj",likelihood))==1) {
+    write(as.integer(g.prior), file = data.file , ncolumns = 1, append = T)
+    write(tau, file = data.file, ncolumns = 1, append = T)      
+    write(as.integer(model.tau), file = data.file , ncolumns = 1, append = T)      
+    write(tau.proposal.sd, file = data.file, ncolumns = 1, append = T)      
+    write(all.model.scores.up.to.dim, file = data.file , ncolumns = 1, append = T)
+  }
+  # Covariate data - different if marginal setup
+  if (length(grep("Marg",likelihood))==1) { # Write summary data
     write(length(xTx), file = data.file , ncolumns = 1, append = T)
     write(block.indices, file = data.file , ncolumns = length(block.indices), append = T)
     if (likelihood == "GaussianMarg") {
@@ -153,8 +157,8 @@
         write.table( (L_Inv[[b]] %*% xTx[[b]]), row.names=F, col.names=F, file = data.file, append = T)
       }      
     }
-  } else {
-    # Covariate data
+  } else { # Write IPD Covariate data
+    if (likelihood == "GaussianConj") { data <- apply(data,MAR=2,function(x) x-mean(x)) }
     write.table(data, row.names=F, col.names=F, file = data.file , append = T)    
   }
   cat("... finished writing datafile.\n")
@@ -165,7 +169,8 @@
   # Vector of disease labels
   if (likelihood %in% c("Logistic", "Weibull")) {
     write(t(as.integer(disease)), file = data.file , ncolumns = N, append = T)    
-  } else if (likelihood %in% c("Gaussian")) {
+  } else if (likelihood %in% c("Gaussian","GaussianConj")) {
+    if (likelihood == "GaussianConj") { disease <- disease - mean(disease) }
     write(t(disease), file = data.file , ncolumns = N, append = T)        
   } else if (likelihood %in% c("GaussianMarg")) {
     write(t(t), file = data.file , ncolumns = V, append = T)        

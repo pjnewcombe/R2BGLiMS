@@ -12,11 +12,12 @@ R2BGLiMS(likelihood = NULL, data = NULL, outcome.var = NULL,
   model.selection = TRUE, model.space.priors = NULL, max.model.dim = -1,
   initial.model = NULL, beta.priors = NULL, n.mil = 1, seed = 1,
   alt.initial.values = FALSE, results.path = NULL,
-  results.label = "R2BGLiMS", args.file = NULL, debug.path = NULL)
+  results.label = "R2BGLiMS", args.file = NULL, do.chain.plot = FALSE,
+  debug.path = NULL)
 }
 \arguments{
 \item{likelihood}{Type of model to fit. Current options are "Logistic" (for binary data), "Weibull" (for survival data),
-"Gaussian" (for continuous data), "GaussianMarg" (for analysis of univariate associations from Gaussian linear
+"Gaussian" (for continuous data), "GaussianConj" (linear regression exploiting conjugate results), "GaussianMarg" (for analysis of univariate associations from Gaussian linear
 regressions) and "GaussianMargConj" (for analysis under a marginal conjugate linear regression model).}
 
 \item{data}{Matrix or dataframe containing the data to analyse. Rows are indiviuals, and columns are variables, named in concordance
@@ -30,33 +31,33 @@ with the following options.}
 
 \item{t}{GaussianMarg and GaussianMargConj ONLY: Vector of quantities calculated from the summary statistics.}
 
-\item{sigma2_invGamma_a}{GaussianMarg and GaussianMargConj ONLY: Inverse-Gamma parameter one for the residual
+\item{sigma2_invGamma_a}{Guassian models ONLY: Inverse-Gamma parameter one for the residual
 precision. For the conjugate model this parameter is intergrated out, and this may be provided as in the
 Bottolo and Richardson 2010 notation. For an informative prior for the non-conjugate model
 (taking into account Java parameterisation) choose N/2.}
 
-\item{sigma2_invGamma_b}{GaussianMarg and GaussianMargConj ONLY: Inverse-Gamma parameter one for the residual
+\item{sigma2_invGamma_b}{Guassian models ONLY: Inverse-Gamma parameter one for the residual
 precision. For the conjugate model this parameter is intergrated out, and this may be provided as in the
 Bottolo and Richardson 2010 notation. For an informative prior for the non-conjugate model
 (taking into account Java parameterisation) choose N/(2*variance estimate).}
 
-\item{g.prior}{GaussianMargConj ONLY: Whether to use a g-prior for the beta's - i.e. a multivariate normal
+\item{g.prior}{Gaussian conjugate models ONLY: Whether to use a g-prior for the beta's - i.e. a multivariate normal
 with correlation structure proportional to sigma^2*X'X^-1 or to use independence priors (default = FALSE).}
 
-\item{tau}{GaussianMargConj ONLY: Value to use for sparsity parameter tau (tau*sigma^2 parameterisation).
+\item{tau}{Gaussian conjugate models ONLY: Value to use for sparsity parameter tau (tau*sigma^2 parameterisation).
 Default residual.var.n. If modelling this parameter, this value is used to center the Zellner-Siow prior
 and as an intial value.}
 
-\item{model.tau}{GaussianMargConj ONLY: Whether to model tau or not (default FALSE). If set to true,
+\item{model.tau}{Gaussian conjugate models ONLY: Whether to model tau or not (default FALSE). If set to true,
 then a Zellner-Siow prior is used, centred on the value provide by tau. The value provided in tau is also used as the
 initial value.}
 
-\item{tau.proposal.sd}{GaussianMargConj ONLY: When modelling tau an initial SD to use in the adaption
+\item{tau.proposal.sd}{Gaussian conjugate models ONLY: When modelling tau an initial SD to use in the adaption
 of the proposal distribution. Under the conjugate model, tau makes use of the BGLiMS parameter `betaPriorSd'. Thus
 the parameters is used on a very different scale to normal and as such it is best to specify this seperately.
 Defaults to 0.05.}
 
-\item{all.model.scores.up.to.dim}{GaussianMargConj ONLY: When NOT modelling tau, whether to output the posterior scores
+\item{all.model.scores.up.to.dim}{Gaussian conjugate models ONLY: When NOT modelling tau, whether to output the posterior scores
 for every possible model of dimension up to the integer specified. Currenly maximum allowed dimension is 2. Setting
 to default 0 means this is not carried out. Can be used as an alternative to running the RJMCMC.}
 
@@ -113,6 +114,8 @@ path taking the name of `results.label' below}
 \item{args.file}{Optional path to an alternative arguments file - e.g. "/Users/pauln/Arguments/Arguments_Alt.txt".
 If left as NULL, a default file located at BGLiMS/Arguments_Package.txt within the package directory is used. Note that
 this file can be used as a template. Currently this is not documented - please contact the package author, Paul Newcombe.}
+
+\item{do.chain.plot}{Whether to produce a PDF containing chain plots. Default FALSE.}
 
 \item{debug.path}{Optional path to save the data and results files to (rather than as temporary files), for aid in
 debugging.}
