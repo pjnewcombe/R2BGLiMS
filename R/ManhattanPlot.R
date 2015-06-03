@@ -6,9 +6,12 @@ NULL
 #' @title Manhattan Plot
 #' @name ManhattanPlot
 #' @inheritParams ResultsTable
-#' @param plot.quantity Can be "PosteriorProbability" (default), "BayesFactor" or "pvalue". The
+#' @param plot.quantity Can be "PosteriorProbability" (default), "BayesFactor", "ABF", or "pvalue". The
 #' latter is implemented to allow easy comparison between analysis frameworks using the same plot style,
-#' and only works if a vector of p-values is supplied.
+#' and only works if a vector of p-values is supplied. ABF is for plotting Approximate Bayes Factors
+#' in favour of the null (i.e. small values correspond to evidence of association), as proposed in 
+#' Wakefield, J. (2009). "Bayes factors for genome-wide association studies: comparison with P-values." 
+#' Genetic Epidemiology, 33(1), 79–86. 
 #' @param results.vector Alternatively can simply pass a named vector of probabilties
 #' @param plot.title Optional character string to name the plot with
 #' @param y.max If plotting Bayes Factors, this is an optional upper limit for the y-axis (e.g. 
@@ -140,7 +143,7 @@ ManhattanPlot <- function(
     .ManhattanSetup(
       plot.title = plot.title,
       y.ticks = y.ticks,
-      y.lab = "p-value (-log10)",
+      y.lab = "p-value",
       y.tick.labels=paste(10^-y.ticks,sep=""),
       x.ticks = x.ticks,
       x.tick.labels = x.tick.labels,
@@ -152,7 +155,27 @@ ManhattanPlot <- function(
     if (add.bonferroni) {
       abline(h=-log10(0.05/length(results.vector)), lty=2, col = "red")
     }    
-  }  
+  } else if (plot.quantity == "ABF") {
+    ## --- Wakefield Bayes Factors
+    if (is.null(y.max)) {
+      y.max <- ceiling( max(-log10(results.vector)) )
+    }
+    y.ticks <- c(0:y.max)
+    abf.tick.labs <- paste(10^-y.ticks,sep="")
+    abf.tick.labs[1] <- "<=1"
+    results.vector[results.vector>1] <- 1
+    .ManhattanSetup(
+      plot.title = plot.title,
+      y.ticks = y.ticks,
+      y.lab = "ABF for the Null",
+      y.tick.labels=abf.tick.labs,
+      x.ticks = x.ticks,
+      x.tick.labels = x.tick.labels,
+      results.vec = -log10(results.vector),
+      point.cols = point.cols,
+      point.labs = point.labs
+    )
+  }
 }
 
 ############################

@@ -2,7 +2,7 @@ AlphaPriorMu 0
 AlphaPriorSd 1000
 WhichBetaPrecisionPrior 1
 BetaSigma_UnifArg1 0.01
-BetaSigma_UnifArg2 1
+BetaSigma_UnifArg2 2
 BetaPrecision_GammaPrior_Shape 0.001
 BetaPrecision_GammaPrior_Scale 0.001
 WeibullScalePrior_GammaArg1 1
