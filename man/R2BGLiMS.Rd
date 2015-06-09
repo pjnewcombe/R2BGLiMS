@@ -5,7 +5,7 @@
 \title{Call BGLiMS from R}
 \usage{
 R2BGLiMS(likelihood = NULL, data = NULL, outcome.var = NULL,
-  times.var = NULL, xTx = NULL, t = NULL, sigma2_invGamma_a = NULL,
+  times.var = NULL, xTx = NULL, z = NULL, sigma2_invGamma_a = NULL,
   sigma2_invGamma_b = NULL, g.prior = FALSE, tau = NULL,
   model.tau = FALSE, tau.proposal.sd = 0.05,
   all.model.scores.up.to.dim = 0, cluster.var = NULL, confounders = NULL,
@@ -29,7 +29,7 @@ with the following options.}
 
 \item{xTx}{GaussianMarg and GaussianMargConj ONLY: List containing each block's plug-in estimate for X'X.}
 
-\item{t}{GaussianMarg and GaussianMargConj ONLY: Vector of quantities calculated from the summary statistics.}
+\item{z}{GaussianMarg and GaussianMargConj ONLY: Vector of quantities calculated from the summary statistics.}
 
 \item{sigma2_invGamma_a}{Guassian models ONLY: Inverse-Gamma parameter one for the residual
 precision. For the conjugate model this parameter is intergrated out, and this may be provided as in the

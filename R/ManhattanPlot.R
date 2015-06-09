@@ -53,8 +53,12 @@ ManhattanPlot <- function(
   }
   
   ### --- Setup PROVIDED results.vector
-  if (!is.null(results.vector)&!is.null(vars.to.include)) {
-    results.vector <- results.vector[vars.to.include]
+  if (!is.null(results.vector)){
+    if(!is.null(vars.to.include)) {
+      results.vector <- results.vector[vars.to.include]
+    } else {
+      vars.to.include <- names(results.vector)
+    }
   }
   
   ### --- Pre-process results object -> results.vector
@@ -81,6 +85,7 @@ ManhattanPlot <- function(
     point.cols <- "black"    
   }
   if (!is.null(top.hits)) {
+    library(gplots)
     rsqmat <- cor(X.mat[,vars.to.include], use="pairwise.complete.obs")
     cor.with.top.hit <- NULL
     for (v in vars.to.include) {

@@ -14,7 +14,7 @@
 #' @param outcome.var Which column in data contains the binary outcome/survival status variable (default "Disease")
 #' @param times.var If survival data, the column in data which contains the event times (default NULL)
 #' @param xTx GaussianMarg and GaussianMargConj ONLY: List containing each block's plug-in estimate for X'X.
-#' @param t GaussianMarg and GaussianMargConj ONLY: Vector of quantities calculated from the summary statistics.
+#' @param z GaussianMarg and GaussianMargConj ONLY: Vector of quantities calculated from the summary statistics.
 #' @param sigma2_invGamma_a Guassian models ONLY: Inverse-Gamma parameter one for the residual
 #' precision. For the conjugate model this parameter is intergrated out, and this may be provided as in the
 #' Bottolo and Richardson 2010 notation. For an informative prior for the non-conjugate model
@@ -105,7 +105,7 @@ R2BGLiMS <- function(
   outcome.var=NULL,
   times.var=NULL,
   xTx=NULL,
-  t=NULL,
+  z=NULL,
   sigma2_invGamma_a=NULL,
   sigma2_invGamma_b=NULL,
   g.prior=FALSE,
@@ -140,7 +140,7 @@ R2BGLiMS <- function(
     }
   }
   if (is.null(data)&is.null(xTx)) stop("The data to analyse has not been specified")
-  if (is.null(outcome.var)&is.null(t)) stop("A binary outcome/survival status variable has not been specified")
+  if (is.null(outcome.var)&is.null(z)) stop("An outcome variable has not been specified")
   if (likelihood %in% c("Logistic", "Weibull")) {
     if (is.factor(data[,outcome.var])) {
       data[,outcome.var] <- as.integer(data[,outcome.var])-1
@@ -292,7 +292,7 @@ R2BGLiMS <- function(
       outcome.var=outcome.var,
       times.var=times.var,
       xTx=xTx,
-      t=t,
+      z=z,
       sigma2_invGamma_a=sigma2_invGamma_a,
       sigma2_invGamma_b=sigma2_invGamma_b,
       g.prior=g.prior,

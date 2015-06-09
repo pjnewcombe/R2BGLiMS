@@ -12,7 +12,7 @@
 #' Poisson data (default "Disease")
 #' @param times.var If survival data or Poisson data, the column in data which contains the follow-up times (default NULL)
 #' @param xTx GaussianMarg and GaussianMargConj ONLY: List containing each block's plug-in estimate for X'X.
-#' @param t GaussianMarg and GaussianMargConj ONLY: Vector of quantities calculated from the summary statistics.
+#' @param z GaussianMarg and GaussianMargConj ONLY: Vector of quantities calculated from the summary statistics.
 #' @param sigma2_invGamma_a GaussianMarg and GaussianMargConj ONLY: Inverse-Gamma parameter one for the residual
 #' precision. For the conjugate model this parameter is intergrated out, and this may be provided as in the
 #' Bottolo and Richardson 2010 notation. For an informative prior for the non-conjugate model
@@ -53,7 +53,7 @@
   outcome.var=NULL,
   times.var=NULL,
   xTx=NULL,
-  t=NULL,
+  z=NULL,
   sigma2_invGamma_a=NULL,
   sigma2_invGamma_b=NULL,
   g.prior=FALSE,
@@ -97,7 +97,7 @@
     var.names <- colnames(data)
     cat(paste((n.start-N),"observations deleted due to missingness"))
   } else {
-    V <- length(t)
+    V <- length(z)
     N <- 1
     var.names <- unlist(lapply(xTx,colnames))
     block.sizes <- unlist(lapply(xTx,ncol))
@@ -151,10 +151,11 @@
       L_Inv <- list()      
       for (b in 1:length(xTx)) {
         cat("Taking Cholesky decomposition of block",b,"...\n")
-        L_Inv[[b]] <- chol(xTx[[b]])
-        L_Inv[[b]] <- solve(L_Inv[[b]]) # Take inverse. Check: id <- t(L[[b]]) %*% xTx[[b]] %*% L[[b]]
+        L <- t(chol(xTx[[b]])) # NB: Transposed to get Cholesky definition in paper!! L L' = X'X (the R give L such that L'L = X'X)
+        L_Inv[[b]] <- solve(L) # Take inverse. Check: id <- t(L[[b]]) %*% xTx[[b]] %*% L[[b]]
         cat("...done")
-        write.table( (L_Inv[[b]] %*% xTx[[b]]), row.names=F, col.names=F, file = data.file, append = T)
+        # NB: L_Inv %*% xTx = L'
+        write.table( t(L), row.names=F, col.names=F, file = data.file, append = T)
       }      
     }
   } else { # Write IPD Covariate data
@@ -173,15 +174,15 @@
     if (likelihood == "GaussianConj") { disease <- disease - mean(disease) }
     write(t(disease), file = data.file , ncolumns = N, append = T)        
   } else if (likelihood %in% c("GaussianMarg")) {
-    write(t(t), file = data.file , ncolumns = V, append = T)        
+    write(t(z), file = data.file , ncolumns = V, append = T)        
   } else if (likelihood %in% c("GaussianMargConj")) {
-    # Multiply by inverse cholesky decomposition
-    L_InvT <- t
+    # Multiply z by inverse cholesky decomposition
+    L_Inv_z <- z
     for (b in 1:length(xTx)) {
       block.vars <- c(block.indices[b]:(block.indices[b+1]-1))
-      L_InvT[block.vars] <- L_Inv[[b]] %*% t[block.vars]
+      L_Inv_z[block.vars] <- L_Inv[[b]] %*% z[block.vars]
     }
-    write(t(L_InvT), file = data.file , ncolumns = V, append = T)        
+    write(t(L_Inv_z), file = data.file , ncolumns = V, append = T)        
   }
   if (!is.null(times.var)) {
     write(t(times), file = data.file , ncolumns = N, append = T)    
