@@ -150,8 +150,8 @@
     } else if (likelihood == "GaussianMargConj") {
       L_Inv <- list()      
       for (b in 1:length(xTx)) {
-        L <- chol(xTx[[b]]) # NB: UPPER triangle. So L'L = X'X
-        write.table(L, row.names=F, col.names=F, file = data.file, append = T)
+        L <- t(chol(xTx[[b]])) # NB: Transposed to LOWER triangle. So LL' = X'X (LIKE IN JAVA)
+        write.table(t(L), row.names=F, col.names=F, file = data.file, append = T) # Multiply by L' (like in JAVA)
         cat("Taking Cholesky decomposition of block",b,"...\n")
         L_Inv[[b]] <- solve(L) # Take inverse. Check: id <- t(L[[b]]) %*% xTx[[b]] %*% L[[b]]
         cat("...done")
