@@ -153,7 +153,7 @@
         L <- chol(xTx[[b]]) # NB: UPPER triangle. So L'L = X'X (LIKE IN PAPER)
         write.table(L, row.names=F, col.names=F, file = data.file, append = T) # Multiply by L' (like in JAVA_test)
         cat("Taking Cholesky decomposition of block",b,"...\n")
-        Lt_Inv[[b]] <- solve(t(L)) # Take inverse. Check: id <- t(L[[b]]) %*% xTx[[b]] %*% L[[b]]
+        Lt_Inv[[b]] <- solve(t(L)) # Take TRANSPOSE inverse
         cat("...done")
       }      
     }
@@ -176,12 +176,12 @@
     write(t(z), file = data.file , ncolumns = V, append = T)        
   } else if (likelihood %in% c("GaussianMargConj")) {
     # Multiply z by inverse cholesky decomposition
-    Lt_Inv_z <- z
+    z_L <- z
     for (b in 1:length(xTx)) {
       block.vars <- c(block.indices[b]:(block.indices[b+1]-1))
-      Lt_Inv_z[block.vars] <- Lt_Inv[[b]] %*% z[block.vars]
+      z_L[block.vars] <- Lt_Inv[[b]] %*% z[block.vars]
     }
-    write(t(Lt_Inv_z), file = data.file , ncolumns = V, append = T)        
+    write(t(z_L), file = data.file , ncolumns = V, append = T)        
   }
   if (!is.null(times.var)) {
     write(t(times), file = data.file , ncolumns = N, append = T)    

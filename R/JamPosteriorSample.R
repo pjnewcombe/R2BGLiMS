@@ -44,7 +44,7 @@ JamPosteriorSample <- function(
   L <- chol(xTx[[1]])
   L_g <- L[,model]
   P <- length(z)
-  y <- solve(L)%*%z
+  y <- solve(t(L))%*%z
   beta_hat <- ((solve( t(L_g) %*% L_g ))%*%t(L_g))%*%y
   sSq <- t(y-L_g%*%beta_hat) %*% (y-L_g%*%beta_hat)
   
@@ -54,13 +54,14 @@ JamPosteriorSample <- function(
   mvn.mean <- tau*beta_hat/(1+tau)
   mvn.sigma <- solve(t(L_g)%*%L_g)*tau/(1+tau)
   
-  n.draws <- 100
   beta.samples <- NULL
-  for (i in 1:n.draws) {
+  for (i in 1:n.samples) {
     sigma_sq <- 1/rgamma(1, InverseGamma_a, InverseGamma_b)
-    beta.samples <- rbind(beta.samples, mvrnorm(n = 1, mu=mvn.mean, Sigma=sigma_sq*mvn.sigma))
+    beta.samples <- rbind(
+      beta.samples, 
+      c(mvrnorm(n = 1, mu=mvn.mean, Sigma=sigma_sq*mvn.sigma),sqrt(sigma_sq)) )
   }
-  colnames(beta.samples) <- model
+  colnames(beta.samples) <- c(model,"sigma")
   
   ## Return
   return(beta.samples)
