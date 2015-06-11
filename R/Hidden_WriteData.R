@@ -151,7 +151,7 @@
       Lt_Inv <- list()
       for (b in 1:length(xTx)) {
         L <- chol(xTx[[b]]) # NB: UPPER triangle. So L'L = X'X (LIKE IN PAPER)
-        write.table(L, row.names=F, col.names=F, file = data.file, append = T) # Multiply by L' (like in JAVA)
+        write.table(L, row.names=F, col.names=F, file = data.file, append = T) # Multiply by L' (like in JAVA_test)
         cat("Taking Cholesky decomposition of block",b,"...\n")
         Lt_Inv[[b]] <- solve(t(L)) # Take inverse. Check: id <- t(L[[b]]) %*% xTx[[b]] %*% L[[b]]
         cat("...done")
