@@ -83,7 +83,7 @@
       resultsRead$model.scores <- rbind(resultsRead$model.scores, model.scores.dim2)
       skip.to.main.results <- skip.to.main.results + n.model.scores.dim2
     }
-    if (resultsRead$args$allModelScoresUpToDim==3) {
+    if (resultsRead$args$allModelScoresUpToDim>=3) {
       n.model.scores.dim3 <- choose(resultsRead$args$V - resultsRead$args$startRJ,3)
       model.scores.dim3 <- read.table(
         results.file,
@@ -92,6 +92,26 @@
         nrows=n.model.scores.dim3)
       resultsRead$model.scores <- rbind(resultsRead$model.scores, model.scores.dim3)
       skip.to.main.results <- skip.to.main.results + n.model.scores.dim3
+    }
+    if (resultsRead$args$allModelScoresUpToDim>=4) {
+      n.model.scores.dim4 <- choose(resultsRead$args$V - resultsRead$args$startRJ,4)
+      model.scores.dim4 <- read.table(
+        results.file,
+        skip = 3+n.model.scores.dim1+n.model.scores.dim2+n.model.scores.dim3,
+        header=FALSE,
+        nrows=n.model.scores.dim4)
+      resultsRead$model.scores <- rbind(resultsRead$model.scores, model.scores.dim4)
+      skip.to.main.results <- skip.to.main.results + n.model.scores.dim4
+    }
+    if (resultsRead$args$allModelScoresUpToDim>=5) {
+      n.model.scores.dim5 <- choose(resultsRead$args$V - resultsRead$args$startRJ,5)
+      model.scores.dim5 <- read.table(
+        results.file,
+        skip = 3+n.model.scores.dim1+n.model.scores.dim2+n.model.scores.dim3+n.model.scores.dim4,
+        header=FALSE,
+        nrows=n.model.scores.dim5)
+      resultsRead$model.scores <- rbind(resultsRead$model.scores, model.scores.dim5)
+      skip.to.main.results <- skip.to.main.results + n.model.scores.dim5
     }
     colnames(resultsRead$model.scores) <- c("Model", "PosteriorScore")
   } else {
