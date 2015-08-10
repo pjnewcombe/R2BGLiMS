@@ -286,7 +286,7 @@ R2BGLiMS <- function(
     arguments.path <- paste(tempdir(),"/",results.label,"_Arguments_",now, sep="")      
     clean.up.arguments <- TRUE
   }
-  system(paste("mkdir '",arguments.path,"'", sep=""))
+  try(system(paste("mkdir '",arguments.path,"'", sep="")))
   arguments.root <- paste(arguments.path, results.label, sep="/")
   arguments.file <- paste(arguments.root,"_Arguments.txt",sep="")
   # Write arguments
@@ -347,7 +347,7 @@ R2BGLiMS <- function(
       clean.up.results <- TRUE
     }
   }
-  system(paste("mkdir '",results.path,"'", sep=""))
+  try(system(paste("mkdir '",results.path,"'", sep="")))
   results.root <- paste(results.path, results.label, sep="/")
   results.file <- paste(results.root,".txt",sep="")
   plot.file <- paste(results.root,".pdf",sep="")    
