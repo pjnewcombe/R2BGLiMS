@@ -346,8 +346,8 @@ R2BGLiMS <- function(
       results.path <- paste(tempdir(),"/",results.label,"_Results_",now, sep="")      
       clean.up.results <- TRUE
     }
-    system(paste("mkdir '",results.path,"'", sep=""))
   }
+  system(paste("mkdir '",results.path,"'", sep=""))
   results.root <- paste(results.path, results.label, sep="/")
   results.file <- paste(results.root,".txt",sep="")
   plot.file <- paste(results.root,".pdf",sep="")    
