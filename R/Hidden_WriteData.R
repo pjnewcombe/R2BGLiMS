@@ -3,7 +3,7 @@
 #' @title Write Java MCMC format data file
 #' @name .WriteData
 #' @param data.file Desired path for .txt data file to be written to
-#' @param likelihood Type of model to fit. Current options are "Logistic" (for binary data), "Weibull" (for survival data), 
+#' @param likelihood Type of model to fit. Current options are "Logistic" (for binary data), "Weibull" (for survival data),  "RocAUC" (to optimise the ROC AUC), 
 #' "Gaussian" (for continuous data), "GaussianMarg" (for analysis of univariate associations from Gaussian linear 
 #' regressions) and "GaussianMargConj" (for analysis under a marginal conjugate linear regression model).
 #' @param data Matrix of data to write - rows indiviuals, columns variables.
@@ -167,7 +167,7 @@
 		write(t(clusters), file = data.file , ncolumns = n.clusters, append = T)
 	}
   # Vector of disease labels
-  if (likelihood %in% c("Logistic", "Weibull")) {
+  if (likelihood %in% c("Logistic", "Weibull", "RocAUC", "RocAUC_Testing")) {
     write(t(as.integer(disease)), file = data.file , ncolumns = N, append = T)    
   } else if (likelihood %in% c("Gaussian","GaussianConj")) {
     if (likelihood == "GaussianConj") { disease <- disease - mean(disease) }

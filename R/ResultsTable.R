@@ -81,11 +81,12 @@ ResultsTable <- function(
       "alpha",
       paste("LogBetaPriorSd",c(1:results$args$nBetaHyperPriorComp),sep=""),
       "LogLikelihood",
+      "AUC",
       vars.fix)) {
       results.table[v,"PostProb"] <- length( results$results[,v][results$results[,v]!=0] ) / nrow(results$results)
       results.table[v,"BF"] <- .BayesFactor( prior.probs[v], results.table[v,"PostProb"])      
     }
-		if (results$args$Likelihood %in% c("Weibull", "Logistic") ) {
+		if (results$args$Likelihood %in% c("Weibull", "Logistic", "RocAUC", "RocAUC_Testing") ) {
       # Exponentiate log-HRs or log-ORs
       results.table[v,c("CrI_Lower", "Median", "CrI_Upper")] <- exp( quantile(results$results[,v],c(0.025, 0.5, 0.975)) )
       results.table[v,c("CrI_Lower_Present", "Median_Present", "CrI_Upper_Present")] <- exp( quantile(results$results[,v][results$results[,v]!=0],c(0.025, 0.5, 0.975) ) )

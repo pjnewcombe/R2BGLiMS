@@ -6,7 +6,8 @@
 #' @export
 #' @title Call BGLiMS from R
 #' @name R2BGLiMS
-#' @param likelihood Type of model to fit. Current options are "Logistic" (for binary data), "Weibull" (for survival data), 
+#' @param likelihood Type of model to fit. Current options are "Logistic" (for binary data), "Weibull" (for survival data), "RocAUC" (to optimise ROC AUC),
+#' "RocAUC_Testing" (to test ROC AUC calculations),
 #' "Gaussian" (for continuous data), "GaussianConj" (linear regression exploiting conjugate results), "GaussianMarg" (for analysis of univariate associations from Gaussian linear 
 #' regressions) and "GaussianMargConj" (for analysis under a marginal conjugate linear regression model).
 #' @param data Matrix or dataframe containing the data to analyse. Rows are indiviuals, and columns are variables, named in concordance
@@ -76,9 +77,9 @@
 #' all output is written to a temporary directory and deleted). NOTE this must exist already. A folder will be created in this
 #' path taking the name of `results.label' below
 #' @param results.label Optional label to for algorithm output files (if you have specified results.path)
-#' @param args.file Optional path to an alternative arguments file - e.g. "/Users/pauln/Arguments/Arguments_Alt.txt". 
-#' If left as NULL, a default file located at BGLiMS/Arguments_Package.txt within the package directory is used. Note that
-#' this file can be used as a template. Currently this is not documented - please contact the package author, Paul Newcombe.
+#' @param extra.arguments A named list of any additional arguments for BGLiMS. Type "data(DefaultArguments)" and look in the 
+#' "default.arguments" list to see the names (which must match) and default values of available extra arguments. Currently these 
+#' are not documented - please contact the package author, Paul Newcombe for details.
 #' @param do.chain.plot Whether to produce a PDF containing chain plots. Default FALSE.
 #' @param debug.path Optional path to save the data and results files to (rather than as temporary files), for aid in
 #' debugging.
@@ -125,7 +126,7 @@ R2BGLiMS <- function(
   alt.initial.values=FALSE,
   results.path=NULL,
   results.label="R2BGLiMS",
-  args.file=NULL,
+  extra.arguments=NULL,
   do.chain.plot=FALSE,
   debug.path=NULL
 ) {
@@ -133,15 +134,15 @@ R2BGLiMS <- function(
   try.java <- try(system("java -version"), silent=TRUE)
   if (try.java!=0) stop("Java is not installed and is required to run BGLiMS.\nPlease install from java.com/download.")  
   if (is.null(likelihood)) stop("No likelihood, i.e. the model type, has been specified; please specify as Logistic,
-                                Weibull, Gaussian, GaussianConj, GaussianMarg or GaussianMargConj")
+                                Weibull, Gaussian, GaussianConj, RocAUC, GaussianMarg or GaussianMargConj")
   if (!is.null(likelihood)) {
-    if (!likelihood %in% c("Logistic", "Weibull", "Gaussian", "GaussianConj", "GaussianMarg", "GaussianMargConj")) {
-      stop("Likelihood must be specified as Logistic, Weibull, Gaussian, GaussianConj, GaussianMarg, or GaussianMargConj")
+    if (!likelihood %in% c("Logistic", "Weibull", "Gaussian", "GaussianConj", "GaussianMarg", "GaussianMargConj", "RocAUC", "RocAUC_Testing")) {
+      stop("Likelihood must be specified as Logistic, Weibull, Gaussian, GaussianConj, RocAUC, GaussianMarg, or GaussianMargConj")
     }
   }
   if (is.null(data)&is.null(xTx)) stop("The data to analyse has not been specified")
   if (is.null(outcome.var)&is.null(z)) stop("An outcome variable has not been specified")
-  if (likelihood %in% c("Logistic", "Weibull")) {
+  if (likelihood %in% c("Logistic", "Weibull", "RocAUC", "RocAUC_Testing")) {
     if (is.factor(data[,outcome.var])) {
       data[,outcome.var] <- as.integer(data[,outcome.var])-1
     } else if (is.character(data[,outcome.var])) {
@@ -211,7 +212,7 @@ R2BGLiMS <- function(
   # NEVER USE
   # fixed.prior.sd Prior SD that will be used in zero-centred normal priors on the betas when none is given (default = 1000)
   # data.file Location of correctly formatted .txt data file. If left as default NA then the arguments below must be provided.
-  # args.file Path to an alternative arguments file, if would prefer not to use the defaults (default NULL and the default arguments file will be used)
+  # arguments.file Path to an alternative arguments file, if would prefer not to use the defaults (default NULL and the default arguments file will be used)
   # first.n.mil.its how many million iterations to read in from the beginning. Useful if you would like to explore whether
   # convergence could have been achieved with less iterations (default is NULL)
   fixed.prior.sd <- 1000
@@ -221,11 +222,6 @@ R2BGLiMS <- function(
   # Setup file paths
   pack.root <- path.package("R2BGLiMS")
   bayesglm.jar <- paste(pack.root,"/BGLiMS/BGLiMS.jar",sep="")
-  if (is.null(args.file)) {
-    args.file <- paste(pack.root,"/BGLiMS/Arguments_Package.txt",sep="")    
-  } else {
-    cat("Using alternative arguments file",args.file,"\n")
-  }
   
   ### --- Prior setup
   # Establish model space prior component sizes
@@ -268,11 +264,39 @@ R2BGLiMS <- function(
       row.names=confounders)    
   }
   
-  ### --- Write data files if not provided
+  ### --- Write BGLiMS Arguments
+  #arguments.file <- paste(pack.root,"/BGLiMS/Arguments_Package.txt",sep="")      
   t1 <- proc.time()["elapsed"]
   clean.up.data <- FALSE
   clean.up.results <- FALSE
+  clean.up.arguments <- FALSE
   now <-format(Sys.time(), "%b%d%H%M%S") # Used to ensure unique names in the temp directory
+  # Set arguments
+  load(paste(pack.root,"/data/DefaultArguments.rda",sep=""))
+  if (!is.null(extra.arguments)) {
+    for (arg in names(extra.arguments)) {
+      cat("Setting user specified argument ",arg,"\n")    
+      default.arguments[[arg]] <- extra.arguments[[arg]]
+    }    
+  }
+  # Setup arguments file
+  if (!is.null(debug.path)) {
+    arguments.path <- paste(debug.path,"/",results.label,"_Arguments_",now, sep="")
+  } else {
+    arguments.path <- paste(tempdir(),"/",results.label,"_Arguments_",now, sep="")      
+    clean.up.arguments <- TRUE
+  }
+  system(paste("mkdir '",arguments.path,"'", sep=""))
+  arguments.root <- paste(arguments.path, results.label, sep="/")
+  arguments.file <- paste(arguments.root,"_Arguments.txt",sep="")
+  # Write arguments
+  write(paste(names(default.arguments)[1],default.arguments[[1]]), file = arguments.file)    
+  for (arg in names(default.arguments)[-1]) {
+    write(paste(arg,format(default.arguments[[arg]],sci=F)), file = arguments.file, append = T)    
+  }
+  rm(default.arguments)
+  
+  ### --- Write data
   if (is.null(data.file)) {
     cat("\nWriting temporary data files...\n")
     if (!is.null(debug.path)) {
@@ -320,7 +344,7 @@ R2BGLiMS <- function(
       results.path <- paste(debug.path,"/",results.label,"_Results_",now, sep="")
     } else {
       results.path <- paste(tempdir(),"/",results.label,"_Results_",now, sep="")      
-      clean.up.results <- TRUE      
+      clean.up.results <- TRUE
     }
     system(paste("mkdir '",results.path,"'", sep=""))
   }
@@ -334,7 +358,7 @@ R2BGLiMS <- function(
   n.output <- round(n.its/10)
   comm <- paste(
     "java -jar \"", bayesglm.jar, "\" \"",
-    args.file, "\" \"", data.file, "\" \"",
+    arguments.file, "\" \"", data.file, "\" \"",
     results.file, "\" ",
     format(n.its,sci=F)," ",0," ",
     format(n.thin,sci=F)," ",
@@ -391,6 +415,7 @@ R2BGLiMS <- function(
   
   # Clean up
   cat("\nCleaning up...")
+  if(clean.up.arguments) { system(paste("rm -rf ",arguments.path, sep="")) }
   if(clean.up.data) { system(paste("rm -rf ",data.path, sep="")) }
   if(clean.up.results) { system(paste("rm -rf ",results.path, sep="")) } else {
     results[["raw.results.file"]] <- results.file
