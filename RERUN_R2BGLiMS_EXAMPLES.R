@@ -12,10 +12,16 @@ biopsyResults <- R2BGLiMS(
     list("Rate"=0.1, "Variables"=paste("V",c(4:9),sep=""))
   )
 )
+# Univariate
+uni <- glm(formula(class~V1+V2+V3+V4+V5+V6+V7+V8+V9),biopsy,family=binomial)
+summary(uni)
+exp(uni$coefficients) # Seems consistent!!!
+
 save(biopsyResults,
      file="~/Dropbox/Work Projects/R Packages/R2BGLiMS/data/biopsyResults.rda")
 
 ### --- Survival analysis with priors provided
+# Be
 utils::data(VA, package = "MASS")
 predictors <- c("treat","age","Karn","diag.time","cell","prior")
 beta.priors <- data.frame(
