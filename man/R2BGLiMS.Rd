@@ -5,118 +5,99 @@
 \title{Call BGLiMS from R}
 \usage{
 R2BGLiMS(likelihood = NULL, data = NULL, outcome.var = NULL,
-  times.var = NULL, xTx = NULL, z = NULL, sigma2_invGamma_a = NULL,
-  sigma2_invGamma_b = NULL, g.prior = FALSE, tau = NULL,
-  model.tau = FALSE, tau.proposal.sd = 0.05,
-  all.model.scores.up.to.dim = 0, cluster.var = NULL, confounders = NULL,
-  model.selection = TRUE, model.space.priors = NULL, max.model.dim = -1,
-  initial.model = NULL, beta.priors = NULL, n.mil = 1, seed = 1,
-  alt.initial.values = FALSE, results.path = NULL,
-  results.label = "R2BGLiMS", extra.arguments = NULL,
-  do.chain.plot = FALSE, debug.path = NULL)
+  times.var = NULL, confounders = NULL, model.selection = TRUE,
+  model.space.priors = NULL, beta.priors = NULL, g.prior = FALSE,
+  model.tau = FALSE, tau = max(nrow(data), ncol(data)^2, length(z)^2),
+  enumerate.up.to.dim = 0, xTx = NULL, z = NULL, n.mil = 1, seed = 1,
+  do.chain.plot = FALSE, results.path = NULL, results.label = "R2BGLiMS",
+  extra.arguments = NULL, initial.model = NULL, max.model.dim = -1,
+  debug.path = NULL)
 }
 \arguments{
-\item{likelihood}{Type of model to fit. Current options are "Logistic" (for binary data), "Weibull" (for survival data), "RocAUC" (to optimise ROC AUC),
-"RocAUC_Testing" (to test ROC AUC calculations),
-"Gaussian" (for continuous data), "GaussianConj" (linear regression exploiting conjugate results), "GaussianMarg" (for analysis of univariate associations from Gaussian linear
-regressions) and "GaussianMargConj" (for analysis under a marginal conjugate linear regression model).}
+\item{likelihood}{Type of model to fit. Current options are
+"Logistic" (for binary data),
+"Weibull" (for survival data),
+"Cox" (for survival data),
+"RocAUC" (to optimise ROC AUC),
+"Gaussian" (for linear regression),
+"GaussianConj" (linear regression exploiting conjugate results),
+"GaussianMarg" (for linear regression summary statistics)
+and "GaussianMargConj" (for analysis under a marginal conjugate linear regression model).}
 
-\item{data}{Matrix or dataframe containing the data to analyse. Rows are indiviuals, and columns are variables, named in concordance
-with the following options.}
+\item{data}{Matrix or dataframe containing the data to analyse.
+Rows are indiviuals, and columns contain the variables and outcome.
+If modelling summary statistics specify xTx instead (see below).}
 
-\item{outcome.var}{Which column in data contains the binary outcome/survival status variable (default "Disease")}
+\item{outcome.var}{Name of outcome variable in data. For survival data see times.var below.
+If modelling summary statistics specify z instead (see below).}
 
-\item{times.var}{If survival data, the column in data which contains the event times (default NULL)}
+\item{times.var}{SURVIVAL DATA ONLY Name of column in data which contains the event times.}
 
-\item{xTx}{GaussianMarg and GaussianMargConj ONLY: List containing each block's plug-in estimate for X'X.}
-
-\item{z}{GaussianMarg and GaussianMargConj ONLY: Vector of quantities calculated from the summary statistics.}
-
-\item{sigma2_invGamma_a}{Guassian models ONLY: Inverse-Gamma parameter one for the residual
-precision. For the conjugate model this parameter is intergrated out, and this may be provided as in the
-Bottolo and Richardson 2010 notation. For an informative prior for the non-conjugate model
-(taking into account Java parameterisation) choose N/2.}
-
-\item{sigma2_invGamma_b}{Guassian models ONLY: Inverse-Gamma parameter one for the residual
-precision. For the conjugate model this parameter is intergrated out, and this may be provided as in the
-Bottolo and Richardson 2010 notation. For an informative prior for the non-conjugate model
-(taking into account Java parameterisation) choose N/(2*variance estimate).}
-
-\item{g.prior}{Gaussian conjugate models ONLY: Whether to use a g-prior for the beta's - i.e. a multivariate normal
-with correlation structure proportional to sigma^2*X'X^-1 or to use independence priors (default = FALSE).}
-
-\item{tau}{Gaussian conjugate models ONLY: Value to use for sparsity parameter tau (tau*sigma^2 parameterisation).
-Default residual.var.n. If modelling this parameter, this value is used to center the Zellner-Siow prior
-and as an intial value.}
-
-\item{model.tau}{Gaussian conjugate models ONLY: Whether to model tau or not (default FALSE). If set to true,
-then a Zellner-Siow prior is used, centred on the value provide by tau. The value provided in tau is also used as the
-initial value.}
-
-\item{tau.proposal.sd}{Gaussian conjugate models ONLY: When modelling tau an initial SD to use in the adaption
-of the proposal distribution. Under the conjugate model, tau makes use of the BGLiMS parameter `betaPriorSd'. Thus
-the parameters is used on a very different scale to normal and as such it is best to specify this seperately.
-Defaults to 0.05.}
-
-\item{all.model.scores.up.to.dim}{Gaussian conjugate models ONLY: When NOT modelling tau, whether to output the posterior scores
-for every possible model of dimension up to the integer specified. Currenly maximum allowed dimension is 2. Setting
-to default 0 means this is not carried out. Can be used as an alternative to running the RJMCMC.}
-
-\item{cluster.var}{If hierarchical data and random intercepts are required, the column in data contains the clustering variable (default NULL)}
-
-\item{confounders}{vector of confounders to fix in the model at all times, i.e. exclude from model selection (default NULL)}
+\item{confounders}{Optional vector of confounders to fix in the model at all times, i.e. exclude from model selection.}
 
 \item{model.selection}{Whether to use model selection (default is TRUE). NB: Even if set to FALSE, please provide a
 dummy model.space.priors argument (see below). This will not be used mathematically, but the package requires taking the list of variable
 names from the "Variables" element therein.}
 
 \item{model.space.priors}{Must be specified if model.selection is set to TRUE.
-A list with as many elements as desired model space components (one or more).
-Each element of the list is also a list, corresponding to a particular
-model space component listing the prior parameters and covariates in that
-component. Either a Poisson prior on model space can be used, in which case an
+A list with as many elements as desired model space `components'.
+Each element of the list is also a list, listing the prior parameters and
+covariates in a particular model space component.
+Either a Poisson prior on model space can be used, in which case an
 element "Rate" must be included, or Beta-Binomial model space priors can
 be used, in which case elements "a" and "b" must be included corresponding
-to the beta-binomial hyperparameters. Finally, an element "Variables" must
-be included - a vector of variable names in that component. Note that when choosing a
-beta-binomial model space prior, higher values of "b" relative to "a" increase sparsity,
-whereas higher values of "a" encourage the inclusion of more covariates. a ~ number of prior successes, b~number of prior
-failures.}
+to the beta-binomial hyperparameters. Higher values of "b" relative to "a"
+encourage sparsity.
+A vector "Variables" must be included listing the variable names in that component.}
 
-\item{max.model.dim}{Optional specification of maximum model dimension (default -1 means no maximum is set). Currently 5 is the limit.}
+\item{beta.priors}{There are three options:
+1) Leave as null, in which case N(0, 1e6) priors are placed on the effects
+of confounders and any predictors included in model selection are assigned a
+common normal prior with unknown variance.
+2) Provide fixed priors for the confounders only.
+3) Provide fixed priors for all covariates.
+beta.priors (a matrix/data.frame) can be used to provide fixed priors; rows must be named with the corresponding
+variable names in the data, and include Guassian prior means and sds in the first and
+second columns respectively.}
 
-\item{initial.model}{Optionally, an initial model can be provided as a vector of 0's and 1's. Default is NULL
-and the null model is used. If set to 1, the saturated model is used.}
+\item{g.prior}{CONJUGATE LINEAR REGRESSION ONLY: Gaussian conjugate models ONLY: Whether to use a g-prior for the beta's - i.e. a multivariate normal
+with correlation structure proportional to sigma^2*X'X^-1 or to use independence priors (default = FALSE).}
 
-\item{beta.priors}{Optional matrix or data.frame containing two columns (1st:mean, 2nd:SD) describing normal priors for
-the beta coefficients of the confounders or confounders and predictors (i.e. log-ORs in the case of logistic regression).
-Rows of
-beta.priors must be named with the corresponding variable names in the data. NOTE: For predictors included in the model
-selection search, the interpretation of these priors is on the effect conditional on inclusion in the model.
-There are three options: 1) Do not specify in which case N(0, 1e6) priors are assigned to the betas of any confounders,
-and the effects of any predictors included in model selection are assigned a common normal prior with unknown variance,
-which in turn assigned a InversGamma(0.001, 0.001) hyperprior. 2) Provide a beta.priors matrix including confounders only.
-This overrides the default use of N(0,1e6) confounder priors, but the predictors for which model selection is performed for
-are still assigned a common prior with unknown variance. 3) provide a beta.priors matrix including all confounders and predictors,
-thereby avoiding the use of a common prior with unkown variance across predictors for which model selection is performed for.}
+\item{model.tau}{CONJUGATE LINEAR REGRESSION ONLY: Gaussian conjugate models ONLY: Whether to model tau or not (default FALSE). If set to true,
+then a Zellner-Siow prior is used, centred on the value provide by tau. The value provided in tau is also used as the
+initial value.}
+
+\item{tau}{CONJUGATE LINEAR REGRESSION ONLY: Value to use for sparsity parameter tau (tau*sigma^2 parameterisation).
+Default residual.var.n. If modelling this parameter, this value is used to center the Zellner-Siow prior
+and as an intial value.}
+
+\item{enumerate.up.to.dim}{CONJUGATE LINEAR REGRESSION ONLY: Whether to calculate posterior scores
+for every possible model of dimension up to the integer specified (as an alternative to RJMCMC).
+Currenly maximum allowed dimension is 5.
+Leaving at 0 means this is not carried out.}
+
+\item{xTx}{SUMMARY STATISTICS ONLY: List containing each block's external plug-in estimate for X'X.}
+
+\item{z}{SUMMARY STATISTICS ONLY: t(X)*y vector, calculated from the summary statistics.}
 
 \item{n.mil}{Number of million iterations to run (default is 1)}
 
-\item{seed}{Which random number seed to use in the RJMCMC sampler (default is 1)}
+\item{seed}{Which random number seed to use in the RJMCMC sampler.}
 
-\item{alt.initial.values}{Whether to use the alternative set of initial values in the arguments file (default is FALSE)}
+\item{do.chain.plot}{Whether to produce a PDF containing chain plots. Default FALSE.}
 
-\item{results.path}{Optional path if wish to to save algorithm results output (when set to the default NULL
-all output is written to a temporary directory and deleted). NOTE this must exist already. A folder will be created in this
-path taking the name of `results.label' below}
+\item{results.path}{Optional path if wish to to save algorithm output.}
 
-\item{results.label}{Optional label to for algorithm output files (if you have specified results.path)}
+\item{results.label}{Optional label for algorithm output files (if you have specified results.path).}
 
 \item{extra.arguments}{A named list of any additional arguments for BGLiMS. Type "data(DefaultArguments)" and look in the
 "default.arguments" list to see the names (which must match) and default values of available extra arguments. Currently these
 are not documented - please contact the package author, Paul Newcombe for details.}
 
-\item{do.chain.plot}{Whether to produce a PDF containing chain plots. Default FALSE.}
+\item{initial.model}{Optionally, an initial model can be provided as a vector of 0's and 1's. Default is NULL
+and the null model is used. If set to 1, the saturated model is used.}
+
+\item{max.model.dim}{Optional specification of maximum model dimension (default -1 means no maximum is set).}
 
 \item{debug.path}{Optional path to save the data and results files to (rather than as temporary files), for aid in
 debugging.}
@@ -137,6 +118,49 @@ Fixed normal priors may be user specified for all predictor (and confounder) coe
 }
 \examples{
 library(R2BGLiMS)
+
+### --- Linear regression with full MCMC of all parameters
+set.seed(1)
+# Simulate data
+X <- matrix(rnorm(1000, 0, 1), 100,10) # n=100, 10 covariates
+confounder <- rnorm(100, 0, 1) 
+b <- c(1, rep(0,9), 4) # Only the first covariate has an effect
+y <- rnorm(100, cbind(X,confounder)\%*\%b,1)
+data <- data.frame(cbind(X,confounder,y))
+# Run model treating prior variance of the effects as unknown
+# Poisson model space prior on number of effects
+poisson.model.space.prior=list( list("Rate"=0.1, "Variables"=paste("V",c(1:10),sep="")) ) 
+lm.hierarchical.prior.results <- R2BGLiMS(
+  likelihood="Gaussian", data=data, outcome.var="y", confounders="confounder",
+  model.space.priors = poisson.model.space.prior
+)
+PrettyResultsTable(lm.hierarchical.prior.results, measure="Effect")
+# Re-analyse using fixed priors
+# (not enough covariates to estimate effect variance)
+beta.priors <- data.frame(
+  cbind(rep(0,11),rep(10,11)),
+  row.names=c("confounder",paste("V",c(1:10),sep="")) )
+lm.fixed.prior.results <- R2BGLiMS(
+  likelihood="Gaussian", data=data, outcome.var="y", confounders="confounder",
+  model.space.priors = poisson.model.space.prior,
+  beta.priors=beta.priors)
+PrettyResultsTable(lm.fixed.prior.results, measure="Effect") # Mixing seems a little poorer
+# Re-analyse using the conjugate Gaussian model
+# Only models are sampled: effects are analytically integrated out
+lm.conjugate.results <- R2BGLiMS(
+  likelihood="GaussianConj", data=data, outcome.var="y",confounders="confounder",
+  model.space.priors=poisson.model.space.prior,
+  enumerate.up.to.dim=0,
+  tau=100, # Tau recommended to be maximum of P^2 and N
+  g.prior=T)
+PrettyResultsTable(lm.conjugate.results)
+TopModels(lm.conjugate.results)
+# Obtain posterior sample of parameter V1
+posterior.sample <- NormInvGamPosteriorSample(
+  data=data, outcome.var ="y", confounders="confounder",
+  model=c("V1"),tau=100)
+# Median and credible interval
+round(quantile(posterior.sample[,"V1"],c(0.5, 0.025, 0.975)),2)
 
 ### --- Logistic regression with two model space prior partitions
 # Example dataset from MASS
@@ -159,12 +183,13 @@ TopModels(biopsyResults)
 # Example dataset from MASS
 utils::data(VA, package = "MASS")
 # Generate priors on log-effect sizes
-predictors <- c("treat","age","Karn","diag.time","cell","prior")
+predictors <- c("treat","age","Karn","diag.time","prior")
 beta.priors <- data.frame(
   cbind(rep(0,length(predictors)),rep(10,length(predictors))),
   row.names=predictors)
+# Analysis using the Weibull likelihood
 # Notice how survival analysis requires additionally flagging a "times.var"
-VAResults <- R2BGLiMS(
+va.results.weibull <- R2BGLiMS(
   likelihood="Weibull",
   data=VA,
   outcome.var="status",
@@ -172,8 +197,19 @@ VAResults <- R2BGLiMS(
   model.space.priors=list(list("a"=1,"b"=1,"Variables"=predictors)),
   beta.prior=beta.priors
 )
-PrettyResultsTable(VAResults)
-TopModels(VAResults)
+PrettyResultsTable(va.results.weibull)
+TopModels(va.results.weibull)
+# Analysis using the Cox likelihood
+va.results.cox <- R2BGLiMS(
+  likelihood="Cox",
+  data=VA,
+  outcome.var="status",
+  times.var="stime",
+  model.space.priors=list(list("a"=1,"b"=1,"Variables"=predictors)),
+  beta.prior=beta.priors
+)
+PrettyResultsTable(va.results.cox)
+TopModels(va.results.cox)
 }
 \author{
 Paul Newcombe

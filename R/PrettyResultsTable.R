@@ -52,6 +52,9 @@ PrettyResultsTable <- function(
   if (results$args$Likelihood %in% c("Weibull", "Logistic") ) { # re-log the intercept
     res.tab["alpha",] <- log(res.tab["alpha",])
   }
+  if (results$args$Likelihood %in% c("Cox") & c("alpha") %in% row.names(res.tab) ) { # re-log the intercept
+    res.tab <- res.tab[-which(row.names(res.tab)=="alpha"),] # Delete interecept row
+  }
   if ("LogWeibullScale" %in% rownames(res.tab)) {
     res.tab.keep <- c("LogWeibullScale", res.tab.keep)
     res.tab.new.names <- c("Scale", res.tab.new.names)
@@ -139,6 +142,11 @@ PrettyResultsTable <- function(
   
   # Add names
   rownames(pretty.tab) <- rownames(res.tab)
+  
+  # Only keep posterior probablities for conjugate models
+  if (length(grep("Conj",results$args$Likelihood))>0) {
+    pretty.tab <- pretty.tab[predictors, c("Posterior Probability", "Bayes Factor")]
+  }
 
   return(pretty.tab)  
 }	

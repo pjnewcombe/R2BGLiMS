@@ -13,14 +13,6 @@
 #' @param times.var If survival data or Poisson data, the column in data which contains the follow-up times (default NULL)
 #' @param xTx GaussianMarg and GaussianMargConj ONLY: List containing each block's plug-in estimate for X'X.
 #' @param z GaussianMarg and GaussianMargConj ONLY: Vector of quantities calculated from the summary statistics.
-#' @param sigma2_invGamma_a GaussianMarg and GaussianMargConj ONLY: Inverse-Gamma parameter one for the residual
-#' precision. For the conjugate model this parameter is intergrated out, and this may be provided as in the
-#' Bottolo and Richardson 2010 notation. For an informative prior for the non-conjugate model
-#' (taking into account Java parameterisation) choose N/2.
-#' @param sigma2_invGamma_b GaussianMarg and GaussianMargConj ONLY: Inverse-Gamma parameter one for the residual
-#' precision. For the conjugate model this parameter is intergrated out, and this may be provided as in the
-#' Bottolo and Richardson 2010 notation. For an informative prior for the non-conjugate model
-#' (taking into account Java parameterisation) choose N/(2*variance estimate).
 #' @param g.prior GaussianMargConj ONLY: Whether to use a g-prior for the beta's - i.e. a multivariate normal 
 #' with correlation structure proportional to sigma^2*X'X^-1 or to use independence priors (default = FALSE).
 #' @param tau GaussianMargConj ONLY: Value to use for sparsity parameter tau (tau*sigma^2 parameterisation).
@@ -29,11 +21,7 @@
 #' @param model.tau GaussianMargConj ONLY: Whether to model tau or not (default FALSE). If set to true,
 #' then a Zellner-Siow prior is used, centred on the value provide by tau. The value provided in tau is also used as the
 #' initial value.
-#' @param tau.proposal.sd GaussianMargConj ONLY: When modelling tau an initial SD to use in the adaption
-#' of the proposal distribution. Under the conjugate model, tau makes use of the BGLiMS parameter `betaPriorSd'. Thus
-#' the parameters is used on a very different scale to normal and as such it is best to specify this seperately.
-#' Defaults to 0.05.
-#' @param all.model.scores.up.to.dim GaussianMargConj ONLY: When NOT modelling tau, whether to output the posterior scores
+#' @param enumerate.up.to.dim GaussianMargConj ONLY: When NOT modelling tau, whether to output the posterior scores
 #' for every possible model of dimension up to the integer specified. Currenly maximum allowed dimension is 2. Setting
 #' to default 0 means this is not carried out. Can be used as an alternative to running the RJMCMC.
 #' 
@@ -54,13 +42,10 @@
   times.var=NULL,
   xTx=NULL,
   z=NULL,
-  sigma2_invGamma_a=NULL,
-  sigma2_invGamma_b=NULL,
   g.prior=FALSE,
   tau=NULL,
   model.tau=FALSE,
-  tau.proposal.sd=0.05,
-  all.model.scores.up.to.dim=0,
+  enumerate.up.to.dim=0,
   residual.var=NULL,
   residual.var.n=NULL,  
   cluster.var=NULL,
@@ -80,7 +65,12 @@
     # Extract disease var
     disease <- data[,outcome.var]
     data <- data[, colnames(data)[!colnames(data)%in%c(outcome.var)] ]
-    # Extract survival times var
+    # Extract survival times var from the main data
+    if (likelihood%in%c("Cox")) {
+      # Re-order rows of data in ascending order of follow-up time
+      cat("Re-ordering data rows by follow-up time: Longest -> Shortest\n")
+      data <- data[order(data[,times.var], decreasing=T),]
+    }  
     if (!is.null(times.var) ) {
       times <- data[,times.var]
       data <- data[, colnames(data)[!colnames(data)%in%times.var] ]
@@ -126,18 +116,12 @@
 	}
   # N x V matrix of covariate values
   cat("\n\nWriting a BGLiMS formatted datafile...\n")
-  # All Guassian models
-  if (length(grep("Gaussian",likelihood))==1) {
-    write(sigma2_invGamma_a, file = data.file , ncolumns = 1, append = T)
-    write(sigma2_invGamma_b, file = data.file , ncolumns = 1, append = T)    
-  }
-  # Conjugate models
+  # Conjugate Gaussian models
   if (length(grep("Conj",likelihood))==1) {
     write(as.integer(g.prior), file = data.file , ncolumns = 1, append = T)
     write(tau, file = data.file, ncolumns = 1, append = T)      
     write(as.integer(model.tau), file = data.file , ncolumns = 1, append = T)      
-    write(tau.proposal.sd, file = data.file, ncolumns = 1, append = T)      
-    write(all.model.scores.up.to.dim, file = data.file , ncolumns = 1, append = T)
+    write(enumerate.up.to.dim, file = data.file , ncolumns = 1, append = T)
   }
   # Covariate data - different if marginal setup
   if (length(grep("Marg",likelihood))==1) { # Write summary data
@@ -157,17 +141,20 @@
         cat("...done")
       }      
     }
-  } else { # Write IPD Covariate data
-    if (likelihood == "GaussianConj") { data <- apply(data,MAR=2,function(x) x-mean(x)) }
+  } else { 
+    # Write IPD Covariate data
+    if (likelihood == "GaussianConj") {
+      # Mean centre covariates for Gaussian conjugate model
+      data <- apply(data,MAR=2,function(x) x-mean(x))
+    }
     write.table(data, row.names=F, col.names=F, file = data.file , append = T)    
   }
-  cat("... finished writing datafile.\n")
   # If R>0 the vector of cluster labels
 	if (!is.null(cluster.var) ) {
 		write(t(clusters), file = data.file , ncolumns = n.clusters, append = T)
 	}
   # Vector of disease labels
-  if (likelihood %in% c("Logistic", "Weibull", "RocAUC", "RocAUC_Testing")) {
+  if (likelihood %in% c("Logistic", "Weibull", "Cox", "RocAUC", "RocAUC_Testing")) {
     write(t(as.integer(disease)), file = data.file , ncolumns = N, append = T)    
   } else if (likelihood %in% c("Gaussian","GaussianConj")) {
     if (likelihood == "GaussianConj") { disease <- disease - mean(disease) }
@@ -183,7 +170,7 @@
     }
     write(t(z_L), file = data.file , ncolumns = V, append = T)        
   }
-  if (!is.null(times.var)) {
+  if (likelihood=="Weibull") {
     write(t(times), file = data.file , ncolumns = N, append = T)    
   }
   
@@ -223,5 +210,11 @@
   } else {
     write(2, file = data.file , ncolumns = 1, append = T)    
     write(t(initial.model), file = data.file , ncolumns = length(initial.model), append = T)    
-  }  
+  }
+  
+  ########################
+  ### --- Finished --- ###
+  ########################
+  
+  cat("... finished writing datafile.\n")
 }

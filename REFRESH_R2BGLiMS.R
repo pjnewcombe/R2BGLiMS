@@ -6,6 +6,7 @@ commit.message <- NULL
 
 ### --- Java code and arguments file
 setwd(paste(package.location,"/",package.name,sep=""))
+system("rm DESCRIPTION")
 system("rm -rf inst/BGLiMS/*")
 system( paste("cp -rf '/Users/pauln/Dropbox/Work Projects/RJ Java Package/Java Code/BGLiMS/dist/'* inst/BGLiMS/", sep="") )
 system( paste("cp '/Users/pauln/Dropbox/Work Projects/RJ Java Package/Test/Arguments/Arguments_Package.txt' inst/BGLiMS/", sep="") )  

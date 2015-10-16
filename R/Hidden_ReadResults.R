@@ -63,7 +63,7 @@
   }
   
   ### Read in posterior scores for single SNP models
-  if (resultsRead$args$allModelScoresUpToDim>0) {
+  if (resultsRead$args$enumerateUpToDim>0) {
     # Null and single dimension models
     n.model.scores.dim1 <- (resultsRead$args$V - resultsRead$args$startRJ) + 1
     skip.to.main.results=3+n.model.scores.dim1
@@ -73,7 +73,7 @@
       header=FALSE,
       nrows=n.model.scores.dim1)
     # Two dimension models
-    if (resultsRead$args$allModelScoresUpToDim>=2) {
+    if (resultsRead$args$enumerateUpToDim>=2) {
       n.model.scores.dim2 <- choose(resultsRead$args$V - resultsRead$args$startRJ,2)
       model.scores.dim2 <- read.table(
         results.file,
@@ -83,7 +83,7 @@
       resultsRead$model.scores <- rbind(resultsRead$model.scores, model.scores.dim2)
       skip.to.main.results <- skip.to.main.results + n.model.scores.dim2
     }
-    if (resultsRead$args$allModelScoresUpToDim>=3) {
+    if (resultsRead$args$enumerateUpToDim>=3) {
       n.model.scores.dim3 <- choose(resultsRead$args$V - resultsRead$args$startRJ,3)
       model.scores.dim3 <- read.table(
         results.file,
@@ -93,7 +93,7 @@
       resultsRead$model.scores <- rbind(resultsRead$model.scores, model.scores.dim3)
       skip.to.main.results <- skip.to.main.results + n.model.scores.dim3
     }
-    if (resultsRead$args$allModelScoresUpToDim>=4) {
+    if (resultsRead$args$enumerateUpToDim>=4) {
       n.model.scores.dim4 <- choose(resultsRead$args$V - resultsRead$args$startRJ,4)
       model.scores.dim4 <- read.table(
         results.file,
@@ -103,7 +103,7 @@
       resultsRead$model.scores <- rbind(resultsRead$model.scores, model.scores.dim4)
       skip.to.main.results <- skip.to.main.results + n.model.scores.dim4
     }
-    if (resultsRead$args$allModelScoresUpToDim>=5) {
+    if (resultsRead$args$enumerateUpToDim>=5) {
       n.model.scores.dim5 <- choose(resultsRead$args$V - resultsRead$args$startRJ,5)
       model.scores.dim5 <- read.table(
         results.file,

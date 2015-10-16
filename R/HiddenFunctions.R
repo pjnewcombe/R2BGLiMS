@@ -51,6 +51,30 @@
   return(priorProb)
 }
 
+#' Replaces the outcome variable with residuals from a linear regression on the confounders. I.e. removes effect
+#' of confounders for the conjugate models.
+#' @param data matrix or data.frame containing outcome and confounders
+#' @param outcome.var name of outcome.variable
+#' @param confounders list of confounders
+#' @return data original dataset with the confounders removed and the outcome replaces with adjusted residuals
+#' @author Paul Newcombe
+.ConfounderAdjustedResiduals <- function(data, outcome.var, confounders) {
+  
+  # Get confounder adjusted residuals
+  formula <- formula(paste(outcome.var,"~",paste(confounders,collapse="+")))
+  lm.res <- lm(formula, data)
+  
+  # Replace outcome variable with confounder adjusted residuals
+  data[,outcome.var] <- lm.res$residuals
+  
+  # Remove confounders from data matrix
+  keep.cols <- colnames(data)[!colnames(data)%in%confounders]
+  data <- data[,keep.cols]
+  
+  # Return dataset
+  return(data)
+}
+
 #' Calculates prior probababilities for x, and >=x causal variables, when a truncated Poisson prior is used for model space
 #' @param V total number of variables
 #' @param mu model space mean

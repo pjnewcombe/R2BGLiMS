@@ -8,12 +8,13 @@ PredictedRisks(data, results, times.var = NULL, t = NULL,
   use.top.n.pred = NULL)
 }
 \arguments{
-\item{data}{Matrix or dataframe containing the data to analyse. Rows are indiviuals, and columns are variables, named in concordance
-with the following options.}
+\item{data}{Matrix or dataframe containing the data to analyse.
+Rows are indiviuals, and columns contain the variables and outcome.
+If modelling summary statistics specify xTx instead (see below).}
 
 \item{results}{Reversible Jump results object from running \code{\link{R2BGLiMS}}.}
 
-\item{times.var}{If survival data, the column in data which contains the event times (default NULL)}
+\item{times.var}{SURVIVAL DATA ONLY Name of column in data which contains the event times.}
 
 \item{t}{If a Weibull model has been fitted, the length of time to calculate risks over}
 

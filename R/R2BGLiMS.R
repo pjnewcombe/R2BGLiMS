@@ -6,81 +6,69 @@
 #' @export
 #' @title Call BGLiMS from R
 #' @name R2BGLiMS
-#' @param likelihood Type of model to fit. Current options are "Logistic" (for binary data), "Weibull" (for survival data), "RocAUC" (to optimise ROC AUC),
-#' "RocAUC_Testing" (to test ROC AUC calculations),
-#' "Gaussian" (for continuous data), "GaussianConj" (linear regression exploiting conjugate results), "GaussianMarg" (for analysis of univariate associations from Gaussian linear 
-#' regressions) and "GaussianMargConj" (for analysis under a marginal conjugate linear regression model).
-#' @param data Matrix or dataframe containing the data to analyse. Rows are indiviuals, and columns are variables, named in concordance
-#' with the following options.
-#' @param outcome.var Which column in data contains the binary outcome/survival status variable (default "Disease")
-#' @param times.var If survival data, the column in data which contains the event times (default NULL)
-#' @param xTx GaussianMarg and GaussianMargConj ONLY: List containing each block's plug-in estimate for X'X.
-#' @param z GaussianMarg and GaussianMargConj ONLY: Vector of quantities calculated from the summary statistics.
-#' @param sigma2_invGamma_a Guassian models ONLY: Inverse-Gamma parameter one for the residual
-#' precision. For the conjugate model this parameter is intergrated out, and this may be provided as in the
-#' Bottolo and Richardson 2010 notation. For an informative prior for the non-conjugate model
-#' (taking into account Java parameterisation) choose N/2.
-#' @param sigma2_invGamma_b Guassian models ONLY: Inverse-Gamma parameter one for the residual
-#' precision. For the conjugate model this parameter is intergrated out, and this may be provided as in the
-#' Bottolo and Richardson 2010 notation. For an informative prior for the non-conjugate model
-#' (taking into account Java parameterisation) choose N/(2*variance estimate).
-#' @param g.prior Gaussian conjugate models ONLY: Whether to use a g-prior for the beta's - i.e. a multivariate normal 
-#' with correlation structure proportional to sigma^2*X'X^-1 or to use independence priors (default = FALSE).
-#' @param tau Gaussian conjugate models ONLY: Value to use for sparsity parameter tau (tau*sigma^2 parameterisation).
-#' Default residual.var.n. If modelling this parameter, this value is used to center the Zellner-Siow prior
-#' and as an intial value.
-#' @param model.tau Gaussian conjugate models ONLY: Whether to model tau or not (default FALSE). If set to true,
-#' then a Zellner-Siow prior is used, centred on the value provide by tau. The value provided in tau is also used as the
-#' initial value.
-#' @param tau.proposal.sd Gaussian conjugate models ONLY: When modelling tau an initial SD to use in the adaption
-#' of the proposal distribution. Under the conjugate model, tau makes use of the BGLiMS parameter `betaPriorSd'. Thus
-#' the parameters is used on a very different scale to normal and as such it is best to specify this seperately.
-#' Defaults to 0.05.
-#' @param all.model.scores.up.to.dim Gaussian conjugate models ONLY: When NOT modelling tau, whether to output the posterior scores
-#' for every possible model of dimension up to the integer specified. Currenly maximum allowed dimension is 2. Setting
-#' to default 0 means this is not carried out. Can be used as an alternative to running the RJMCMC.
-#' @param cluster.var If hierarchical data and random intercepts are required, the column in data contains the clustering variable (default NULL)
-#' @param confounders vector of confounders to fix in the model at all times, i.e. exclude from model selection (default NULL)
+#' @param likelihood Type of model to fit. Current options are 
+#' "Logistic" (for binary data), 
+#' "Weibull" (for survival data), 
+#' "Cox" (for survival data), 
+#' "RocAUC" (to optimise ROC AUC),
+#' "Gaussian" (for linear regression), 
+#' "GaussianConj" (linear regression exploiting conjugate results), 
+#' "GaussianMarg" (for linear regression summary statistics) 
+#' and "GaussianMargConj" (for analysis under a marginal conjugate linear regression model).
+#' @param data Matrix or dataframe containing the data to analyse. 
+#' Rows are indiviuals, and columns contain the variables and outcome.
+#' If modelling summary statistics specify xTx instead (see below).
+#' @param outcome.var Name of outcome variable in data. For survival data see times.var below.
+#' If modelling summary statistics specify z instead (see below).
+#' @param times.var SURVIVAL DATA ONLY Name of column in data which contains the event times.
+#' @param confounders Optional vector of confounders to fix in the model at all times, i.e. exclude from model selection.
 #' @param model.selection Whether to use model selection (default is TRUE). NB: Even if set to FALSE, please provide a 
 #' dummy model.space.priors argument (see below). This will not be used mathematically, but the package requires taking the list of variable
 #' names from the "Variables" element therein.
 #' @param model.space.priors Must be specified if model.selection is set to TRUE.
-#' A list with as many elements as desired model space components (one or more).
-#' Each element of the list is also a list, corresponding to a particular
-#' model space component listing the prior parameters and covariates in that
-#' component. Either a Poisson prior on model space can be used, in which case an
+#' A list with as many elements as desired model space `components'.
+#' Each element of the list is also a list, listing the prior parameters and 
+#' covariates in a particular model space component. 
+#' Either a Poisson prior on model space can be used, in which case an
 #' element "Rate" must be included, or Beta-Binomial model space priors can
 #' be used, in which case elements "a" and "b" must be included corresponding
-#' to the beta-binomial hyperparameters. Finally, an element "Variables" must
-#' be included - a vector of variable names in that component. Note that when choosing a
-#' beta-binomial model space prior, higher values of "b" relative to "a" increase sparsity,
-#' whereas higher values of "a" encourage the inclusion of more covariates. a ~ number of prior successes, b~number of prior
-#' failures.
-#' @param max.model.dim Optional specification of maximum model dimension (default -1 means no maximum is set). Currently 5 is the limit.
-#' @param initial.model Optionally, an initial model can be provided as a vector of 0's and 1's. Default is NULL
-#' and the null model is used. If set to 1, the saturated model is used.
-#' @param beta.priors Optional matrix or data.frame containing two columns (1st:mean, 2nd:SD) describing normal priors for
-#' the beta coefficients of the confounders or confounders and predictors (i.e. log-ORs in the case of logistic regression).
-#' Rows of
-#' beta.priors must be named with the corresponding variable names in the data. NOTE: For predictors included in the model
-#' selection search, the interpretation of these priors is on the effect conditional on inclusion in the model.
-#' There are three options: 1) Do not specify in which case N(0, 1e6) priors are assigned to the betas of any confounders, 
-#' and the effects of any predictors included in model selection are assigned a common normal prior with unknown variance,
-#' which in turn assigned a InversGamma(0.001, 0.001) hyperprior. 2) Provide a beta.priors matrix including confounders only. 
-#' This overrides the default use of N(0,1e6) confounder priors, but the predictors for which model selection is performed for
-#' are still assigned a common prior with unknown variance. 3) provide a beta.priors matrix including all confounders and predictors,
-#' thereby avoiding the use of a common prior with unkown variance across predictors for which model selection is performed for.
+#' to the beta-binomial hyperparameters. Higher values of "b" relative to "a" 
+#' encourage sparsity.
+#' A vector "Variables" must be included listing the variable names in that component. 
+#' @param beta.priors There are three options: 
+#' 1) Leave as null, in which case N(0, 1e6) priors are placed on the effects
+#' of confounders and any predictors included in model selection are assigned a
+#' common normal prior with unknown variance.
+#' 2) Provide fixed priors for the confounders only. 
+#' 3) Provide fixed priors for all covariates. 
+#' beta.priors (a matrix/data.frame) can be used to provide fixed priors; rows must be named with the corresponding 
+#' variable names in the data, and include Guassian prior means and sds in the first and 
+#' second columns respectively.
+#' @param g.prior CONJUGATE LINEAR REGRESSION ONLY: Gaussian conjugate models ONLY: Whether to use a g-prior for the beta's - i.e. a multivariate normal 
+#' with correlation structure proportional to sigma^2*X'X^-1 or to use independence priors (default = FALSE).
+#' @param model.tau CONJUGATE LINEAR REGRESSION ONLY: Gaussian conjugate models ONLY: Whether to model tau or not (default FALSE). If set to true,
+#' then a Zellner-Siow prior is used, centred on the value provide by tau. The value provided in tau is also used as the
+#' initial value.
+#' @param tau CONJUGATE LINEAR REGRESSION ONLY: Value to use for sparsity parameter tau (tau*sigma^2 parameterisation).
+#' Default residual.var.n. If modelling this parameter, this value is used to center the Zellner-Siow prior
+#' and as an intial value.
+#' @param enumerate.up.to.dim CONJUGATE LINEAR REGRESSION ONLY: Whether to calculate posterior scores
+#' for every possible model of dimension up to the integer specified (as an alternative to RJMCMC). 
+#' Currenly maximum allowed dimension is 5. 
+#' Leaving at 0 means this is not carried out. 
+#' @param xTx SUMMARY STATISTICS ONLY: List containing each block's external plug-in estimate for X'X.
+#' @param z SUMMARY STATISTICS ONLY: t(X)*y vector, calculated from the summary statistics.
 #' @param n.mil Number of million iterations to run (default is 1)
-#' @param seed Which random number seed to use in the RJMCMC sampler (default is 1)
-#' @param alt.initial.values Whether to use the alternative set of initial values in the arguments file (default is FALSE)
-#' @param results.path Optional path if wish to to save algorithm results output (when set to the default NULL 
-#' all output is written to a temporary directory and deleted). NOTE this must exist already. A folder will be created in this
-#' path taking the name of `results.label' below
-#' @param results.label Optional label to for algorithm output files (if you have specified results.path)
+#' @param seed Which random number seed to use in the RJMCMC sampler.
+#' @param do.chain.plot Whether to produce a PDF containing chain plots. Default FALSE.
+#' @param results.path Optional path if wish to to save algorithm output.
+#' @param results.label Optional label for algorithm output files (if you have specified results.path).
 #' @param extra.arguments A named list of any additional arguments for BGLiMS. Type "data(DefaultArguments)" and look in the 
 #' "default.arguments" list to see the names (which must match) and default values of available extra arguments. Currently these 
 #' are not documented - please contact the package author, Paul Newcombe for details.
-#' @param do.chain.plot Whether to produce a PDF containing chain plots. Default FALSE.
+#' @param initial.model Optionally, an initial model can be provided as a vector of 0's and 1's. Default is NULL
+#' and the null model is used. If set to 1, the saturated model is used.
+#' @param max.model.dim Optional specification of maximum model dimension (default -1 means no maximum is set).
 #' @param debug.path Optional path to save the data and results files to (rather than as temporary files), for aid in
 #' debugging.
 #' 
@@ -105,44 +93,56 @@ R2BGLiMS <- function(
   data=NULL,
   outcome.var=NULL,
   times.var=NULL,
-  xTx=NULL,
-  z=NULL,
-  sigma2_invGamma_a=NULL,
-  sigma2_invGamma_b=NULL,
-  g.prior=FALSE,
-  tau=NULL,
-  model.tau=FALSE,
-  tau.proposal.sd=0.05,
-  all.model.scores.up.to.dim=0,
-  cluster.var=NULL,
   confounders=NULL,
   model.selection=TRUE,
   model.space.priors=NULL,
-  max.model.dim=-1,
-  initial.model=NULL,
   beta.priors=NULL,
+  g.prior=FALSE,
+  model.tau=FALSE,
+  tau=max(nrow(data),ncol(data)^2,length(z)^2),
+  enumerate.up.to.dim=0,
+  xTx=NULL,
+  z=NULL,
   n.mil=1,
   seed=1,
-  alt.initial.values=FALSE,
+  do.chain.plot=FALSE,
   results.path=NULL,
   results.label="R2BGLiMS",
   extra.arguments=NULL,
-  do.chain.plot=FALSE,
+  initial.model=NULL,
+  max.model.dim=-1,
   debug.path=NULL
 ) {
-  ### --- Error messages
+  
+  ###########################
+  ### --- Old options --- ###
+  ###########################
+  cluster.var <- NULL # Very out of date; probably broken
+  alt.initial.values <- FALSE # Now done using the extra.arguments option
+  
+  ##############################
+  ##############################
+  ### --- Error messages --- ###
+  ##############################
+  ##############################
+  
+  ### --- Java installation error messages
   try.java <- try(system("java -version"), silent=TRUE)
   if (try.java!=0) stop("Java is not installed and is required to run BGLiMS.\nPlease install from java.com/download.")  
+  
+  ### --- Basic input checks
   if (is.null(likelihood)) stop("No likelihood, i.e. the model type, has been specified; please specify as Logistic,
-                                Weibull, Gaussian, GaussianConj, RocAUC, GaussianMarg or GaussianMargConj")
+                                Weibull, Cox, Gaussian, GaussianConj, RocAUC, GaussianMarg or GaussianMargConj")
   if (!is.null(likelihood)) {
-    if (!likelihood %in% c("Logistic", "Weibull", "Gaussian", "GaussianConj", "GaussianMarg", "GaussianMargConj", "RocAUC", "RocAUC_Testing")) {
-      stop("Likelihood must be specified as Logistic, Weibull, Gaussian, GaussianConj, RocAUC, GaussianMarg, or GaussianMargConj")
+    if (!likelihood %in% c("Logistic", "Weibull", "Cox", "Gaussian", "GaussianConj", "GaussianMarg", "GaussianMargConj", "RocAUC", "RocAUC_Testing")) {
+      stop("Likelihood must be specified as Logistic, Weibull, Cox, Gaussian, GaussianConj, RocAUC, GaussianMarg, or GaussianMargConj")
     }
   }
   if (is.null(data)&is.null(xTx)) stop("The data to analyse has not been specified")
   if (is.null(outcome.var)&is.null(z)) stop("An outcome variable has not been specified")
-  if (likelihood %in% c("Logistic", "Weibull", "RocAUC", "RocAUC_Testing")) {
+  
+  ### --- Likelihood specific checks
+  if (likelihood %in% c("Logistic", "Weibull", "Cox", "RocAUC", "RocAUC_Testing")) {
     if (is.factor(data[,outcome.var])) {
       data[,outcome.var] <- as.integer(data[,outcome.var])-1
     } else if (is.character(data[,outcome.var])) {
@@ -150,19 +150,22 @@ R2BGLiMS <- function(
     }    
     if (length(table(data[,outcome.var]))!=2) stop("Outcome variable must be binary")    
   }
+  if (length(grep("Conj", likelihood)) > 0) {
+    if (is.null(tau)) stop("Must specify a value for tau, the variable selection coefficient. Recommend max(N, P^2).")    
+  }
+  
+  ### --- Enumeration error messages
+  if (enumerate.up.to.dim>0) {
+    if (model.tau) stop ("Tau must be fixed to enumerate model specific posterior
+                         scores.")
+    if ((enumerate.up.to.dim>5)) stop ("Currenly only possible to enumerate models
+                                     up to dimension 5") # If change edit help above    
+  }  
+  
+  ### --- Model space prior error messages
   if (is.null(model.space.priors)) stop("Must specify a prior over the model space (even if model selection
                                         will not be used this is used to provide the list of covariate
                                         names")
-  if (!is.null(confounders)) {
-    if (sum(confounders%in%colnames(data))!=length(confounders)) stop("One or more confounders are not present in the data")
-    for (v in confounders) {
-      if (is.factor(data[,v])) {
-        data[,v] <- as.integer(data[,v])
-      } else if (is.character(data[,v])) {
-        data[,v] <- as.integer(as.factor(data[,v]))        
-      }
-    }
-  }
   if (!is.null(model.space.priors)) {
     if (!is.list(model.space.priors)) stop("model.space.priors must be a list of list(s). If only a single model space component is required, this must still be a list of a list")
     # Check structure
@@ -195,8 +198,24 @@ R2BGLiMS <- function(
       }
     }
   }
-  ### -- Beta priors
+  
+  ### --- Confounders error messages
+  if (!is.null(confounders)) {
+    if (sum(confounders%in%colnames(data))!=length(confounders)) stop("One or more confounders are not present in the data")
+    if (sum(confounders%in%unlist(model.space.priors))>0) stop("One or more confounders are also declared in the model space")
+    for (v in confounders) {
+      if (is.factor(data[,v])) {
+        data[,v] <- as.integer(data[,v])
+      } else if (is.character(data[,v])) {
+        data[,v] <- as.integer(as.factor(data[,v]))        
+      }
+    }
+  }
+  
+  ### -- Beta prior error messages
   if (!is.null(beta.priors)) {
+    if (length(grep("Conj",likelihood))>0) {stop("Fixed priors for the coefficients can not be specified for the conjugate model; the prior
+                                                 is take as a function of X'X")}
     beta.priors.not.mat <- TRUE
     if (is.data.frame(beta.priors)) {beta.priors.not.mat <- FALSE}
     if (is.matrix(beta.priors)) {beta.priors.not.mat <- FALSE}
@@ -206,24 +225,25 @@ R2BGLiMS <- function(
     if (!likelihood %in% c("GaussianMarg", "GaussianMargConj")) {
       if (sum(rownames(beta.priors)%in%colnames(data))!=nrow(beta.priors)) stop("One or more variables in beta.priors are not present in the data")
     }
-  }
-  
-  ### --- Possible future options
-  # NEVER USE
-  # fixed.prior.sd Prior SD that will be used in zero-centred normal priors on the betas when none is given (default = 1000)
-  # data.file Location of correctly formatted .txt data file. If left as default NA then the arguments below must be provided.
-  # arguments.file Path to an alternative arguments file, if would prefer not to use the defaults (default NULL and the default arguments file will be used)
-  # first.n.mil.its how many million iterations to read in from the beginning. Useful if you would like to explore whether
-  # convergence could have been achieved with less iterations (default is NULL)
-  fixed.prior.sd <- 1000
-  data.file <- NULL
-  first.n.mil.its <- NULL
+  }  
   
   # Setup file paths
   pack.root <- path.package("R2BGLiMS")
   bayesglm.jar <- paste(pack.root,"/BGLiMS/BGLiMS.jar",sep="")
   
-  ### --- Prior setup
+  ###########################
+  ###########################
+  ### --- Prior setup --- ###
+  ###########################
+  ###########################
+  
+  # Deal with confounders for conjugate model
+  if (!is.null(confounders)&(likelihood=="GaussianConj")) {
+    cat("Obtaining confounder adjusted residuals...\n")
+    data <- .ConfounderAdjustedResiduals(data, outcome.var, confounders)
+    confounders <- NULL
+  }
+    
   # Establish model space prior component sizes
   n.mod.space.comps <- length(model.space.priors)
   mod.space.comp.sizes <- NULL
@@ -260,7 +280,7 @@ R2BGLiMS <- function(
     # If confoudners have been specified but no beta.priors, create - 
     # must have fixed priors for confounders
     beta.priors <- data.frame(
-      cbind(rep(0,length(confounders)),rep(fixed.prior.sd,length(confounders))),
+      cbind(rep(0,length(confounders)),rep(1000,length(confounders))),
       row.names=confounders)    
   }
   
@@ -297,6 +317,7 @@ R2BGLiMS <- function(
   rm(default.arguments)
   
   ### --- Write data
+  data.file <- NULL
   if (is.null(data.file)) {
     cat("\nWriting temporary data files...\n")
     if (!is.null(debug.path)) {
@@ -317,13 +338,10 @@ R2BGLiMS <- function(
       times.var=times.var,
       xTx=xTx,
       z=z,
-      sigma2_invGamma_a=sigma2_invGamma_a,
-      sigma2_invGamma_b=sigma2_invGamma_b,
       g.prior=g.prior,
       tau=tau,
       model.tau=model.tau,
-      tau.proposal.sd=tau.proposal.sd,
-      all.model.scores.up.to.dim=all.model.scores.up.to.dim,
+      enumerate.up.to.dim=enumerate.up.to.dim,
       cluster.var=cluster.var,
       beta.priors=beta.priors,
       model.space.priors=model.space.priors,
@@ -404,7 +422,7 @@ R2BGLiMS <- function(
   t1 <- proc.time()["elapsed"]
   results <- .ReadResults(
     results.file=results.file,
-    first.n.mil.its=first.n.mil.its)
+    first.n.mil.its=NULL)
   if (do.chain.plot) {ChainPlots(results, plot.file=plot.file)}
   t2 <- proc.time()["elapsed"]
   results.processing.time <- t2-t1
@@ -431,7 +449,7 @@ R2BGLiMS <- function(
   results$run.times$write.time <- write.time
   results$run.times$bglims.time <- bglims.time
   results$run.times$results.processing.time <- results.processing.time
-  if (all.model.scores.up.to.dim>0) {
+  if (enumerate.up.to.dim>0) {
     results$approx.probs <- EnumeratedApproxPostProbs(results)
   }
   
