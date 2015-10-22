@@ -54,6 +54,11 @@
   initial.model=NULL
 ) {
 	### Pre-processing
+  if (likelihood%in%c("Cox")) {
+    # Re-order rows of data in ascending order of follow-up time
+    # Must be done BEFORE extracting individual variables
+    data <- data[order(data[,times.var], decreasing=T),]
+  }  
   if (!likelihood%in%c("GaussianMarg", "GaussianMargConj")) {
     n.start <- nrow(data)
     if (!is.null(predictors)) {
@@ -66,11 +71,6 @@
     disease <- data[,outcome.var]
     data <- data[, colnames(data)[!colnames(data)%in%c(outcome.var)] ]
     # Extract survival times var from the main data
-    if (likelihood%in%c("Cox")) {
-      # Re-order rows of data in ascending order of follow-up time
-      cat("Re-ordering data rows by follow-up time: Longest -> Shortest\n")
-      data <- data[order(data[,times.var], decreasing=T),]
-    }  
     if (!is.null(times.var) ) {
       times <- data[,times.var]
       data <- data[, colnames(data)[!colnames(data)%in%times.var] ]

@@ -142,7 +142,8 @@ R2BGLiMS <- function(
   if (is.null(outcome.var)&is.null(z)) stop("An outcome variable has not been specified")
   
   ### --- Likelihood specific checks
-  if (likelihood %in% c("Logistic", "Weibull", "Cox", "RocAUC", "RocAUC_Testing")) {
+  if (likelihood %in% c("Logistic", "Weibull", "RocAUC", "RocAUC_Testing")) {
+    # This check is not done for Cox - since with uncensored data the outcome is not binary
     if (is.factor(data[,outcome.var])) {
       data[,outcome.var] <- as.integer(data[,outcome.var])-1
     } else if (is.character(data[,outcome.var])) {
