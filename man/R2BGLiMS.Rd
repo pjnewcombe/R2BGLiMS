@@ -107,7 +107,7 @@ A Reversible Jump results object is returned. This is a list of two elements: "a
 arguments used in the analysis, and "results" - a matrix containing all saved posterior samples from the analysis. Columns
 correspond to parameters and each row contains values from a particular itertation, with 0 indicating exclusion from the model.
 
-The function \code{\link{ResultsTable}} can be used to print summary posterior results for all parameters. Other functions
+The function \code{\link{PrettyResultsTable}} can be used to print summary posterior results for all parameters. Other functions
 for summarising results are listed under "see also".
 }
 \description{

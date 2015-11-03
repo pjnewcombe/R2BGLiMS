@@ -1,3 +1,6 @@
+#' @include ResultsTable.R
+NULL
+
 #' Calls BGLiMS - a Java package for fitting GLMs under Bayesian model selection. NOTE: The predictors to explore with model
 #' selection are specified via the model.space.priors argument - see examples. By Default a common, and unknown, prior SD
 #' is used for all predictors under model selection, which in turn is assigned an Inverse-Gamma hyper-prior.
@@ -76,7 +79,7 @@
 #' arguments used in the analysis, and "results" - a matrix containing all saved posterior samples from the analysis. Columns
 #' correspond to parameters and each row contains values from a particular itertation, with 0 indicating exclusion from the model.
 #' 
-#' The function \code{\link{ResultsTable}} can be used to print summary posterior results for all parameters. Other functions
+#' The function \code{\link{PrettyResultsTable}} can be used to print summary posterior results for all parameters. Other functions
 #' for summarising results are listed under "see also".
 #' 
 #' @seealso For summary results of covariates see \code{\link{ResultsTable}},
@@ -453,6 +456,9 @@ R2BGLiMS <- function(
   if (enumerate.up.to.dim>0) {
     results$approx.probs <- EnumeratedApproxPostProbs(results)
   }
+  
+  # Append rsults table to results object
+  results$results.table <- ResultsTable(results)
   
   return(results)
 }
