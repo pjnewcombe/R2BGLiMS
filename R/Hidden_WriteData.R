@@ -7,51 +7,50 @@
 #' "Gaussian" (for continuous data), "GaussianMarg" (for analysis of univariate associations from Gaussian linear 
 #' regressions) and "GaussianMargConj" (for analysis under a marginal conjugate linear regression model).
 #' @param data Matrix of data to write - rows indiviuals, columns variables.
-#' @param predictors vector of predictors. Leave as the default NULL to include all variables available in the data.frame will be used.
 #' @param outcome.var Which column in data contains the binary outcome for logistic and survival data, or the integer count for
 #' Poisson data (default "Disease")
 #' @param times.var If survival data or Poisson data, the column in data which contains the follow-up times (default NULL)
-#' @param xTx GaussianMarg and GaussianMargConj ONLY: List containing each block's plug-in estimate for X'X.
-#' @param z GaussianMarg and GaussianMargConj ONLY: Vector of quantities calculated from the summary statistics.
+#' @param predictors vector of predictors. Leave as the default NULL to include all variables available in the data.frame will be used.
 #' @param g.prior GaussianMargConj ONLY: Whether to use a g-prior for the beta's - i.e. a multivariate normal 
 #' with correlation structure proportional to sigma^2*X'X^-1 or to use independence priors (default = FALSE).
-#' @param tau GaussianMargConj ONLY: Value to use for sparsity parameter tau (tau*sigma^2 parameterisation).
-#' Default residual.var.n. If modelling this parameter, this value is used to center the Zellner-Siow prior
-#' and as an intial value.
 #' @param model.tau GaussianMargConj ONLY: Whether to model tau or not (default FALSE). If set to true,
 #' then a Zellner-Siow prior is used, centred on the value provide by tau. The value provided in tau is also used as the
 #' initial value.
+#' @param tau GaussianMargConj ONLY: Value to use for sparsity parameter tau (tau*sigma^2 parameterisation).
+#' If modelling this parameter, this value is used to center the Zellner-Siow prior
+#' and as an intial value.
 #' @param enumerate.up.to.dim GaussianMargConj ONLY: When NOT modelling tau, whether to output the posterior scores
 #' for every possible model of dimension up to the integer specified. Currenly maximum allowed dimension is 2. Setting
 #' to default 0 means this is not carried out. Can be used as an alternative to running the RJMCMC.
-#' 
-#' @param block.indices If Guassian marginal tests are being analysed, the external xTx data may be divided
-#' into blocks, to simplify inversion. This vector should contain the indices of the block break points (default NULL)
-#' @param cluster.var If hierarchical data and random intercepts are required, the column in data contains the clustering variable (default NULL)
+#' @param xTx GaussianMarg and GaussianMargConj ONLY: List containing each block's plug-in estimate for X'X.
+#' @param z GaussianMarg and GaussianMargConj ONLY: Vector of quantities calculated from the summary statistics.
+#' @param max.fpr ROC AUC ONLY: Maximum acceptable false positive rate (or x-axis value) to optimise a truncated ROC AUC.
+#' @param min.tpr ROC AUC ONLY: Minimum acceptable true positive rate, i.e. sensitivity (or y-axis value) to optimise a truncated ROC AUC.
 #' @param initial.model Optionally, an initial model can be provided as a vector of 0's and 1's. Default is NULL
 #' and the null model is used. If set to 1, the saturated model is used.
+#' @param cluster.var If hierarchical data and random intercepts are required, the column in data contains the clustering variable (default NULL)
 #' @return NA
 #' @author Paul Newcombe
 .WriteData <- function(
   data.file,
   likelihood,
   data,
-  predictors=NULL,
-  confounders=NULL,
   outcome.var=NULL,
   times.var=NULL,
+  confounders=NULL,
+  predictors=NULL,
+  model.space.priors,
+  beta.priors=NULL,
+  g.prior=FALSE,
+  model.tau=FALSE,
+  tau=NULL,
+  enumerate.up.to.dim=0,
   xTx=NULL,
   z=NULL,
-  g.prior=FALSE,
-  tau=NULL,
-  model.tau=FALSE,
-  enumerate.up.to.dim=0,
-  residual.var=NULL,
-  residual.var.n=NULL,  
-  cluster.var=NULL,
-  beta.priors=NULL,
-  model.space.priors,
-  initial.model=NULL
+  max.fpr=1,
+  min.tpr=0,
+  initial.model=NULL,
+  cluster.var=NULL # OLD
 ) {
 	### Pre-processing
   if (likelihood%in%c("Cox")) {
@@ -172,6 +171,10 @@
   }
   if (likelihood=="Weibull") {
     write(t(times), file = data.file , ncolumns = N, append = T)    
+  }
+  if (likelihood=="RocAUC") {
+    write(max.fpr, file = data.file , ncolumns = N, append = T)    
+    write(min.tpr, file = data.file , ncolumns = N, append = T)    
   }
   
   ### --- Fixed beta priors

@@ -8,10 +8,10 @@ R2BGLiMS(likelihood = NULL, data = NULL, outcome.var = NULL,
   times.var = NULL, confounders = NULL, model.selection = TRUE,
   model.space.priors = NULL, beta.priors = NULL, g.prior = FALSE,
   model.tau = FALSE, tau = max(nrow(data), ncol(data)^2, length(z)^2),
-  enumerate.up.to.dim = 0, xTx = NULL, z = NULL, n.mil = 1, seed = 1,
-  do.chain.plot = FALSE, results.path = NULL, results.label = "R2BGLiMS",
-  extra.arguments = NULL, initial.model = NULL, max.model.dim = -1,
-  debug.path = NULL)
+  enumerate.up.to.dim = 0, xTx = NULL, z = NULL, max.fpr = 1,
+  min.tpr = 0, n.mil = 1, seed = 1, do.chain.plot = FALSE,
+  results.path = NULL, results.label = "R2BGLiMS", extra.arguments = NULL,
+  initial.model = NULL, max.model.dim = -1, debug.path = NULL)
 }
 \arguments{
 \item{likelihood}{Type of model to fit. Current options are
@@ -79,6 +79,10 @@ Leaving at 0 means this is not carried out.}
 \item{xTx}{SUMMARY STATISTICS ONLY: List containing each block's external plug-in estimate for X'X.}
 
 \item{z}{SUMMARY STATISTICS ONLY: t(X)*y vector, calculated from the summary statistics.}
+
+\item{max.fpr}{ROC AUC ONLY: Maximum acceptable false positive rate (or x-axis value) to optimise a truncated ROC AUC.}
+
+\item{min.tpr}{ROC AUC ONLY: Minimum acceptable true positive rate, i.e. sensitivity (or y-axis value) to optimise a truncated ROC AUC.}
 
 \item{n.mil}{Number of million iterations to run (default is 1)}
 

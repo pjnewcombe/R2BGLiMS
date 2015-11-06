@@ -61,6 +61,8 @@ NULL
 #' Leaving at 0 means this is not carried out. 
 #' @param xTx SUMMARY STATISTICS ONLY: List containing each block's external plug-in estimate for X'X.
 #' @param z SUMMARY STATISTICS ONLY: t(X)*y vector, calculated from the summary statistics.
+#' @param max.fpr ROC AUC ONLY: Maximum acceptable false positive rate (or x-axis value) to optimise a truncated ROC AUC.
+#' @param min.tpr ROC AUC ONLY: Minimum acceptable true positive rate, i.e. sensitivity (or y-axis value) to optimise a truncated ROC AUC.
 #' @param n.mil Number of million iterations to run (default is 1)
 #' @param seed Which random number seed to use in the RJMCMC sampler.
 #' @param do.chain.plot Whether to produce a PDF containing chain plots. Default FALSE.
@@ -106,6 +108,8 @@ R2BGLiMS <- function(
   enumerate.up.to.dim=0,
   xTx=NULL,
   z=NULL,
+  max.fpr=1,
+  min.tpr=0,
   n.mil=1,
   seed=1,
   do.chain.plot=FALSE,
@@ -120,7 +124,6 @@ R2BGLiMS <- function(
   ###########################
   ### --- Old options --- ###
   ###########################
-  cluster.var <- NULL # Very out of date; probably broken
   alt.initial.values <- FALSE # Now done using the extra.arguments option
   
   ##############################
@@ -336,19 +339,20 @@ R2BGLiMS <- function(
       data.file=data.file,
       likelihood=likelihood,
       data=data,
-      predictors=predictors,
-      confounders=confounders, 
       outcome.var=outcome.var,
       times.var=times.var,
+      confounders=confounders, 
+      predictors=predictors,
+      model.space.priors=model.space.priors,
+      beta.priors=beta.priors,
+      g.prior=g.prior,
+      model.tau=model.tau,
+      tau=tau,
+      enumerate.up.to.dim=enumerate.up.to.dim,
       xTx=xTx,
       z=z,
-      g.prior=g.prior,
-      tau=tau,
-      model.tau=model.tau,
-      enumerate.up.to.dim=enumerate.up.to.dim,
-      cluster.var=cluster.var,
-      beta.priors=beta.priors,
-      model.space.priors=model.space.priors,
+      max.fpr=max.fpr,
+      min.tpr=min.tpr,
       initial.model=initial.model
       )
     cat("\n...finished writing temporary data files.\n")

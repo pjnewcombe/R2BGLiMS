@@ -25,7 +25,7 @@ EnumeratedApproxPostProbs <- function(results,a=NULL,b=NULL,max.dim=NULL) {
     b <- results$args$model.space.priors[[1]]$b
   }
   if (is.null(max.dim)) {
-    max.dim <- results$args$allModelScoresUpToDim
+    max.dim <- results$args$enumerateUpToDim
   }
   vars <- results$args$model.space.priors[[1]]$Variables
   P <- length(vars)
