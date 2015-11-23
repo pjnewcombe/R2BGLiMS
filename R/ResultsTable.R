@@ -6,6 +6,9 @@ NULL
 #' @title Summary results table
 #' @name ResultsTable
 #' @param results Reversible Jump results object from running \code{\link{R2BGLiMS}}.
+#' @param stochastic.search.probs CONJUGATE MODELS ONLY: Whether to calculate posterior probabilities according
+#' to the stochastic Reversible Jump search (TRUE), or according to exhaustive enumeration
+#' up to a chosen dimension (FALSE).
 #' @param vars.to.include Optional character vector specifying a subset of variables
 #' to restrict output to.
 #' @param normalised.sds If variables were normalised (e.g. to facilitate use of a common
@@ -19,6 +22,7 @@ NULL
 #' @example Examples/ResultsTable_Examples.R 
 ResultsTable <- function(
   results,
+  stochastic.search.probs=TRUE,
   vars.to.include=NULL,
   var.dictionary=NULL) {
   
@@ -74,6 +78,13 @@ ResultsTable <- function(
     }
 	}
   
+  if (results$args$Likelihood%in%c("GaussianConj", "JAM")) {
+    if ((!stochastic.search.probs) & (results$args$enumerateUpToDim==0)) {
+      cat("WARNING: Argument enumerateUpToDim was set to 0 in orginal analysis; using stochastic search\n")
+      stochastic.search.probs <- TRUE
+    }
+  }      
+  
 	for (v in rownames(results.table) ) {
     if (!v %in% c(
       "LogWeibullScale",
@@ -83,8 +94,12 @@ ResultsTable <- function(
       "LogLikelihood",
       "AUC",
       vars.fix)) {
-      results.table[v,"PostProb"] <- length( results$results[,v][results$results[,v]!=0] ) / nrow(results$results)
-      results.table[v,"BF"] <- .BayesFactor( prior.probs[v], results.table[v,"PostProb"])      
+      results.table[v,"PostProb"] <- length( results$results[,v][results$results[,v]!=0] ) / nrow(results$results)      
+      ### --- Enumeration probs
+      if (results$args$Likelihood%in%c("GaussianConj", "JAM") & (!stochastic.search.probs)) {
+        results.table[v,"PostProb"] <- results$approx.probs$marg.probs[v]
+      }
+      results.table[v,"BF"] <- .BayesFactor(prior.probs[v], results.table[v,"PostProb"])      
     }
 		if (results$args$Likelihood %in% c("Weibull", "Cox", "Logistic", "RocAUC", "RocAUC_Testing") ) {
       # Exponentiate log-HRs or log-ORs

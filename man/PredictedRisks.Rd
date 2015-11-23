@@ -10,7 +10,7 @@ PredictedRisks(data, results, times.var = NULL, t = NULL,
 \arguments{
 \item{data}{Matrix or dataframe containing the data to analyse.
 Rows are indiviuals, and columns contain the variables and outcome.
-If modelling summary statistics specify xTx instead (see below).}
+If modelling summary statistics specify X.ref, marginal.betas, and n instead (see below).}
 
 \item{results}{Reversible Jump results object from running \code{\link{R2BGLiMS}}.}
 

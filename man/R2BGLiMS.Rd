@@ -7,10 +7,10 @@
 R2BGLiMS(likelihood = NULL, data = NULL, outcome.var = NULL,
   times.var = NULL, confounders = NULL, model.selection = TRUE,
   model.space.priors = NULL, beta.priors = NULL, g.prior = FALSE,
-  model.tau = FALSE, tau = max(nrow(data), ncol(data)^2, length(z)^2),
-  enumerate.up.to.dim = 0, xTx = NULL, z = NULL, max.fpr = 1,
-  min.tpr = 0, n.mil = 1, seed = 1, do.chain.plot = FALSE,
-  results.path = NULL, results.label = "R2BGLiMS", extra.arguments = NULL,
+  model.tau = FALSE, tau = NULL, enumerate.up.to.dim = 0, X.ref = NULL,
+  marginal.betas = NULL, n = NULL, max.fpr = 1, min.tpr = 0,
+  n.mil = 1, seed = 1, do.chain.plot = FALSE, results.path = NULL,
+  results.label = "R2BGLiMS", extra.arguments = NULL,
   initial.model = NULL, max.model.dim = -1, debug.path = NULL)
 }
 \arguments{
@@ -21,15 +21,15 @@ R2BGLiMS(likelihood = NULL, data = NULL, outcome.var = NULL,
 "RocAUC" (to optimise ROC AUC),
 "Gaussian" (for linear regression),
 "GaussianConj" (linear regression exploiting conjugate results),
-"GaussianMarg" (for linear regression summary statistics)
-and "GaussianMargConj" (for analysis under a marginal conjugate linear regression model).}
+"JAM" (for conjugate linear regression using summary statistics, integrating out parameters)
+and "JAM_MCMC" (for linear regression using summary statistics, with full MCMC of all parameters).}
 
 \item{data}{Matrix or dataframe containing the data to analyse.
 Rows are indiviuals, and columns contain the variables and outcome.
-If modelling summary statistics specify xTx instead (see below).}
+If modelling summary statistics specify X.ref, marginal.betas, and n instead (see below).}
 
 \item{outcome.var}{Name of outcome variable in data. For survival data see times.var below.
-If modelling summary statistics specify z instead (see below).}
+If modelling summary statistics with JAM this can be left null but you must specify X.ref, marginal.beats and n instead (see below).}
 
 \item{times.var}{SURVIVAL DATA ONLY Name of column in data which contains the event times.}
 
@@ -40,15 +40,18 @@ dummy model.space.priors argument (see below). This will not be used mathematica
 names from the "Variables" element therein.}
 
 \item{model.space.priors}{Must be specified if model.selection is set to TRUE.
-A list with as many elements as desired model space `components'.
-Each element of the list is also a list, listing the prior parameters and
-covariates in a particular model space component.
-Either a Poisson prior on model space can be used, in which case an
-element "Rate" must be included, or Beta-Binomial model space priors can
-be used, in which case elements "a" and "b" must be included corresponding
-to the beta-binomial hyperparameters. Higher values of "b" relative to "a"
-encourage sparsity.
-A vector "Variables" must be included listing the variable names in that component.}
+Two options are available. 1) A fixed prior is placed on the proportion of causal
+covariates, and all models with the same number of covariates is equally likely. This
+is effectively a Poisson prior over the different possible model sizes. A list must
+be supplied for `model.space.priors` with an element "Rate", specifying the prior
+proportion of causal covariates, and an element "Variables" containing the list of covariates
+included in the model search. 2) The prior proportion of causal covariates
+is treated as unknown and given a Beta(a, b) hyper-prior, in which case
+elements "a" and "b" must be included in the `model.space.priors` list rather
+than "Rate". Higher values of "b" relative to "a" will encourage sparsity.
+NOTE: It is easy to specify different model space priors for different collections of
+covariates by providing a list of lists, each element of which is itself a model.space.prior
+list asm described above for a particular subset of the covariates.}
 
 \item{beta.priors}{There are three options:
 1) Leave as null, in which case N(0, 1e6) priors are placed on the effects
@@ -67,8 +70,9 @@ with correlation structure proportional to sigma^2*X'X^-1 or to use independence
 then a Zellner-Siow prior is used, centred on the value provide by tau. The value provided in tau is also used as the
 initial value.}
 
-\item{tau}{CONJUGATE LINEAR REGRESSION ONLY: Value to use for sparsity parameter tau (tau*sigma^2 parameterisation).
-Default residual.var.n. If modelling this parameter, this value is used to center the Zellner-Siow prior
+\item{tau}{CONJUGATE LINEAR REGRESSION ONLY: Value to use for sparsity parameter tau (under the tau*sigma^2 parameterisation).
+A recommended default is max(n, P^2) where n is the number of individuals, and P the number of predictors.
+If modelling this parameter, this value is used to center the Zellner-Siow prior
 and as an intial value.}
 
 \item{enumerate.up.to.dim}{CONJUGATE LINEAR REGRESSION ONLY: Whether to calculate posterior scores
@@ -76,9 +80,15 @@ for every possible model of dimension up to the integer specified (as an alterna
 Currenly maximum allowed dimension is 5.
 Leaving at 0 means this is not carried out.}
 
-\item{xTx}{SUMMARY STATISTICS ONLY: List containing each block's external plug-in estimate for X'X.}
+\item{X.ref}{JAM ONLY: Reference genotype matrix with which to impute the SNP-SNP correlations. If multiple regions are to be
+analysed this should be a list containing reference genotype matrices for each region. Individual's genotype
+must be coded as a numeric risk allele count 0/1/2. Non-integer values reflecting imputation may be given.
+NB: The risk allele coding MUST correspond to that used in marginal.betas. These matrices must each be positive definite and
+the column names must correspond to the names of the marginal.betas vector.}
 
-\item{z}{SUMMARY STATISTICS ONLY: t(X)*y vector, calculated from the summary statistics.}
+\item{marginal.betas}{JAM ONLY: Vector of marginal effect estimates.}
+
+\item{n}{JAM ONLY: Sample size which marginal effects came from.}
 
 \item{max.fpr}{ROC AUC ONLY: Maximum acceptable false positive rate (or x-axis value) to optimise a truncated ROC AUC.}
 

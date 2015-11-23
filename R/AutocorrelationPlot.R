@@ -9,6 +9,11 @@
 #' @param plot.file Path to a PDF to print plot to.
 #' @param include.var.names Include variable names perpendicularly below the x-axis. Turn off if it looks too crowded.
 #' @param include.post.probs Include a barplot of posterior probabilities at the top.
+#' @param cex.x.axis.ticks Control the size of tick marks for the covariates along the X-axis. Decrease if there are many.
+#' @param cex.y.axis.ticks Control the size of tick marks for the Y-axis.
+#' @param cex.y.axis.labels Control the size of the y-labels. Decrease if these are not fitting on.
+#' @param mar.for.varnames Margin size for the bottom axis. Default is 8 so there is room for perpendicular variable names. 
+#' Decrease if not using variable names.
 #' @return NA
 #' @author Paul Newcombe
 #' @example Examples/AutocorrelationPlot_Examples.R
@@ -18,14 +23,12 @@ AutocorrelationPlot <- function(
   plot.file=NULL,
   include.var.names=TRUE,
   var.dictionary=NULL,
-  include.post.probs=TRUE) {
-  
-  # Possible future arguments:
-  cex.x.axis.ticks<-0.5
-  cex.y.axis.ticks<-2
-  cex.y.axis.labels<-2
-  mar.for.varnames<-8  
-  
+  include.post.probs=TRUE,
+  cex.x.axis.ticks=0.5,
+  cex.y.axis.ticks=2,
+  cex.y.axis.labels=2,
+  mar.for.varnames=8) {
+    
   # Setup for plot
   if (!is.null(vars.to.include)) {
     results$results <- results$results[,vars.to.include]

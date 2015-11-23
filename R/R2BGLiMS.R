@@ -16,28 +16,31 @@ NULL
 #' "RocAUC" (to optimise ROC AUC),
 #' "Gaussian" (for linear regression), 
 #' "GaussianConj" (linear regression exploiting conjugate results), 
-#' "GaussianMarg" (for linear regression summary statistics) 
-#' and "GaussianMargConj" (for analysis under a marginal conjugate linear regression model).
+#' "JAM" (for conjugate linear regression using summary statistics, integrating out parameters) 
+#' and "JAM_MCMC" (for linear regression using summary statistics, with full MCMC of all parameters).
 #' @param data Matrix or dataframe containing the data to analyse. 
 #' Rows are indiviuals, and columns contain the variables and outcome.
-#' If modelling summary statistics specify xTx instead (see below).
+#' If modelling summary statistics specify X.ref, marginal.betas, and n instead (see below).
 #' @param outcome.var Name of outcome variable in data. For survival data see times.var below.
-#' If modelling summary statistics specify z instead (see below).
+#' If modelling summary statistics with JAM this can be left null but you must specify X.ref, marginal.beats and n instead (see below).
 #' @param times.var SURVIVAL DATA ONLY Name of column in data which contains the event times.
 #' @param confounders Optional vector of confounders to fix in the model at all times, i.e. exclude from model selection.
 #' @param model.selection Whether to use model selection (default is TRUE). NB: Even if set to FALSE, please provide a 
 #' dummy model.space.priors argument (see below). This will not be used mathematically, but the package requires taking the list of variable
 #' names from the "Variables" element therein.
 #' @param model.space.priors Must be specified if model.selection is set to TRUE.
-#' A list with as many elements as desired model space `components'.
-#' Each element of the list is also a list, listing the prior parameters and 
-#' covariates in a particular model space component. 
-#' Either a Poisson prior on model space can be used, in which case an
-#' element "Rate" must be included, or Beta-Binomial model space priors can
-#' be used, in which case elements "a" and "b" must be included corresponding
-#' to the beta-binomial hyperparameters. Higher values of "b" relative to "a" 
-#' encourage sparsity.
-#' A vector "Variables" must be included listing the variable names in that component. 
+#' Two options are available. 1) A fixed prior is placed on the proportion of causal 
+#' covariates, and all models with the same number of covariates is equally likely. This
+#' is effectively a Poisson prior over the different possible model sizes. A list must
+#' be supplied for `model.space.priors` with an element "Rate", specifying the prior 
+#' proportion of causal covariates, and an element "Variables" containing the list of covariates
+#' included in the model search. 2) The prior proportion of causal covariates
+#' is treated as unknown and given a Beta(a, b) hyper-prior, in which case 
+#' elements "a" and "b" must be included in the `model.space.priors` list rather
+#' than "Rate". Higher values of "b" relative to "a" will encourage sparsity.
+#' NOTE: It is easy to specify different model space priors for different collections of
+#' covariates by providing a list of lists, each element of which is itself a model.space.prior
+#' list asm described above for a particular subset of the covariates.
 #' @param beta.priors There are three options: 
 #' 1) Leave as null, in which case N(0, 1e6) priors are placed on the effects
 #' of confounders and any predictors included in model selection are assigned a
@@ -52,15 +55,21 @@ NULL
 #' @param model.tau CONJUGATE LINEAR REGRESSION ONLY: Gaussian conjugate models ONLY: Whether to model tau or not (default FALSE). If set to true,
 #' then a Zellner-Siow prior is used, centred on the value provide by tau. The value provided in tau is also used as the
 #' initial value.
-#' @param tau CONJUGATE LINEAR REGRESSION ONLY: Value to use for sparsity parameter tau (tau*sigma^2 parameterisation).
-#' Default residual.var.n. If modelling this parameter, this value is used to center the Zellner-Siow prior
+#' @param tau CONJUGATE LINEAR REGRESSION ONLY: Value to use for sparsity parameter tau (under the tau*sigma^2 parameterisation).
+#' A recommended default is max(n, P^2) where n is the number of individuals, and P the number of predictors. 
+#' If modelling this parameter, this value is used to center the Zellner-Siow prior
 #' and as an intial value.
 #' @param enumerate.up.to.dim CONJUGATE LINEAR REGRESSION ONLY: Whether to calculate posterior scores
 #' for every possible model of dimension up to the integer specified (as an alternative to RJMCMC). 
 #' Currenly maximum allowed dimension is 5. 
 #' Leaving at 0 means this is not carried out. 
-#' @param xTx SUMMARY STATISTICS ONLY: List containing each block's external plug-in estimate for X'X.
-#' @param z SUMMARY STATISTICS ONLY: t(X)*y vector, calculated from the summary statistics.
+#' @param X.ref JAM ONLY: Reference genotype matrix with which to impute the SNP-SNP correlations. If multiple regions are to be 
+#' analysed this should be a list containing reference genotype matrices for each region. Individual's genotype
+#' must be coded as a numeric risk allele count 0/1/2. Non-integer values reflecting imputation may be given.
+#' NB: The risk allele coding MUST correspond to that used in marginal.betas. These matrices must each be positive definite and
+#' the column names must correspond to the names of the marginal.betas vector.
+#' @param marginal.betas JAM ONLY: Vector of marginal effect estimates.
+#' @param n JAM ONLY: Sample size which marginal effects came from.
 #' @param max.fpr ROC AUC ONLY: Maximum acceptable false positive rate (or x-axis value) to optimise a truncated ROC AUC.
 #' @param min.tpr ROC AUC ONLY: Minimum acceptable true positive rate, i.e. sensitivity (or y-axis value) to optimise a truncated ROC AUC.
 #' @param n.mil Number of million iterations to run (default is 1)
@@ -104,10 +113,11 @@ R2BGLiMS <- function(
   beta.priors=NULL,
   g.prior=FALSE,
   model.tau=FALSE,
-  tau=max(nrow(data),ncol(data)^2,length(z)^2),
+  tau=NULL,
   enumerate.up.to.dim=0,
-  xTx=NULL,
-  z=NULL,
+  X.ref=NULL,
+  marginal.betas=NULL,
+  n=NULL,
   max.fpr=1,
   min.tpr=0,
   n.mil=1,
@@ -138,14 +148,14 @@ R2BGLiMS <- function(
   
   ### --- Basic input checks
   if (is.null(likelihood)) stop("No likelihood, i.e. the model type, has been specified; please specify as Logistic,
-                                Weibull, Cox, Gaussian, GaussianConj, RocAUC, GaussianMarg or GaussianMargConj")
+                                Weibull, Cox, Gaussian, GaussianConj, RocAUC, JAM_MCMC or JAM")
   if (!is.null(likelihood)) {
-    if (!likelihood %in% c("Logistic", "Weibull", "Cox", "Gaussian", "GaussianConj", "GaussianMarg", "GaussianMargConj", "RocAUC", "RocAUC_Testing")) {
-      stop("Likelihood must be specified as Logistic, Weibull, Cox, Gaussian, GaussianConj, RocAUC, GaussianMarg, or GaussianMargConj")
+    if (!likelihood %in% c("Logistic", "Weibull", "Cox", "Gaussian", "GaussianConj", "JAM_MCMC", "JAM", "RocAUC", "RocAUC_Testing")) {
+      stop("Likelihood must be specified as Logistic, Weibull, Cox, Gaussian, GaussianConj, RocAUC, JAM_MCMC, or JAM")
     }
   }
-  if (is.null(data)&is.null(xTx)) stop("The data to analyse has not been specified")
-  if (is.null(outcome.var)&is.null(z)) stop("An outcome variable has not been specified")
+  if (is.null(data)&is.null(X.ref)) stop("The data to analyse has not been specified")
+  if (is.null(outcome.var)&is.null(marginal.betas)) stop("An outcome variable has not been specified")
   
   ### --- Likelihood specific checks
   if (likelihood %in% c("Logistic", "Weibull", "RocAUC", "RocAUC_Testing")) {
@@ -157,8 +167,13 @@ R2BGLiMS <- function(
     }    
     if (length(table(data[,outcome.var]))!=2) stop("Outcome variable must be binary")    
   }
-  if (length(grep("Conj", likelihood)) > 0) {
-    if (is.null(tau)) stop("Must specify a value for tau, the variable selection coefficient. Recommend max(N, P^2).")    
+  if (likelihood %in% c("GaussianConj")) {
+    cat("tau was not provided, setting to the maximum of n and P^2\n")
+    tau <- max(nrow(data), ncol(data)^2)
+  }
+  if (likelihood %in% c("JAM")) {
+    cat("tau was not provided, setting to P^2\n")
+    tau <- length(marginal.betas)^2
   }
   
   ### --- Enumeration error messages
@@ -170,11 +185,13 @@ R2BGLiMS <- function(
   }  
   
   ### --- Model space prior error messages
-  if (is.null(model.space.priors)) stop("Must specify a prior over the model space (even if model selection
-                                        will not be used this is used to provide the list of covariate
-                                        names")
+  if (is.null(model.space.priors)) stop("Must specify a prior over the model space.")
   if (!is.null(model.space.priors)) {
-    if (!is.list(model.space.priors)) stop("model.space.priors must be a list of list(s). If only a single model space component is required, this must still be a list of a list")
+    if (!is.list(model.space.priors)) stop("model.space.priors must be a list, or list of list(s).")
+    if (!is.list(model.space.priors[[1]])) {
+      # Convert to list of lists if only a single model space component is provided
+      model.space.priors <- list(model.space.priors)
+    }
     # Check structure
     for (c in 1:length(model.space.priors)) {
       no.prior.family <- TRUE
@@ -190,7 +207,7 @@ R2BGLiMS <- function(
       if (!"Variables"%in%names(model.space.priors[[c]])) {
         stop("Each model.space.prior list(s) must contain an element named Variables, defining which covariates to search over")
       }
-      if (!likelihood %in% c("GaussianMarg", "GaussianMargConj")) {
+      if (!likelihood %in% c("JAM_MCMC", "JAM")) {
         if (sum(model.space.priors[[c]]$Variables%in%colnames(data))!=length(model.space.priors[[c]]$Variables)) {
           stop(paste("Not all variables in model space component",c,"are present in the data"))
         }
@@ -221,7 +238,7 @@ R2BGLiMS <- function(
   
   ### -- Beta prior error messages
   if (!is.null(beta.priors)) {
-    if (length(grep("Conj",likelihood))>0) {stop("Fixed priors for the coefficients can not be specified for the conjugate model; the prior
+    if (likelihood %in% c("GaussianConj", "JAM")) {stop("Fixed priors for the coefficients can not be specified for the conjugate model; the prior
                                                  is take as a function of X'X")}
     beta.priors.not.mat <- TRUE
     if (is.data.frame(beta.priors)) {beta.priors.not.mat <- FALSE}
@@ -229,11 +246,22 @@ R2BGLiMS <- function(
     if (beta.priors.not.mat) stop("beta.priors must be a matrix or data frame")
     if (ncol(beta.priors)!=2) stop("beta.priors must have two columns - 1st for means, 2nd for SDs")
     if ( is.null(rownames(beta.priors)) ) stop("Rows of beta.priors must be named with corresponding variable names")
-    if (!likelihood %in% c("GaussianMarg", "GaussianMargConj")) {
+    if (!likelihood %in% c("JAM_MCMC", "JAM")) {
       if (sum(rownames(beta.priors)%in%colnames(data))!=nrow(beta.priors)) stop("One or more variables in beta.priors are not present in the data")
     }
   }  
   
+  ### --- X.ref error message for JAM
+  if (!is.null(X.ref)) {
+    if (!is.list(X.ref)) {
+      X.ref <- list(X.ref) # convert to list if there is a single block
+    }
+    if (is.null(marginal.betas)) { stop("For analysis with JAM you must provide a vector of marginal summary statistics") }
+    if (is.null(n)) { stop("You must specificy the number of individuals the marginal effect estimates were calculated in.") }
+    if (sum(unlist(lapply(X.ref, function(x) !is.numeric(x) )))>0) {stop("Reference genotype matrices must be numeric, coded as risk allele countsin the 0 to 2 range")}
+    if (max(unlist(X.ref))>2 | min(unlist(X.ref)) < 0) {stop("Reference genotype matrices must be coded coded as risk allele counts in the 0 to 2 range")}
+    if (sum(names(marginal.betas) %in% unlist(lapply(X.ref, colnames))) < length(marginal.betas)) {stop("Reference genotype matrices do not include all SNPs in the marginal.betas vector")}
+  }
   # Setup file paths
   pack.root <- path.package("R2BGLiMS")
   bayesglm.jar <- paste(pack.root,"/BGLiMS/BGLiMS.jar",sep="")
@@ -323,6 +351,38 @@ R2BGLiMS <- function(
   }
   rm(default.arguments)
   
+  #########################
+  #########################
+  ### --- JAM Setup --- ###
+  #########################
+  #########################
+  
+  ### --- Generate X'X, after normalising X
+  xTx <- list()
+  for (ld.block in 1:length(X.ref)) {
+    # Normalise X
+    X.normalised <- apply(X.ref[[ld.block]], MAR=2, function(x) x-mean(x))
+    # Calculate X'X
+    xTx[[ld.block]] <- t(X.normalised) %*% X.normalised
+  }
+  
+  ### --- Generate Xy for JAM
+  z <- rep(NA,length(marginal.betas))
+  names(z) <- names(marginal.betas)
+  for (ld.block in 1:length(X.ref)) {
+    mafs <- apply(X.ref[[ld.block]], MAR=2, mean)/2 # Take MAFs from reference X
+    for (snp in colnames(X.ref[[ld.block]])) {
+      # Group counts under HWE
+      n1 <- n*(1-mafs[snp])*mafs[snp]*2
+      n2 <- n*mafs[snp]*mafs[snp]
+      # Group means from beta-hat (mean-centred)
+      y0 <- -(n1 * marginal.betas[snp] + n2 * 2 * marginal.betas[snp])/n
+      y1 <- y0 + marginal.betas[snp]
+      y2 <- y0 + 2*marginal.betas[snp]
+      z[snp] <- y1 * n1 + 2 * y2 * n2
+    }
+  }
+
   ### --- Write data
   data.file <- NULL
   if (is.null(data.file)) {
@@ -462,7 +522,10 @@ R2BGLiMS <- function(
   }
   
   # Append rsults table to results object
-  results$results.table <- ResultsTable(results)
+  results$results.table <- ResultsTable(results, stochastic.search.probs=TRUE)
+  if (likelihood %in% c("JAM", "GaussianConj") & enumerate.up.to.dim>0) {
+    results$results.table.enum <- ResultsTable(results, stochastic.search.probs=FALSE)    
+  }
   
   return(results)
 }

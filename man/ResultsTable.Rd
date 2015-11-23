@@ -4,10 +4,15 @@
 \alias{ResultsTable}
 \title{Summary results table}
 \usage{
-ResultsTable(results, vars.to.include = NULL, var.dictionary = NULL)
+ResultsTable(results, stochastic.search.probs = TRUE,
+  vars.to.include = NULL, var.dictionary = NULL)
 }
 \arguments{
 \item{results}{Reversible Jump results object from running \code{\link{R2BGLiMS}}.}
+
+\item{stochastic.search.probs}{CONJUGATE MODELS ONLY: Whether to calculate posterior probabilities according
+to the stochastic Reversible Jump search (TRUE), or according to exhaustive enumeration
+up to a chosen dimension (FALSE).}
 
 \item{vars.to.include}{Optional character vector specifying a subset of variables
 to restrict output to.}

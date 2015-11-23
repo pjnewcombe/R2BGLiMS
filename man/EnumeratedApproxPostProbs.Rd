@@ -4,16 +4,10 @@
 \alias{EnumeratedApproxPostProbs}
 \title{Enumertated approximate posterior probabilities}
 \usage{
-EnumeratedApproxPostProbs(results, a = NULL, b = NULL, max.dim = NULL)
+EnumeratedApproxPostProbs(results, max.dim = NULL)
 }
 \arguments{
 \item{results}{R2BGLiMS results object}
-
-\item{a}{Beta-binomial hyperparamter a - optional. If not specified the value used in
-the original analysis is used.}
-
-\item{b}{Beta-binomial hyperparamter b - optional. If not specified the value used in
-the original analysis is used.}
 
 \item{max.dim}{Maxmimum dimension to truncate space too (can be less than or equal to
 what was passed to R2BGLiMS). If left NULL the value passed to R2BGLiMS will be used.}

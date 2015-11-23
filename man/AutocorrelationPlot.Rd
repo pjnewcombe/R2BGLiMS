@@ -7,7 +7,8 @@ represented across all iterations as a black and white "heatmap".}
 \usage{
 AutocorrelationPlot(results, vars.to.include = NULL, plot.file = NULL,
   include.var.names = TRUE, var.dictionary = NULL,
-  include.post.probs = TRUE)
+  include.post.probs = TRUE, cex.x.axis.ticks = 0.5, cex.y.axis.ticks = 2,
+  cex.y.axis.labels = 2, mar.for.varnames = 8)
 }
 \arguments{
 \item{results}{Reversible Jump results object from running \code{\link{R2BGLiMS}}.}
@@ -24,6 +25,15 @@ named wtih the current covariate names. This can consist of expression functions
 achieve italics or superscripts when passed to a plot function.}
 
 \item{include.post.probs}{Include a barplot of posterior probabilities at the top.}
+
+\item{cex.x.axis.ticks}{Control the size of tick marks for the covariates along the X-axis. Decrease if there are many.}
+
+\item{cex.y.axis.ticks}{Control the size of tick marks for the Y-axis.}
+
+\item{cex.y.axis.labels}{Control the size of the y-labels. Decrease if these are not fitting on.}
+
+\item{mar.for.varnames}{Margin size for the bottom axis. Default is 8 so there is room for perpendicular variable names.
+Decrease if not using variable names.}
 }
 \value{
 NA

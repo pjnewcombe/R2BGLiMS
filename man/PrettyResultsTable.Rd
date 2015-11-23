@@ -5,14 +5,18 @@
 \title{A pretty summary results table for reports - note that entries are formatted as character strings so,
 for processing results use \code{\link{ResultsTable}}.}
 \usage{
-PrettyResultsTable(results, round.digits.betas = 2,
-  round.digits.postprob = 2, round.digits.bf = 1, measure = "OR",
-  vars.to.include = NULL, var.dictionary = NULL, normalised.sds = NULL,
-  post.prob.cut = NULL, abbreviated.names = FALSE,
+PrettyResultsTable(results, stochastic.search.probs = TRUE,
+  round.digits.betas = 2, round.digits.postprob = 2, round.digits.bf = 1,
+  measure = "OR", vars.to.include = NULL, var.dictionary = NULL,
+  normalised.sds = NULL, post.prob.cut = NULL, abbreviated.names = FALSE,
   remove.col.white.spaces = FALSE)
 }
 \arguments{
 \item{results}{Reversible Jump results object from running \code{\link{R2BGLiMS}}.}
+
+\item{stochastic.search.probs}{JAM ONLY: Whether to calculate posterior probabilities according
+to the stochastic Reversible Jump search (set to TRUE), or approximately according to exhaustive enumeration
+of all models up to a chosen dimension (set to FALSE).}
 
 \item{round.digits.betas}{Number of decimal places to include for effect estimates. (Default is 2)}
 

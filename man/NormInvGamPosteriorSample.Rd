@@ -12,10 +12,10 @@ NormInvGamPosteriorSample(data = NULL, outcome.var = NULL,
 \arguments{
 \item{data}{Matrix or dataframe containing the data to analyse.
 Rows are indiviuals, and columns contain the variables and outcome.
-If modelling summary statistics specify xTx instead (see below).}
+If modelling summary statistics specify X.ref, marginal.betas, and n instead (see below).}
 
 \item{outcome.var}{Name of outcome variable in data. For survival data see times.var below.
-If modelling summary statistics specify z instead (see below).}
+If modelling summary statistics with JAM this can be left null but you must specify X.ref, marginal.beats and n instead (see below).}
 
 \item{confounders}{Optional vector of confounders to fix in the model at all times, i.e. exclude from model selection.}
 
@@ -25,10 +25,6 @@ should be specified with the confounders argument.}
 \item{tau}{Value to use for the g-prior sparsity parameter (tau*sigma^2 parameterisation).}
 
 \item{n.samples}{Number of posterior samples to draw.}
-
-\item{xTx}{SUMMARY STATISTICS ONLY: List containing each block's external plug-in estimate for X'X.}
-
-\item{z}{SUMMARY STATISTICS ONLY: t(X)*y vector, calculated from the summary statistics.}
 
 \item{sigma2_invGamma_a}{Inverse-Gamma parameter a for the residual
 variance. Not specifying means the value in default.arguments is used (type "data(DefaultArguments)").}

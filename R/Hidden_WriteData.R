@@ -4,26 +4,26 @@
 #' @name .WriteData
 #' @param data.file Desired path for .txt data file to be written to
 #' @param likelihood Type of model to fit. Current options are "Logistic" (for binary data), "Weibull" (for survival data),  "RocAUC" (to optimise the ROC AUC), 
-#' "Gaussian" (for continuous data), "GaussianMarg" (for analysis of univariate associations from Gaussian linear 
-#' regressions) and "GaussianMargConj" (for analysis under a marginal conjugate linear regression model).
+#' "Gaussian" (for continuous data), "JAM_MCMC" (for analysis of univariate associations from Gaussian linear 
+#' regressions) and "JAM" (for analysis under a marginal conjugate linear regression model).
 #' @param data Matrix of data to write - rows indiviuals, columns variables.
 #' @param outcome.var Which column in data contains the binary outcome for logistic and survival data, or the integer count for
 #' Poisson data (default "Disease")
 #' @param times.var If survival data or Poisson data, the column in data which contains the follow-up times (default NULL)
 #' @param predictors vector of predictors. Leave as the default NULL to include all variables available in the data.frame will be used.
-#' @param g.prior GaussianMargConj ONLY: Whether to use a g-prior for the beta's - i.e. a multivariate normal 
+#' @param g.prior JAM ONLY: Whether to use a g-prior for the beta's - i.e. a multivariate normal 
 #' with correlation structure proportional to sigma^2*X'X^-1 or to use independence priors (default = FALSE).
-#' @param model.tau GaussianMargConj ONLY: Whether to model tau or not (default FALSE). If set to true,
+#' @param model.tau JAM ONLY: Whether to model tau or not (default FALSE). If set to true,
 #' then a Zellner-Siow prior is used, centred on the value provide by tau. The value provided in tau is also used as the
 #' initial value.
-#' @param tau GaussianMargConj ONLY: Value to use for sparsity parameter tau (tau*sigma^2 parameterisation).
+#' @param tau JAM ONLY: Value to use for sparsity parameter tau (tau*sigma^2 parameterisation).
 #' If modelling this parameter, this value is used to center the Zellner-Siow prior
 #' and as an intial value.
-#' @param enumerate.up.to.dim GaussianMargConj ONLY: When NOT modelling tau, whether to output the posterior scores
+#' @param enumerate.up.to.dim JAM ONLY: When NOT modelling tau, whether to output the posterior scores
 #' for every possible model of dimension up to the integer specified. Currenly maximum allowed dimension is 2. Setting
 #' to default 0 means this is not carried out. Can be used as an alternative to running the RJMCMC.
-#' @param xTx GaussianMarg and GaussianMargConj ONLY: List containing each block's plug-in estimate for X'X.
-#' @param z GaussianMarg and GaussianMargConj ONLY: Vector of quantities calculated from the summary statistics.
+#' @param xTx JAM_MCMC and JAM ONLY: List containing each block's plug-in estimate for X'X.
+#' @param z JAM_MCMC and JAM ONLY: Vector of quantities calculated from the summary statistics.
 #' @param max.fpr ROC AUC ONLY: Maximum acceptable false positive rate (or x-axis value) to optimise a truncated ROC AUC.
 #' @param min.tpr ROC AUC ONLY: Minimum acceptable true positive rate, i.e. sensitivity (or y-axis value) to optimise a truncated ROC AUC.
 #' @param initial.model Optionally, an initial model can be provided as a vector of 0's and 1's. Default is NULL
@@ -58,7 +58,7 @@
     # Must be done BEFORE extracting individual variables
     data <- data[order(data[,times.var], decreasing=T),]
   }  
-  if (!likelihood%in%c("GaussianMarg", "GaussianMargConj")) {
+  if (!likelihood%in%c("JAM_MCMC", "JAM")) {
     n.start <- nrow(data)
     if (!is.null(predictors)) {
       data <- data[, c(outcome.var, times.var, cluster.var, predictors)]
@@ -116,21 +116,21 @@
   # N x V matrix of covariate values
   cat("\n\nWriting a BGLiMS formatted datafile...\n")
   # Conjugate Gaussian models
-  if (length(grep("Conj",likelihood))==1) {
+  if (likelihood %in% c("GaussianConj", "JAM")) {
     write(as.integer(g.prior), file = data.file , ncolumns = 1, append = T)
     write(tau, file = data.file, ncolumns = 1, append = T)      
     write(as.integer(model.tau), file = data.file , ncolumns = 1, append = T)      
     write(enumerate.up.to.dim, file = data.file , ncolumns = 1, append = T)
   }
   # Covariate data - different if marginal setup
-  if (length(grep("Marg",likelihood))==1) { # Write summary data
+  if (likelihood %in% c("JAM", "JAM_MCMC")) { # Write summary data
     write(length(xTx), file = data.file , ncolumns = 1, append = T)
     write(block.indices, file = data.file , ncolumns = length(block.indices), append = T)
-    if (likelihood == "GaussianMarg") {
+    if (likelihood == "JAM_MCMC") {
       for (b in 1:length(xTx)) {
         write.table(xTx[[b]], row.names=F, col.names=F, file = data.file, append = T)
       }
-    } else if (likelihood == "GaussianMargConj") {
+    } else if (likelihood == "JAM") {
       Lt_Inv <- list()
       for (b in 1:length(xTx)) {
         L <- chol(xTx[[b]]) # NB: UPPER triangle. So L'L = X'X (LIKE IN PAPER)
@@ -158,9 +158,9 @@
   } else if (likelihood %in% c("Gaussian","GaussianConj")) {
     if (likelihood == "GaussianConj") { disease <- disease - mean(disease) }
     write(t(disease), file = data.file , ncolumns = N, append = T)        
-  } else if (likelihood %in% c("GaussianMarg")) {
+  } else if (likelihood %in% c("JAM_MCMC")) {
     write(t(z), file = data.file , ncolumns = V, append = T)        
-  } else if (likelihood %in% c("GaussianMargConj")) {
+  } else if (likelihood %in% c("JAM")) {
     # Multiply z by inverse cholesky decomposition
     z_L <- z
     for (b in 1:length(xTx)) {

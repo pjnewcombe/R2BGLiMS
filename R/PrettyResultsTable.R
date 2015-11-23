@@ -7,6 +7,9 @@ NULL
 #' for processing results use \code{\link{ResultsTable}}.
 #' @name PrettyResultsTable
 #' @inheritParams ResultsTable
+#' @param stochastic.search.probs JAM ONLY: Whether to calculate posterior probabilities according
+#' to the stochastic Reversible Jump search (set to TRUE), or approximately according to exhaustive enumeration
+#' of all models up to a chosen dimension (set to FALSE).
 #' @param round.digits.betas Number of decimal places to include for effect estimates. (Default is 2)
 #' @param round.digits.postprob Number of decimal places to include for posterior probabilities. (Default is 2)
 #' @param round.digits.bf Number of decimal places to include for Bayes factors. (Default is 1)
@@ -21,6 +24,7 @@ NULL
 #' @example Examples/PrettyResultsTable_Examples.R 
 PrettyResultsTable <- function(
   results,
+  stochastic.search.probs=TRUE,
   round.digits.betas=2,
   round.digits.postprob=2,
   round.digits.bf=1,
@@ -32,18 +36,29 @@ PrettyResultsTable <- function(
   abbreviated.names=FALSE,
   remove.col.white.spaces=FALSE
   ) {
-  # Normalise if provided
-  if ( !is.null(normalised.sds) ) {
-    for (v in intersect(names(normalised.sds), colnames(results$results)) ) {
-      results$results[,v] <- results$results[,v]/normalised.sds[v]   # If the original scale was huge, then the effects are much smaller for a unit on the original scale
+  
+  # Extract pre-calculated results table
+  res.tab <- as.data.frame(results$results.table, stringsAsFactors=F)
+  if (!stochastic.search.probs) {
+    if (results$args$enumerateUpToDim==0) {
+      stop ("enumerateUpToDim was set to 0 - MUST use stochastic search inference")
+    } else {
+      cat("Using exhaustive enumeration inference\n")
+      res.tab <- as.data.frame(results$results.table.enum, stringsAsFactors=F)
     }
   }
   
-  # Establish whether a results table, or a results object has been provided
-  if (is.list(results)) {
-    res.tab <- as.data.frame(ResultsTable(results, var.dictionary=var.dictionary), stringsAsFactors=F)    
-  } else {
-    res.tab <- results
+  # Normalise if provided
+  cols.to.normalise <- c("Median", "CrI_Lower", "CrI_Upper", "Median_Present", "CrI_Lower_Present", "CrI_Upper_Present")
+  if (!is.null(normalised.sds) ) {
+    for (v in intersect(names(normalised.sds), colnames(results$results)) ) {
+      res.tab[v, cols.to.normalise] <-  res.tab[v, cols.to.normalise]/normalised.sds[v]   # If the original scale was huge, then the effects are much smaller for a unit on the original scale
+    }
+  }
+  
+  # Update names if variable dictionary provided
+  if (!is.null(var.dictionary)) {
+    rownames(res.tab)[rownames(res.tab)%in%names(var.dictionary)] <- var.dictionary[rownames(res.tab)[rownames(res.tab)%in%names(var.dictionary)]]
   }
   
   # Order and rename variables for table
