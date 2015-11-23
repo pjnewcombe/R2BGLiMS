@@ -360,30 +360,32 @@ R2BGLiMS <- function(
   #########################
   #########################
   
-  ### --- Generate X'X, after normalising X
-  xTx <- list()
-  for (ld.block in 1:length(X.ref)) {
-    # Normalise X
-    X.normalised <- apply(X.ref[[ld.block]], MAR=2, function(x) x-mean(x))
-    # Calculate X'X
-    xTx[[ld.block]] <- t(X.normalised) %*% X.normalised
-  }
-  
-  ### --- Generate Xy for JAM
-  z <- rep(NA,length(marginal.betas))
-  names(z) <- names(marginal.betas)
-  for (ld.block in 1:length(X.ref)) {
-    mafs <- apply(X.ref[[ld.block]], MAR=2, mean)/2 # Take MAFs from reference X
-    for (snp in colnames(X.ref[[ld.block]])) {
-      # Group counts under HWE
-      n1 <- n*(1-mafs[snp])*mafs[snp]*2
-      n2 <- n*mafs[snp]*mafs[snp]
-      # Group means from beta-hat (mean-centred)
-      y0 <- -(n1 * marginal.betas[snp] + n2 * 2 * marginal.betas[snp])/n
-      y1 <- y0 + marginal.betas[snp]
-      y2 <- y0 + 2*marginal.betas[snp]
-      z[snp] <- y1 * n1 + 2 * y2 * n2
+  if (likelihood %in% c("JAM", "JAM_MCMC")) {
+    ### --- Generate X'X, after normalising X
+    xTx <- list()
+    for (ld.block in 1:length(X.ref)) {
+      # Normalise X
+      X.normalised <- apply(X.ref[[ld.block]], MAR=2, function(x) x-mean(x))
+      # Calculate X'X
+      xTx[[ld.block]] <- t(X.normalised) %*% X.normalised
     }
+    
+    ### --- Generate Xy for JAM
+    z <- rep(NA,length(marginal.betas))
+    names(z) <- names(marginal.betas)
+    for (ld.block in 1:length(X.ref)) {
+      mafs <- apply(X.ref[[ld.block]], MAR=2, mean)/2 # Take MAFs from reference X
+      for (snp in colnames(X.ref[[ld.block]])) {
+        # Group counts under HWE
+        n1 <- n*(1-mafs[snp])*mafs[snp]*2
+        n2 <- n*mafs[snp]*mafs[snp]
+        # Group means from beta-hat (mean-centred)
+        y0 <- -(n1 * marginal.betas[snp] + n2 * 2 * marginal.betas[snp])/n
+        y1 <- y0 + marginal.betas[snp]
+        y2 <- y0 + 2*marginal.betas[snp]
+        z[snp] <- y1 * n1 + 2 * y2 * n2
+      }
+    }    
   }
 
   ### --- Write data
