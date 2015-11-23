@@ -167,11 +167,11 @@ R2BGLiMS <- function(
     }    
     if (length(table(data[,outcome.var]))!=2) stop("Outcome variable must be binary")    
   }
-  if (likelihood %in% c("GaussianConj")) {
+  if (likelihood %in% c("GaussianConj") & is.null(tau)) {
     cat("tau was not provided, setting to the maximum of n and P^2\n")
     tau <- max(nrow(data), ncol(data)^2)
   }
-  if (likelihood %in% c("JAM")) {
+  if (likelihood %in% c("JAM") & is.null(tau)) {
     cat("tau was not provided, setting to P^2\n")
     tau <- length(marginal.betas)^2
   }
@@ -253,6 +253,9 @@ R2BGLiMS <- function(
   
   ### --- X.ref error message for JAM
   if (!is.null(X.ref)) {
+    if (is.data.frame(X.ref)) {
+      X.ref <- matrix(X.ref) # convert to matrix
+    }
     if (!is.list(X.ref)) {
       X.ref <- list(X.ref) # convert to list if there is a single block
     }
