@@ -5,24 +5,19 @@
 \title{Autocorrelation plot for model selection. Model inclusion of each predictor is
 represented across all iterations as a black and white "heatmap".}
 \usage{
-AutocorrelationPlot(results, vars.to.include = NULL, plot.file = NULL,
-  include.var.names = TRUE, var.dictionary = NULL,
-  include.post.probs = TRUE, cex.x.axis.ticks = 0.5, cex.y.axis.ticks = 2,
-  cex.y.axis.labels = 2, mar.for.varnames = 8)
+AutocorrelationPlot(results, plot.title = NULL, vars.to.include = NULL,
+  plot.file = NULL, include.var.names = TRUE, var.dictionary = NULL,
+  include.post.probs = TRUE, cex.x.axis.ticks = 1, cex.y.axis.ticks = 1,
+  cex.y.axis.labels = 1, mar.for.varnames = 8)
 }
 \arguments{
-\item{results}{Reversible Jump results object from running \code{\link{R2BGLiMS}}.}
+\item{results}{A \code{\link[R2BGLiMS]{R2BGLiMS_Results-class}} object frum running the \code{\link[R2BGLiMS]{R2BGLiMS}} command.}
 
-\item{vars.to.include}{Optional character vector specifying a subset of variables
-to restrict output to.}
+\item{plot.title}{Optionally specify a title for the plot.}
 
 \item{plot.file}{Path to a PDF to print plot to.}
 
 \item{include.var.names}{Include variable names perpendicularly below the x-axis. Turn off if it looks too crowded.}
-
-\item{var.dictionary}{Alternative covariate names. This must be a character vector,
-named wtih the current covariate names. This can consist of expression functions, e.g. to
-achieve italics or superscripts when passed to a plot function.}
 
 \item{include.post.probs}{Include a barplot of posterior probabilities at the top.}
 

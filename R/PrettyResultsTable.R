@@ -1,112 +1,74 @@
-#' @include ResultsTable.R
-NULL
-
 #' Creates a `pretty' summary results table from a Reversible Jump results object
 #' @export
 #' @title A pretty summary results table for reports - note that entries are formatted as character strings so,
 #' for processing results use \code{\link{ResultsTable}}.
 #' @name PrettyResultsTable
-#' @inheritParams ResultsTable
-#' @param stochastic.search.probs JAM ONLY: Whether to calculate posterior probabilities according
-#' to the stochastic Reversible Jump search (set to TRUE), or approximately according to exhaustive enumeration
-#' of all models up to a chosen dimension (set to FALSE).
+#' @inheritParams ManhattanPlot
 #' @param round.digits.betas Number of decimal places to include for effect estimates. (Default is 2)
 #' @param round.digits.postprob Number of decimal places to include for posterior probabilities. (Default is 2)
 #' @param round.digits.bf Number of decimal places to include for Bayes factors. (Default is 1)
-#' @param measure Abbreviated measure to include in column titles, e.g. "HR". (Default is "OR")
-#' @param post.prob.cut Optionally can provide a  posterior probability threshold for including
-#' predictors in the table for which model selection has been performed for.
-#' @param abbreviated.names Use abbreviated names for Posterior Probability and Bayes Factors columns? (Default is FALSE)
-#' @param remove.col.white.spaces Should the column titles have no white spaces? (Default is FALSE)
+#' @param normalised.sds If covariates were normalised by their standard deviation, provide a named
+#' vector of the standard deviations on the original scale using this argument. Effects in the resulting 
+#' table will then be interpretable according to unit changes on each covariate's original scale, rather 
+#' than according to standard deviation changes.
 #' 
-#' @return Prints a nice summary results table 
+#' @return A nice summary results table.
 #' @author Paul Newcombe
 #' @example Examples/PrettyResultsTable_Examples.R 
 PrettyResultsTable <- function(
   results,
-  stochastic.search.probs=TRUE,
   round.digits.betas=2,
   round.digits.postprob=2,
   round.digits.bf=1,
-  measure="OR",
-  vars.to.include=NULL,
-  var.dictionary=NULL,
-  normalised.sds=NULL,
-  post.prob.cut=NULL,
-  abbreviated.names=FALSE,
-  remove.col.white.spaces=FALSE
+  normalised.sds=NULL
   ) {
   
   # Extract pre-calculated results table
-  res.tab <- as.data.frame(results$results.table, stringsAsFactors=F)
-  if (!stochastic.search.probs) {
-    if (results$args$enumerateUpToDim==0) {
-      stop ("enumerateUpToDim was set to 0 - MUST use stochastic search inference")
-    } else {
-      cat("Using exhaustive enumeration inference\n")
-      res.tab <- as.data.frame(results$results.table.enum, stringsAsFactors=F)
-    }
-  }
-  
+  res.tab <- as.data.frame(results@posterior.summary.table, stringsAsFactors=F)
+
   # Normalise if provided
   cols.to.normalise <- c("Median", "CrI_Lower", "CrI_Upper", "Median_Present", "CrI_Lower_Present", "CrI_Upper_Present")
   if (!is.null(normalised.sds) ) {
-    for (v in intersect(names(normalised.sds), colnames(results$results)) ) {
+    for (v in intersect(names(normalised.sds), colnames(results@bglims.rjmcmc.output)) ) {
       res.tab[v, cols.to.normalise] <-  res.tab[v, cols.to.normalise]/normalised.sds[v]   # If the original scale was huge, then the effects are much smaller for a unit on the original scale
     }
   }
   
-  # Update names if variable dictionary provided
-  if (!is.null(var.dictionary)) {
-    rownames(res.tab)[rownames(res.tab)%in%names(var.dictionary)] <- var.dictionary[rownames(res.tab)[rownames(res.tab)%in%names(var.dictionary)]]
-  }
-  
   # Order and rename variables for table
+  effect.estimate.cols <- c("Median", "CrI_Lower", "CrI_Upper", "Median_Present", "CrI_Lower_Present", "CrI_Upper_Present")
   res.tab.keep <- c("alpha")
   res.tab.new.names <- c("Intercept")
-  if (results$args$Likelihood %in% c("Weibull", "Logistic") ) { # re-log the intercept
-    res.tab["alpha",] <- log(res.tab["alpha",])
-  }
-  if (results$args$Likelihood %in% c("Cox") & c("alpha") %in% row.names(res.tab) ) { # re-log the intercept
+  if (results@likelihood %in% c("Cox") & c("alpha") %in% row.names(res.tab) ) { # re-log the intercept
     res.tab <- res.tab[-which(row.names(res.tab)=="alpha"),] # Delete interecept row
   }
   if ("LogWeibullScale" %in% rownames(res.tab)) {
     res.tab.keep <- c("LogWeibullScale", res.tab.keep)
     res.tab.new.names <- c("Scale", res.tab.new.names)
+    res.tab["LogWeibullScale",effect.estimate.cols] <- exp(res.tab["LogWeibullScale",effect.estimate.cols])
   }
   if ("LogGaussianResidual" %in% rownames(res.tab)) {
     res.tab.keep <- c("LogGaussianResidual", res.tab.keep)
     res.tab["LogGaussianResidual",] <- exp(res.tab["LogGaussianResidual",])
     res.tab.new.names <- c("Residual", res.tab.new.names)
   }
-  if (results$args$nBetaHyperPriorComp>0) {
-    res.tab.keep <- c(res.tab.keep, paste("LogBetaPriorSd",c(1:results$args$nBetaHyperPriorComp), sep="") )
-    if (results$args$nBetaHyperPriorComp==1) {
+  if (results@bglims.arguments$nBetaHyperPriorComp>0) {
+    res.tab.keep <- c(res.tab.keep, paste("LogBetaPriorSd",c(1:results@bglims.arguments$nBetaHyperPriorComp), sep="") )
+    if (results@bglims.arguments$nBetaHyperPriorComp==1) {
       res.tab.new.names <- c(res.tab.new.names, "log(beta) Hyperprior SD")
     } else {
-      res.tab.new.names <- c(res.tab.new.names, paste("log(beta) Hyperprior SD - component",c(1:results$args$nBetaHyperPriorComp)) )
+      res.tab.new.names <- c(res.tab.new.names, paste("log(beta) Hyperprior SD - component",c(1:results@bglims.arguments$nBetaHyperPriorComp)) )
     }
   }
-  if(!is.null(vars.to.include)) {
-    predictors <- vars.to.include
-  } else {
-    predictors <- rownames(res.tab[!rownames(res.tab)%in%c(
-      "LogWeibullScale", "LogGaussianResidual", "alpha",
-      paste("LogBetaPriorSd",c(1:results$args$nBetaHyperPriorComp), sep=""),
-      "LogLikelihood"),])
-  }
+  predictors <- rownames(res.tab[!rownames(res.tab)%in%c(
+    "LogWeibullScale", "LogGaussianResidual", "alpha",
+    paste("LogBetaPriorSd",c(1:results@bglims.arguments$nBetaHyperPriorComp), sep=""),
+    "LogLikelihood"),])
   res.tab.keep <- c(res.tab.keep,predictors)
   res.tab.new.names <- c(res.tab.new.names,predictors)
   
   # Re-order/rename variables
   res.tab <- res.tab[res.tab.keep,]
   rownames(res.tab) <- res.tab.new.names
-  
-  # Filter on posterior probability
-  if (!is.null(post.prob.cut)) {
-    res.tab <- res.tab[
-      (is.na(res.tab[,"PostProb"]) | res.tab[,"PostProb"]>=post.prob.cut),]
-  }
   
   # Round and replace with >0.01
   beta.cols <- c("Median", "CrI_Lower", "CrI_Upper", "Median_Present", "CrI_Lower_Present", "CrI_Upper_Present")
@@ -137,20 +99,14 @@ PrettyResultsTable <- function(
   pretty.tab[,"Bayes Factor"] <- gsub(to.replace, replace.with, pretty.tab[,"Bayes Factor"])
   
   # Measure to include in column titles
-  if (!is.null(measure)) {
-    colnames(pretty.tab)[colnames(pretty.tab) %in% beta.col.names] <- paste(measure, beta.col.names)    
+  measure <- "Effect"
+  if (results@likelihood %in% c("Logistic", "JAM", "JAM_MCMC")) {
+    measure <- "OR"
+  } else if (results@likelihood %in% c("Cox", "Weibull")) {
+    measure <- "HR"
   }
-  
-  # Abbreviate names
-  if (abbreviated.names == TRUE) {
-    colnames(pretty.tab)[c(5:6)] <- c("Post Prob", "BF")
-  }
-  
-  # Remove white spaces from column titles
-  if (remove.col.white.spaces==TRUE) {
-    colnames(pretty.tab) <- gsub(" ", "_", colnames(pretty.tab)) 
-  }
-  
+  colnames(pretty.tab)[colnames(pretty.tab) %in% beta.col.names] <- paste(measure, beta.col.names)    
+
   # Insert NAs for variables included at all times
   na.string <- paste(paste(rep(" ",round.digits.postprob),collapse=""), "NA", sep="")
   pretty.tab[which(pretty.tab[,"Posterior Probability"]==na.string), c(1,2) ] <- na.string
@@ -158,8 +114,8 @@ PrettyResultsTable <- function(
   # Add names
   rownames(pretty.tab) <- rownames(res.tab)
   
-  # Only keep posterior probablities for conjugate models
-  if (length(grep("Conj",results$args$Likelihood))>0) {
+  # Only keep posterior probablities and Bayes Factors for conjugate models
+  if (results@likelihood %in% c("JAM", "GaussianConj")) {
     pretty.tab <- pretty.tab[predictors, c("Posterior Probability", "Bayes Factor")]
   }
 

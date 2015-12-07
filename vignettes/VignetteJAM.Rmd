@@ -1,0 +1,196 @@
+---
+title: "JAM: Joint Analysis of Marginal statistics"
+author: "Paul Newcombe"
+date: "19 November 2015"
+output: pdf_document
+toc : true
+---
+
+```{r set-options, echo=FALSE, cache=TRUE}
+options(width = 100)
+```
+
+\newpage
+
+# Introduction
+
+Genetic association studies typically only publish results from one-at-a-time tests of genetic variants, or "SNP"s. Confounding due to linkage disequilibrium, i.e. genetic correlations, can cloud the location of a truly causal SNP, since correlated variants appear associated too. JAM (Joint Analysis of Marginal statistics) is an algorithm which enables inference of joint multi-SNP models from one-at-a-time summary statistics. Correlations are adjusted for according to estimates from an external dataset. Models and SNPs which best explain the complete joint pattern of marginal effects are highlighted via an integrated Bayesian penalized regression framework.
+
+## Pre-requisites
+
+The underlying JAM algorithm is coded in Java. Therefore you must have a Java JDK installed on your system (note that a Java runtime environment alone is not sufficient). The Java JDK may be downloaded from <https://www.java.com/download/>. R2BGLiMS - a general Bayesian model selection package which contains the JAM algorithm, may be installed from github as follows (requires the "devtools" library):
+
+```
+install.packages("devtools")
+library(devtools)
+install_github("pjnewcombe/R2BGLiMS")
+```
+
+## Quick reference example
+The main arguments are:
+
+* `marginal.betas`: The pubished SNP effecs from one at-a-time regressions
+* `X.ref`: A reference genotype matrix
+* `model.space.prior`: Prior over the model space to use for Bayesian model selection
+* `n`: The number of individuals analysed to infer marginal.betas
+
+```
+library(R2BGLiMS) # Load package
+data(JAM_Example) # Load example data
+jam.results <- JAM(
+  marginal.betas=marginal.betas[snps.region1],
+  X.ref=X.ref.region1,
+  model.space.prior = list("Rate"=0.1, "Variables"=snps.region1),
+  n=1000)
+PrettyResultsTable(jam.results)
+```
+
+More detail on JAM's arguments, and obtaining inference follow with a worked example below.
+
+# Worked example - 1 region
+
+We start by loading the example simulated dataset included in the R2BGLiMS package.
+
+```{r}
+library(R2BGLiMS)
+data(JAM_Example)
+```
+
+One-a-a-time SNP effect estimates from an analysis of `n=1,000` people for 20 SNPs, divided into two regions (`snps.region1` and `snps.region2`) are stored in `marginal.betas`. The true effects used in the simulations are stored in `true.betas`. You can see the level of confounding due to LD by comparing `marginal.betas` vs `true.betas`. For region 1 a single effect at SNP 5 was simulated, and for region 2 two effects were simulated. 
+
+## JAM's main arguments
+
+JAM requires the following key arguments:
+
+* `marginal.betas`: The pubished SNP effecs from one at-a-time regressions
+* `X.ref`: A reference genotype matrix
+* `model.space.prior`: Prior over the model space to use for Bayesian model selection
+* `n`: The number of individuals analysed to infer marginal.betas
+
+### `marginal.betas`
+`marginal.betas` is simply a named vector of reported SNP effects. 
+
+### `X.ref`
+
+`X.ref`, the reference individual level genotype matrix, must be numerically coded as risk allele counts 0/1/2 whereby the risk allele corresponds to `marginal.betas`. See, for example, the first 3 rows of the example reference matrix for region 1:
+
+```{r}
+X.ref.region1[1:3,snps.region1]
+```
+
+### `model.space.priors`
+To facilitate the Bayesian model selection, a probabilistic prior over the set of possible models, i.e. causal SNP combinations, must be specified using `model.space.prior`. JAM allows two opions:
+
+1) A fixed prior proportion of "causal" SNPs, which results in a Poisson prior probability distribution over different model sizes. This can be provided to JAM as a list, e.g:
+
+```{r}
+model.space.prior = list("Rate"=0.1, "Variables"=snps.region1)
+```
+
+2) Treat the prior proporion of "causal" SNPs, as unknown with a Beta hyper-prior. A Beta(1,1) prior corresponds to a flat uniform distribution and may be a sensible choice. To impose sparsity, an informative prior for smaller values of $\theta$ can be used by choosing higher values of the second hyper-parameter, eg Beta(1,10) or Beta(1,100). This choice is specified by using a list of the format:
+
+```{r}
+model.space.prior = list("a"=1, "b"=1, "Variables"=snps.region1)
+```
+
+## Running JAM
+
+### Stochastic model search
+
+A re-analysis of the example region 1 marginal effects proceeds as follows. Note that an uniformative beta-binomial prior is used for the model space:
+
+```{r, results="hide", cache=TRUE}
+region1.results <- JAM(
+  marginal.betas=marginal.betas[snps.region1],
+  X.ref=X.ref.region1,
+  model.space.prior = list("a"=1, "b"=1, "Variables"=snps.region1),
+  n.mil=1,
+  n=1000)
+```
+
+Posterior probabilities for different SNPs and SNP combinations are obtained, by default, from `n.mil` million iterations of a stochastic model search. Convergence/mixing can be checked using the `AutocorrelationPlot` function. The plot indicates inclusion in the model of the different covariates at different iterations; iterations are ordered vertically, and covariates along the X-axis. If the reversible jump MCMC is mixing well (as below), covariates should be regularly jumping in and out, and not "sticking". The top part of the plot indicates the marginal posterior probability of association for each covariate. Note that JAM has correctly identified the 5th SNP as the single simulated causal effect.
+
+```{r, fig.width = 5, fig.height=6}
+AutocorrelationPlot(region1.results, plot.title="Region 1 variable selection trace plot")
+```
+
+A nice summary table of the evidence for each SNP can be obtained using the `PrettyResultsTable` function:
+
+```{r}
+PrettyResultsTable(region1.results)
+```
+
+and a summary of the top supported SNP combinations can be obtained using the `TopModels` command. As expected the top model is one which only includes SNP 5:
+
+```{r}
+PrettyResultsTable(region1.results)
+TopModels(region1.results)
+```
+
+### Posterior inference by exhaustive enumeration of models
+
+Optionally, posterior probabilities can be inferred by exhaustively assessing every model up to a chosen dimenion specified by `enumerate.up.to.dim`. This is an approximate method (since not all possible models are evaluated). However, inference no longer relies on convergence of a stochastic search. This can provide a good check of the stochastic search inference.
+
+```{r, results="hide", cache=TRUE}
+region1.results.enum <- JAM(
+  marginal.betas=marginal.betas[snps.region1],
+  X.ref=X.ref.region1,
+  model.space.prior = list("a"=1, "b"=1, "Variables"=snps.region1),
+  enumerate.up.to.dim=3,
+  n=1000)
+```
+
+Encouragingly, inference is equivalent...
+
+```{r}
+PrettyResultsTable(region1.results.enum)
+```
+
+# Worked example - multiple regions
+
+JAM is designed for simulataneous analysis of multiple regions. The example dataset contains marginal SNP effects, and a reference genotype matrix for a second region with an effect simulated at SNP16. 
+
+## Stochastic search
+
+Running JAM with both regions is straight forward. We start by analysing the data using a stochastic model search. Notice that X.ref is now specified as a list - each element of which contains the reference genotype matrix for a different region:
+
+```{r, results="hide", cache=TRUE}
+two.regions.results <- JAM(
+  marginal.betas=marginal.betas,
+  X.ref=list(X.ref.region1, X.ref.region2),
+  model.space.prior = list("a"=1, "b"=9, "Variables"=c(snps.region1,snps.region2) ),
+  n.mil=1,
+  n=1000)
+```
+
+The autocorrelation plot suggests good mixing:
+
+```{r, fig.width = 5, fig.height=6}
+AutocorrelationPlot(
+  two.regions.results, 
+  plot.title="Region 1 & 2 variable selection trace plot")
+```
+
+and JAM has correctly placed compelling evidence at both causal SNPs:
+
+```{r}
+PrettyResultsTable(two.regions.results)
+```
+
+## Exhaustive model enumaration
+
+As a sensitivity analysis we re-analyse the two regions using model enumeration. For multiple regions, under the block independence assumption, the enumeration is carried out within each region independently and then posterior probabilities are combined:
+
+```{r, results="hide", cache=TRUE}
+two.regions.results.enum <- JAM(
+  marginal.betas=marginal.betas,
+  X.ref=list(X.ref.region1, X.ref.region2),
+  model.space.prior = list("a"=1, "b"=9, "Variables"=c(snps.region1,snps.region2) ),
+  enumerate.up.to.dim=3,
+  n=1000)
+```
+
+Results are very similar to above:
+```{r}
+PrettyResultsTable(two.regions.results.enum)
+```

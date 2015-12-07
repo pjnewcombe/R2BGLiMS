@@ -11,7 +11,7 @@ ManhattanPlot(results = NULL, plot.quantity = "PosteriorProbability",
   suppress.x.ticks = FALSE)
 }
 \arguments{
-\item{results}{Reversible Jump results object from running \code{\link{R2BGLiMS}}.}
+\item{results}{A \code{\link[R2BGLiMS]{R2BGLiMS_Results-class}} object frum running the \code{\link[R2BGLiMS]{R2BGLiMS}} command.}
 
 \item{plot.quantity}{Can be "PosteriorProbability" (default), "BayesFactor", "ABF", or "pvalue". The
 latter is implemented to allow easy comparison between analysis frameworks using the same plot style,
@@ -21,13 +21,6 @@ Wakefield, J. (2009). "Bayes factors for genome-wide association studies: compar
 Genetic Epidemiology, 33(1), 79–86.}
 
 \item{results.vector}{Alternatively can simply pass a named vector of probabilties}
-
-\item{vars.to.include}{Optional character vector specifying a subset of variables
-to restrict output to.}
-
-\item{var.dictionary}{Alternative covariate names. This must be a character vector,
-named wtih the current covariate names. This can consist of expression functions, e.g. to
-achieve italics or superscripts when passed to a plot function.}
 
 \item{plot.title}{Optional character string to name the plot with}
 

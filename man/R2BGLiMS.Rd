@@ -9,9 +9,9 @@ R2BGLiMS(likelihood = NULL, data = NULL, outcome.var = NULL,
   model.space.priors = NULL, beta.priors = NULL, g.prior = FALSE,
   model.tau = FALSE, tau = NULL, enumerate.up.to.dim = 0, X.ref = NULL,
   marginal.betas = NULL, n = NULL, max.fpr = 1, min.tpr = 0,
-  n.mil = 1, seed = 1, do.chain.plot = FALSE, results.path = NULL,
-  results.label = "R2BGLiMS", extra.arguments = NULL,
-  initial.model = NULL, max.model.dim = -1, debug.path = NULL)
+  n.mil = 1, seed = 1, results.path = NULL, results.label = "R2BGLiMS",
+  extra.arguments = NULL, initial.model = NULL, max.model.dim = -1,
+  debug.path = NULL)
 }
 \arguments{
 \item{likelihood}{Type of model to fit. Current options are
@@ -63,32 +63,21 @@ beta.priors (a matrix/data.frame) can be used to provide fixed priors; rows must
 variable names in the data, and include Guassian prior means and sds in the first and
 second columns respectively.}
 
-\item{g.prior}{CONJUGATE LINEAR REGRESSION ONLY: Gaussian conjugate models ONLY: Whether to use a g-prior for the beta's - i.e. a multivariate normal
-with correlation structure proportional to sigma^2*X'X^-1 or to use independence priors (default = FALSE).}
+\item{g.prior}{Whether to use a g-prior for the beta's - i.e. a multivariate normal
+with correlation structure proportional to sigma^2*X'X^-1 (set to TRUE) or to use independence priors (leave as FALSE).}
 
-\item{model.tau}{CONJUGATE LINEAR REGRESSION ONLY: Gaussian conjugate models ONLY: Whether to model tau or not (default FALSE). If set to true,
+\item{model.tau}{Whether to model tau or not (default FALSE). If set to true,
 then a Zellner-Siow prior is used, centred on the value provide by tau. The value provided in tau is also used as the
 initial value.}
 
-\item{tau}{CONJUGATE LINEAR REGRESSION ONLY: Value to use for sparsity parameter tau (under the tau*sigma^2 parameterisation).
-A recommended default is max(n, P^2) where n is the number of individuals, and P the number of predictors.
-If modelling this parameter, this value is used to center the Zellner-Siow prior
-and as an intial value.}
+\item{tau}{Value to use for sparsity parameter tau (under the tau*sigma^2 parameterisation).
+A recommended default is max(n, P^2) where n is the number of individuals, and P the number of predictors.}
 
-\item{enumerate.up.to.dim}{CONJUGATE LINEAR REGRESSION ONLY: Whether to calculate posterior scores
-for every possible model of dimension up to the integer specified (as an alternative to RJMCMC).
-Currenly maximum allowed dimension is 5.
-Leaving at 0 means this is not carried out.}
+\item{enumerate.up.to.dim}{Whether to make posterior inference by exhaustively calculating
+the posterior support for every possible model up to this dimension. Leaving at 0 to disable
+and use RJMCMC instead. The current maximum allowed value is 5.}
 
-\item{X.ref}{JAM ONLY: Reference genotype matrix with which to impute the SNP-SNP correlations. If multiple regions are to be
-analysed this should be a list containing reference genotype matrices for each region. Individual's genotype
-must be coded as a numeric risk allele count 0/1/2. Non-integer values reflecting imputation may be given.
-NB: The risk allele coding MUST correspond to that used in marginal.betas. These matrices must each be positive definite and
-the column names must correspond to the names of the marginal.betas vector.}
-
-\item{marginal.betas}{JAM ONLY: Vector of marginal effect estimates.}
-
-\item{n}{JAM ONLY: Sample size which marginal effects came from.}
+\item{marginal.betas}{Vector of marginal effect estimates to re-analyse with JAM under multivariate models.}
 
 \item{max.fpr}{ROC AUC ONLY: Maximum acceptable false positive rate (or x-axis value) to optimise a truncated ROC AUC.}
 
@@ -97,8 +86,6 @@ the column names must correspond to the names of the marginal.betas vector.}
 \item{n.mil}{Number of million iterations to run (default is 1)}
 
 \item{seed}{Which random number seed to use in the RJMCMC sampler.}
-
-\item{do.chain.plot}{Whether to produce a PDF containing chain plots. Default FALSE.}
 
 \item{results.path}{Optional path if wish to to save algorithm output.}
 
@@ -115,11 +102,18 @@ and the null model is used. If set to 1, the saturated model is used.}
 
 \item{debug.path}{Optional path to save the data and results files to (rather than as temporary files), for aid in
 debugging.}
+
+\item{X.ref:}{Reference genotype matrix used by JAM to impute the SNP-SNP correlations. If multiple regions are to be
+analysed this should be a list containing reference genotype matrices for each region. Individual's genotype
+must be coded as a numeric risk allele count 0/1/2. Non-integer values reflecting imputation may be given.
+NB: The risk allele coding MUST correspond to that used in marginal.betas. These matrices must each be positive definite and
+the column names must correspond to the names of the marginal.betas vector.}
+
+\item{n:}{Sample size which marginal.betas were calculated in.}
 }
 \value{
-A Reversible Jump results object is returned. This is a list of two elements: "args" which records various modelling
-arguments used in the analysis, and "results" - a matrix containing all saved posterior samples from the analysis. Columns
-correspond to parameters and each row contains values from a particular itertation, with 0 indicating exclusion from the model.
+A R2BGLiMS_Results class object is returned. See the slot 'posterior.summary.table' for a posterior
+summary of all parameters.
 
 The function \code{\link{PrettyResultsTable}} can be used to print summary posterior results for all parameters. Other functions
 for summarising results are listed under "see also".
@@ -148,7 +142,7 @@ lm.hierarchical.prior.results <- R2BGLiMS(
   likelihood="Gaussian", data=data, outcome.var="y", confounders="confounder",
   model.space.priors = poisson.model.space.prior
 )
-PrettyResultsTable(lm.hierarchical.prior.results, measure="Effect")
+PrettyResultsTable(lm.hierarchical.prior.results)
 # Re-analyse using fixed priors
 # (not enough covariates to estimate effect variance)
 beta.priors <- data.frame(
@@ -158,7 +152,7 @@ lm.fixed.prior.results <- R2BGLiMS(
   likelihood="Gaussian", data=data, outcome.var="y", confounders="confounder",
   model.space.priors = poisson.model.space.prior,
   beta.priors=beta.priors)
-PrettyResultsTable(lm.fixed.prior.results, measure="Effect") # Mixing seems a little poorer
+PrettyResultsTable(lm.fixed.prior.results) # Mixing seems a little poorer
 # Re-analyse using the conjugate Gaussian model
 # Only models are sampled: effects are analytically integrated out
 lm.conjugate.results <- R2BGLiMS(
@@ -175,6 +169,7 @@ posterior.sample <- NormInvGamPosteriorSample(
   model=c("V1"),tau=100)
 # Median and credible interval
 round(quantile(posterior.sample[,"V1"],c(0.5, 0.025, 0.975)),2)
+# Clearly excludes 0
 
 ### --- Logistic regression with two model space prior partitions
 # Example dataset from MASS
@@ -183,7 +178,7 @@ utils::data(biopsy, package = "MASS")
 for (v in paste("V",c(1:9),sep="")) {
   biopsy[,v] <- (biopsy[,v]-mean(biopsy[,v],na.rm=T))/sd(biopsy[,v],na.rm=T)
 }
-biopsyResults <- R2BGLiMS(
+biopsyResults <- R2BGLiMS( # Takes a few minutes to run
   likelihood="Logistic", data=biopsy, outcome.var="class",
   model.space.priors=list(
     list("Rate"=0.5, "Variables"=paste("V",c(1:3),sep="")),
@@ -229,7 +224,7 @@ TopModels(va.results.cox)
 Paul Newcombe
 }
 \seealso{
-For summary results of covariates see \code{\link{ResultsTable}},
+For a nicer summary of all covariates see
 \code{\link{PrettyResultsTable}} and \code{\link{ManhattanPlot}}. For posterior model space
 summaries see \code{\link{ModelSizes}} and \code{\link{TopModels}}. For convergence check
 plots see \code{\link{ChainPlots}} and \code{\link{AutocorrelationPlot}}.

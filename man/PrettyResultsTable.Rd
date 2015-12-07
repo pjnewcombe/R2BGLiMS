@@ -5,18 +5,11 @@
 \title{A pretty summary results table for reports - note that entries are formatted as character strings so,
 for processing results use \code{\link{ResultsTable}}.}
 \usage{
-PrettyResultsTable(results, stochastic.search.probs = TRUE,
-  round.digits.betas = 2, round.digits.postprob = 2, round.digits.bf = 1,
-  measure = "OR", vars.to.include = NULL, var.dictionary = NULL,
-  normalised.sds = NULL, post.prob.cut = NULL, abbreviated.names = FALSE,
-  remove.col.white.spaces = FALSE)
+PrettyResultsTable(results, round.digits.betas = 2,
+  round.digits.postprob = 2, round.digits.bf = 1, normalised.sds = NULL)
 }
 \arguments{
-\item{results}{Reversible Jump results object from running \code{\link{R2BGLiMS}}.}
-
-\item{stochastic.search.probs}{JAM ONLY: Whether to calculate posterior probabilities according
-to the stochastic Reversible Jump search (set to TRUE), or approximately according to exhaustive enumeration
-of all models up to a chosen dimension (set to FALSE).}
+\item{results}{A \code{\link[R2BGLiMS]{R2BGLiMS_Results-class}} object frum running the \code{\link[R2BGLiMS]{R2BGLiMS}} command.}
 
 \item{round.digits.betas}{Number of decimal places to include for effect estimates. (Default is 2)}
 
@@ -24,28 +17,13 @@ of all models up to a chosen dimension (set to FALSE).}
 
 \item{round.digits.bf}{Number of decimal places to include for Bayes factors. (Default is 1)}
 
-\item{measure}{Abbreviated measure to include in column titles, e.g. "HR". (Default is "OR")}
-
-\item{vars.to.include}{Optional character vector specifying a subset of variables
-to restrict output to.}
-
-\item{var.dictionary}{Alternative covariate names. This must be a character vector,
-named wtih the current covariate names. This can consist of expression functions, e.g. to
-achieve italics or superscripts when passed to a plot function.}
-
-\item{normalised.sds}{If variables were normalised (e.g. to facilitate use of a common
-unknown prior on their effects), a named vector of their original sds can be provided
-such that estimates returned may be interpreted on the original scale.}
-
-\item{post.prob.cut}{Optionally can provide a  posterior probability threshold for including
-predictors in the table for which model selection has been performed for.}
-
-\item{abbreviated.names}{Use abbreviated names for Posterior Probability and Bayes Factors columns? (Default is FALSE)}
-
-\item{remove.col.white.spaces}{Should the column titles have no white spaces? (Default is FALSE)}
+\item{normalised.sds}{If covariates were normalised by their standard deviation, provide a named
+vector of the standard deviations on the original scale using this argument. Effects in the resulting
+table will then be interpretable according to unit changes on each covariate's original scale, rather
+than according to standard deviation changes.}
 }
 \value{
-Prints a nice summary results table
+A nice summary results table.
 }
 \description{
 Creates a `pretty' summary results table from a Reversible Jump results object

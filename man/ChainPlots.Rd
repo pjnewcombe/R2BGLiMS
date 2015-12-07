@@ -9,14 +9,7 @@ ChainPlots(results, vars.to.include = NULL, var.dictionary = NULL,
   par.mfrow = NULL, add.panel.labels = FALSE)
 }
 \arguments{
-\item{results}{Reversible Jump results object from running \code{\link{R2BGLiMS}}.}
-
-\item{vars.to.include}{Optional character vector specifying a subset of variables
-to restrict output to.}
-
-\item{var.dictionary}{Alternative covariate names. This must be a character vector,
-named wtih the current covariate names. This can consist of expression functions, e.g. to
-achieve italics or superscripts when passed to a plot function.}
+\item{results}{A \code{\link[R2BGLiMS]{R2BGLiMS_Results-class}} object frum running the \code{\link[R2BGLiMS]{R2BGLiMS}} command.}
 
 \item{predictors.only}{If true only chain plots for predictors are plotted (and intercept,
 likelihood etc. are excluded). Default is FALSE.}

@@ -1,11 +1,8 @@
-#' @include ResultsTable.R
-NULL
-
 #' Produces a Manhattan plot of marginal predictor evidence from a Reversible Jump Results object.
 #' @export
 #' @title Manhattan Plot
 #' @name ManhattanPlot
-#' @inheritParams ResultsTable
+#' @param results A \code{\link[R2BGLiMS]{R2BGLiMS_Results-class}} object frum running the \code{\link[R2BGLiMS]{R2BGLiMS}} command.
 #' @param plot.quantity Can be "PosteriorProbability" (default), "BayesFactor", "ABF", or "pvalue". The
 #' latter is implemented to allow easy comparison between analysis frameworks using the same plot style,
 #' and only works if a vector of p-values is supplied. ABF is for plotting Approximate Bayes Factors
@@ -65,12 +62,9 @@ ManhattanPlot <- function(
   if (!is.null(results)) {
     # By default exclude these boring modelling parameters
     if (is.null(vars.to.include)) {
-      exclude.man <- c("LogWeibullScale", "alpha", "LogLikelihood",
-        paste("LogBetaPriorSd",c(1:results$args$nRjComp), sep="")
-      )
-      vars.to.include <- colnames(results$results)[!colnames(results$results)%in%exclude.man]
+      vars.to.include <- unlist(lapply(results@model.space.priors, function(x) x$Variables))
     }
-    results.table <- ResultsTable(results)
+    results.table <- results@posterior.summary.table
     results.table <- results.table[vars.to.include,]
     if (plot.quantity=="PosteriorProbability") {
       results.vector <- results.table[,"PostProb"]      

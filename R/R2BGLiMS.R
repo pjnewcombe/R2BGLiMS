@@ -1,4 +1,4 @@
-#' @include ResultsTable.R
+#' @include HiddenFunctions.R
 NULL
 
 #' Calls BGLiMS - a Java package for fitting GLMs under Bayesian model selection. NOTE: The predictors to explore with model
@@ -50,31 +50,27 @@ NULL
 #' beta.priors (a matrix/data.frame) can be used to provide fixed priors; rows must be named with the corresponding 
 #' variable names in the data, and include Guassian prior means and sds in the first and 
 #' second columns respectively.
-#' @param g.prior CONJUGATE LINEAR REGRESSION ONLY: Gaussian conjugate models ONLY: Whether to use a g-prior for the beta's - i.e. a multivariate normal 
-#' with correlation structure proportional to sigma^2*X'X^-1 or to use independence priors (default = FALSE).
-#' @param model.tau CONJUGATE LINEAR REGRESSION ONLY: Gaussian conjugate models ONLY: Whether to model tau or not (default FALSE). If set to true,
+#' @param g.prior Whether to use a g-prior for the beta's - i.e. a multivariate normal 
+#' with correlation structure proportional to sigma^2*X'X^-1 (set to TRUE) or to use independence priors (leave as FALSE).
+#' @param model.tau Whether to model tau or not (default FALSE). If set to true,
 #' then a Zellner-Siow prior is used, centred on the value provide by tau. The value provided in tau is also used as the
 #' initial value.
-#' @param tau CONJUGATE LINEAR REGRESSION ONLY: Value to use for sparsity parameter tau (under the tau*sigma^2 parameterisation).
+#' @param tau Value to use for sparsity parameter tau (under the tau*sigma^2 parameterisation).
 #' A recommended default is max(n, P^2) where n is the number of individuals, and P the number of predictors. 
-#' If modelling this parameter, this value is used to center the Zellner-Siow prior
-#' and as an intial value.
-#' @param enumerate.up.to.dim CONJUGATE LINEAR REGRESSION ONLY: Whether to calculate posterior scores
-#' for every possible model of dimension up to the integer specified (as an alternative to RJMCMC). 
-#' Currenly maximum allowed dimension is 5. 
-#' Leaving at 0 means this is not carried out. 
-#' @param X.ref JAM ONLY: Reference genotype matrix with which to impute the SNP-SNP correlations. If multiple regions are to be 
+#' @param enumerate.up.to.dim Whether to make posterior inference by exhaustively calculating
+#' the posterior support for every possible model up to this dimension. Leaving at 0 to disable
+#' and use RJMCMC instead. The current maximum allowed value is 5.
+#' @param X.ref: Reference genotype matrix used by JAM to impute the SNP-SNP correlations. If multiple regions are to be 
 #' analysed this should be a list containing reference genotype matrices for each region. Individual's genotype
 #' must be coded as a numeric risk allele count 0/1/2. Non-integer values reflecting imputation may be given.
 #' NB: The risk allele coding MUST correspond to that used in marginal.betas. These matrices must each be positive definite and
 #' the column names must correspond to the names of the marginal.betas vector.
-#' @param marginal.betas JAM ONLY: Vector of marginal effect estimates.
-#' @param n JAM ONLY: Sample size which marginal effects came from.
+#' @param marginal.betas Vector of marginal effect estimates to re-analyse with JAM under multivariate models.
+#' @param n: Sample size which marginal.betas were calculated in.
 #' @param max.fpr ROC AUC ONLY: Maximum acceptable false positive rate (or x-axis value) to optimise a truncated ROC AUC.
 #' @param min.tpr ROC AUC ONLY: Minimum acceptable true positive rate, i.e. sensitivity (or y-axis value) to optimise a truncated ROC AUC.
 #' @param n.mil Number of million iterations to run (default is 1)
 #' @param seed Which random number seed to use in the RJMCMC sampler.
-#' @param do.chain.plot Whether to produce a PDF containing chain plots. Default FALSE.
 #' @param results.path Optional path if wish to to save algorithm output.
 #' @param results.label Optional label for algorithm output files (if you have specified results.path).
 #' @param extra.arguments A named list of any additional arguments for BGLiMS. Type "data(DefaultArguments)" and look in the 
@@ -86,14 +82,13 @@ NULL
 #' @param debug.path Optional path to save the data and results files to (rather than as temporary files), for aid in
 #' debugging.
 #' 
-#' @return A Reversible Jump results object is returned. This is a list of two elements: "args" which records various modelling
-#' arguments used in the analysis, and "results" - a matrix containing all saved posterior samples from the analysis. Columns
-#' correspond to parameters and each row contains values from a particular itertation, with 0 indicating exclusion from the model.
+#' @return A R2BGLiMS_Results class object is returned. See the slot 'posterior.summary.table' for a posterior
+#' summary of all parameters.
 #' 
 #' The function \code{\link{PrettyResultsTable}} can be used to print summary posterior results for all parameters. Other functions
 #' for summarising results are listed under "see also".
 #' 
-#' @seealso For summary results of covariates see \code{\link{ResultsTable}},
+#' @seealso For a nicer summary of all covariates see 
 #' \code{\link{PrettyResultsTable}} and \code{\link{ManhattanPlot}}. For posterior model space
 #' summaries see \code{\link{ModelSizes}} and \code{\link{TopModels}}. For convergence check
 #' plots see \code{\link{ChainPlots}} and \code{\link{AutocorrelationPlot}}.
@@ -122,7 +117,6 @@ R2BGLiMS <- function(
   min.tpr=0,
   n.mil=1,
   seed=1,
-  do.chain.plot=FALSE,
   results.path=NULL,
   results.label="R2BGLiMS",
   extra.arguments=NULL,
@@ -196,10 +190,12 @@ R2BGLiMS <- function(
     for (c in 1:length(model.space.priors)) {
       no.prior.family <- TRUE
       if ("a"%in%names(model.space.priors[[c]])&"b"%in%names(model.space.priors[[c]])) {
-        no.prior.family <- FALSE        
+        no.prior.family <- FALSE
+        model.space.priors[[c]]$Family <- "Poisson"
       }
       if ("Rate"%in%names(model.space.priors[[c]])) {
         no.prior.family <- FALSE        
+        model.space.priors[[c]]$Family <- "BetaBinomial"
       }
       if (no.prior.family) {
         stop("Each model.space.prior list(s) must contain either named a and b elements to sepecify a beta-binomial prior, or a named Rate element to specify a Poisson prior")
@@ -265,6 +261,7 @@ R2BGLiMS <- function(
     if (max(unlist(X.ref))>2 | min(unlist(X.ref)) < 0) {stop("Reference genotype matrices must be coded coded as risk allele counts in the 0 to 2 range")}
     if (sum(names(marginal.betas) %in% unlist(lapply(X.ref, colnames))) < length(marginal.betas)) {stop("Reference genotype matrices do not include all SNPs in the marginal.betas vector")}
   }
+  
   # Setup file paths
   pack.root <- path.package("R2BGLiMS")
   bayesglm.jar <- paste(pack.root,"/BGLiMS/BGLiMS.jar",sep="")
@@ -356,7 +353,9 @@ R2BGLiMS <- function(
   
   #########################
   #########################
+  #########################
   ### --- JAM Setup --- ###
+  #########################
   #########################
   #########################
   
@@ -490,47 +489,142 @@ R2BGLiMS <- function(
   secs <- round(t2-t1-hrs*60*60 - mins*60)
   cat(paste("\nBGLiMS analysis finished in",hrs,"hrs",mins,"mins and",secs,"seconds"))
   
-  ### --- Results processing
-  cat("\nProcessing BGLiMS output...")
-  t1 <- proc.time()["elapsed"]
-  results <- .ReadResults(
-    results.file=results.file,
-    first.n.mil.its=NULL)
-  if (do.chain.plot) {ChainPlots(results, plot.file=plot.file)}
-  t2 <- proc.time()["elapsed"]
-  results.processing.time <- t2-t1
-  hrs <-floor( (t2-t1)/(60*60) )
-  mins <- floor( (t2-t1-60*60*hrs)/60 )
-  secs <- round(t2-t1-hrs*60*60 - mins*60)
-  cat(paste("\nResults processed in",hrs,"hrs",mins,"mins and",secs,"seconds"))
+  ##################################
+  ##################################
+  ##################################
+  ### --- Results processing --- ###
+  ##################################
+  ##################################
+  ##################################
   
-  # Clean up
+  cat("\n\nReading in the BGLiMS results file...\n")  
+  t1 <- proc.time()["elapsed"]
+  results <- list()  # Initialise list
+  
+  ### --- Read BGLiMS arguments
+  bglims.arguments <- as.list(read.table(results.file, header=T, sep=" ", nrows=1))
+  bglims.arguments$Likelihood <- as.character(bglims.arguments$Likelihood)
+  bglims.arguments$ModelSpacePriorFamily <- as.character(bglims.arguments$ModelSpacePriorFamily)  
+
+  n.lines.until.rjmcmc.output <- 3 # There are always three lines of meta-data
+  enumerated.posterior.inference <- list("No enumeration was done.")
+  if (enumerate.up.to.dim>0) {
+    ### -- Read enumerated posterior scores
+    enumerated.model.posterior.scores <- NULL
+    for (max.model.dimension in c(0:enumerate.up.to.dim)) { # From 0 to account for the null model
+      n.models.this.dimension <- choose(bglims.arguments$V - bglims.arguments$startRJ, max.model.dimension)
+      model.scores.this.dimension <- read.table(
+        results.file,
+        skip = n.lines.until.rjmcmc.output,
+        header=FALSE,
+        nrows=n.models.this.dimension)    
+      n.lines.until.rjmcmc.output <- n.lines.until.rjmcmc.output+n.models.this.dimension
+      enumerated.model.posterior.scores <- rbind(enumerated.model.posterior.scores, model.scores.this.dimension)    
+    }
+    colnames(enumerated.model.posterior.scores) <- c("Model", "PosteriorScore")
+    enumerated.model.posterior.scores$Model <- as.character(enumerated.model.posterior.scores$Model)
+    enumerated.posterior.inference <- .ApproxPostProbsByModelEnumeration(enumerated.model.posterior.scores, model.space.priors, enumerate.up.to.dim)
+  }
+  
+  ### --- Read MCMC output
+  n.rows.written <- bglims.arguments$iterations/bglims.arguments$thin
+  bglims.rjmcmc.output <- read.table(
+    results.file,
+    skip = n.lines.until.rjmcmc.output,
+    header=TRUE,
+    nrows=n.rows.written)
+  Lhalf <- round(nrow(bglims.rjmcmc.output)/2)     	 # Burnin is a half	
+  bglims.rjmcmc.output <- bglims.rjmcmc.output[(Lhalf+1):nrow(bglims.rjmcmc.output),]   # Remove burnin
+
+  cat("... finished reading BGLiMS results.\n")  
+  
+  ### --- Summary table
+  posterior.summary.table <- matrix(NA,ncol(bglims.rjmcmc.output),8)
+  colnames(posterior.summary.table) = c("PostProb","Median","CrI_Lower","CrI_Upper",
+    "Median_Present","CrI_Lower_Present","CrI_Upper_Present","BF")
+  rownames(posterior.summary.table) <- colnames(bglims.rjmcmc.output)
+  # Prior probabilties - used for Bayes Factors below
+  prior.probs <- rep(NA, nrow(posterior.summary.table))
+  names(prior.probs) <- rownames(posterior.summary.table)
+  for (c in 1:length(model.space.priors)) {
+    if ("Rate" %in% names(model.space.priors[[c]]) ) {
+      prior.probs[model.space.priors[[c]]$Variables] <- .ModelSpaceSpecProb(length(model.space.priors[[c]]$Variables), model.space.priors[[c]]$Rate)
+    } else {
+      prior.probs[model.space.priors[[c]]$Variables] <- model.space.priors[[c]]$a/(model.space.priors[[c]]$a + model.space.priors[[c]]$b)                
+    }
+  }
+  # Fill in the summary table
+  for (v in rownames(posterior.summary.table)) {
+    posterior.summary.table[v,c("CrI_Lower", "Median", "CrI_Upper")] <- quantile(bglims.rjmcmc.output[,v],c(0.025, 0.5, 0.975))
+    posterior.summary.table[v,c("CrI_Lower_Present", "Median_Present", "CrI_Upper_Present")] <- quantile(bglims.rjmcmc.output[,v][bglims.rjmcmc.output[,v]!=0],c(0.025, 0.5, 0.975) )
+    if (v %in% unlist(lapply(model.space.priors, function(x) x$Variables))) {
+      posterior.summary.table[v,"PostProb"] <- length( bglims.rjmcmc.output[,v][bglims.rjmcmc.output[,v]!=0] ) / nrow(bglims.rjmcmc.output)      
+      if (enumerate.up.to.dim>0) {
+        # Replace with enumeration probs
+        posterior.summary.table[v,"PostProb"] <- enumerated.posterior.inference$marg.probs[v]
+      }
+      posterior.summary.table[v,"BF"] <- .BayesFactor(prior.probs[v], posterior.summary.table[v,"PostProb"])
+      if (likelihood %in% c("Weibull", "Cox", "Logistic", "RocAUC", "RocAUC_Testing") ) {
+        # Exponentiate quantiles
+        posterior.summary.table[v,c("CrI_Lower", "Median", "CrI_Upper","CrI_Lower_Present", "Median_Present","CrI_Upper_Present")] <- exp(posterior.summary.table[v,c("CrI_Lower", "Median", "CrI_Upper","CrI_Lower_Present", "Median_Present","CrI_Upper_Present")])
+      }
+    }
+  }
+  
+  t2 <- proc.time()["elapsed"]  
+  results.processing.time <- t2-t1
+  
+  ########################
+  ########################
+  ### --- Clean up --- ###
+  ########################
+  ########################
+  
   cat("\nCleaning up...")
   if(clean.up.arguments) { system(paste("rm -rf ",arguments.path, sep="")) }
   if(clean.up.data) { system(paste("rm -rf ",data.path, sep="")) }
   if(clean.up.results) { system(paste("rm -rf ",results.path, sep="")) } else {
     results[["raw.results.file"]] <- results.file
   }
+  hrs <-floor( (t2-t1)/(60*60) )
+  mins <- floor( (t2-t1-60*60*hrs)/60 )
+  secs <- round(t2-t1-hrs*60*60 - mins*60)
+  cat(paste("\nResults processed in",hrs,"hrs",mins,"mins and",secs,"seconds"))
   
-  # Append extra information to results object
-  results$args$model.selection <- model.selection
-  results$args$mcmc.seed <- seed
-  results$args$model.space.priors <- model.space.priors
-  results$args$confounders <- confounders
-  results$args$predictors <- predictors
-  results$run.times <- list()
-  results$run.times$write.time <- write.time
-  results$run.times$bglims.time <- bglims.time
-  results$run.times$results.processing.time <- results.processing.time
-  if (enumerate.up.to.dim>0) {
-    results$approx.probs <- EnumeratedApproxPostProbs(results)
-  }
+  #########################
+  #########################
+  ### --- Run times --- ###
+  #########################
+  #########################
   
-  # Append rsults table to results object
-  results$results.table <- ResultsTable(results, stochastic.search.probs=TRUE)
-  if (likelihood %in% c("JAM", "GaussianConj") & enumerate.up.to.dim>0) {
-    results$results.table.enum <- ResultsTable(results, stochastic.search.probs=FALSE)    
+  run.times <- list()
+  run.times$write.time <- write.time
+  run.times$bglims.time <- bglims.time
+  run.times$results.processing.time <- results.processing.time
+  
+  ################################
+  ################################
+  ### --- Create S4 Object --- ###
+  ################################
+  ################################
+  if (is.null(confounders)) {
+    confounders <- c("None")
   }
+  results <- new(
+    "R2BGLiMS_Results",
+    likelihood = likelihood,
+    posterior.summary.table = posterior.summary.table,
+    enumerate.up.to.dim = enumerate.up.to.dim,
+    enumerated.posterior.inference = enumerated.posterior.inference,
+    n.iterations = n.its,
+    thin = bglims.arguments$thin,
+    model.space.priors = model.space.priors,
+    confounders = confounders,
+    run.times=run.times,
+    n.covariate.blocks.for.jam = 1,
+    bglims.arguments=bglims.arguments,
+    bglims.rjmcmc.output=bglims.rjmcmc.output
+    )
   
   return(results)
 }

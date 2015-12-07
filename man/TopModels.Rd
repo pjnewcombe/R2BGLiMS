@@ -4,29 +4,16 @@
 \alias{TopModels}
 \title{Table of top models}
 \usage{
-TopModels(results, vars.to.include = NULL, n.top.models = 20,
-  post.prob.digits = 1, for.latex = FALSE, present.character = "X",
-  post.prob.label = "Posterior Probability", remove.empty.cols = TRUE)
+TopModels(results, n.top.models = 20, remove.empty.cols = TRUE)
 }
 \arguments{
-\item{results}{Reversible Jump results object from running \code{\link{R2BGLiMS}}.}
-
-\item{vars.to.include}{A list of variables to restrict to when calculating the model space. Otherwise
-models are inferred with respect to the complete model space analysed}
+\item{results}{A \code{\link[R2BGLiMS]{R2BGLiMS_Results-class}} object frum running the \code{\link[R2BGLiMS]{R2BGLiMS}} command.}
 
 \item{n.top.models}{number of top models to include in the table (default 20)}
-
-\item{post.prob.digits}{number of digits to round to for posterior percetage column (default 1)}
-
-\item{for.latex}{Set to true if passing to xtable, and a doublebackslash will be included
-in front of the percentage sign, and $\\bullet$ will be used as the present symbol}
-
-\item{present.character}{character to indicate when a variable is present}
-
-\item{post.prob.label}{Can specify how the post prob should be labelled (if width is a problem)}
 }
 \value{
-Ordered table of best models, with corresponding posterior probabilities.
+Ordered table of best models, with corresponding posterior probabilities. If JAM
+was run with multiple covariate blocks, a list of model tables is returned.
 }
 \description{
 Generates a table of the top models from a Reversible Jump Results object.
