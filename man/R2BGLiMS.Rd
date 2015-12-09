@@ -9,9 +9,8 @@ R2BGLiMS(likelihood = NULL, data = NULL, outcome.var = NULL,
   model.space.priors = NULL, beta.priors = NULL, g.prior = FALSE,
   model.tau = FALSE, tau = NULL, enumerate.up.to.dim = 0, X.ref = NULL,
   marginal.betas = NULL, n = NULL, max.fpr = 1, min.tpr = 0,
-  n.mil = 1, seed = 1, results.path = NULL, results.label = "R2BGLiMS",
-  extra.arguments = NULL, initial.model = NULL, max.model.dim = -1,
-  debug.path = NULL)
+  n.mil = 1, seed = 1, extra.arguments = NULL, initial.model = NULL,
+  max.model.dim = -1, results.label = NULL, save.path = NULL)
 }
 \arguments{
 \item{likelihood}{Type of model to fit. Current options are
@@ -87,10 +86,6 @@ and use RJMCMC instead. The current maximum allowed value is 5.}
 
 \item{seed}{Which random number seed to use in the RJMCMC sampler.}
 
-\item{results.path}{Optional path if wish to to save algorithm output.}
-
-\item{results.label}{Optional label for algorithm output files (if you have specified results.path).}
-
 \item{extra.arguments}{A named list of any additional arguments for BGLiMS. Type "data(DefaultArguments)" and look in the
 "default.arguments" list to see the names (which must match) and default values of available extra arguments. Currently these
 are not documented - please contact the package author, Paul Newcombe for details.}
@@ -100,8 +95,10 @@ and the null model is used. If set to 1, the saturated model is used.}
 
 \item{max.model.dim}{Optional specification of maximum model dimension (default -1 means no maximum is set).}
 
-\item{debug.path}{Optional path to save the data and results files to (rather than as temporary files), for aid in
-debugging.}
+\item{results.label}{Optional label for algorithm output files (if you have specified save.path).}
+
+\item{save.path}{Optional path to save BGLiMS's data and results files. These are usually written as temporary files, and deleted
+after running R2BGLiMS. However, this option might help for debugging.}
 
 \item{X.ref:}{Reference genotype matrix used by JAM to impute the SNP-SNP correlations. If multiple regions are to be
 analysed this should be a list containing reference genotype matrices for each region. Individual's genotype

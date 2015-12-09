@@ -71,16 +71,15 @@ NULL
 #' @param min.tpr ROC AUC ONLY: Minimum acceptable true positive rate, i.e. sensitivity (or y-axis value) to optimise a truncated ROC AUC.
 #' @param n.mil Number of million iterations to run (default is 1)
 #' @param seed Which random number seed to use in the RJMCMC sampler.
-#' @param results.path Optional path if wish to to save algorithm output.
-#' @param results.label Optional label for algorithm output files (if you have specified results.path).
+#' @param results.label Optional label for algorithm output files (if you have specified save.path).
 #' @param extra.arguments A named list of any additional arguments for BGLiMS. Type "data(DefaultArguments)" and look in the 
 #' "default.arguments" list to see the names (which must match) and default values of available extra arguments. Currently these 
 #' are not documented - please contact the package author, Paul Newcombe for details.
 #' @param initial.model Optionally, an initial model can be provided as a vector of 0's and 1's. Default is NULL
 #' and the null model is used. If set to 1, the saturated model is used.
 #' @param max.model.dim Optional specification of maximum model dimension (default -1 means no maximum is set).
-#' @param debug.path Optional path to save the data and results files to (rather than as temporary files), for aid in
-#' debugging.
+#' @param save.path Optional path to save BGLiMS's data and results files. These are usually written as temporary files, and deleted
+#' after running R2BGLiMS. However, this option might help for debugging.
 #' 
 #' @return A R2BGLiMS_Results class object is returned. See the slot 'posterior.summary.table' for a posterior
 #' summary of all parameters.
@@ -117,12 +116,11 @@ R2BGLiMS <- function(
   min.tpr=0,
   n.mil=1,
   seed=1,
-  results.path=NULL,
-  results.label="R2BGLiMS",
   extra.arguments=NULL,
   initial.model=NULL,
   max.model.dim=-1,
-  debug.path=NULL
+  results.label=NULL,
+  save.path=NULL
 ) {
   
   ###########################
@@ -255,6 +253,21 @@ R2BGLiMS <- function(
     if (!is.list(X.ref)) {
       X.ref <- list(X.ref) # convert to list if there is a single block
     }
+    if (length(X.ref)==1) {
+      qr.decomp <- qr(X.ref[[1]])
+      if (qr.decomp$rank < ncol(X.ref[[1]])) stop ("The reference matrix is not full rank. 
+                                            Ideally a larger reference sample should be used, 
+                                            or you could try pruning correlated SNPs.")
+    } else {
+      for (ld.block in 1:length(X.ref)) {
+        qr.decomp <- qr(X.ref[[ld.block]])
+        if (qr.decomp$rank < ncol(X.ref[[ld.block]])) stop (
+          paste("The reference matrix for block",ld.block,"is not full rank.
+              Ideally a larger reference sample should be used, 
+              or you could try pruning correlated SNPs.")
+        )
+      }
+    }
     if (is.null(marginal.betas)) { stop("For analysis with JAM you must provide a vector of marginal summary statistics") }
     if (is.null(n)) { stop("You must specificy the number of individuals the marginal effect estimates were calculated in.") }
     if (sum(unlist(lapply(X.ref, function(x) !is.numeric(x) )))>0) {stop("Reference genotype matrices must be numeric, coded as risk allele countsin the 0 to 2 range")}
@@ -262,32 +275,29 @@ R2BGLiMS <- function(
     if (sum(names(marginal.betas) %in% unlist(lapply(X.ref, colnames))) < length(marginal.betas)) {stop("Reference genotype matrices do not include all SNPs in the marginal.betas vector")}
   }
   
+  ##########################
+  ##########################
+  ### --- File setup --- ###
+  ##########################
+  ##########################
+  
+  now <-format(Sys.time(), "%b%d%H%M%S") # Used to ensure unique names in the temp directory
+  if (is.null(save.path)) {
+    clean.up.bglims.files <- TRUE
+    arguments.file <- paste(tempfile(),now,"Arguments.txt",sep="_")
+    data.file <- paste(tempfile(),now,"Data.txt",sep="_")
+    results.file <- paste(tempfile(),now,"Results.txt",sep="_")
+  } else {
+    clean.up.bglims.files <- FALSE
+    if (is.null(results.label)) {results.label <- now}
+    arguments.file <- file.path(save.path,paste(results.label,"Arguments.txt",sep="_"))
+    data.file <- file.path(save.path,paste(results.label,"Data.txt",sep="_"))
+    results.file <- file.path(save.path,paste(results.label,"Results.txt",sep="_"))
+  }
+  
   # Setup file paths/sytem command information
-  if (.Platform$OS.type == "windows") {
-    fsep <- "\\"
-    del.command <- "rmdir /s /q"
-  } else {
-    fsep <- "/"
-    del.command <- "rm -rf"
-  }  
   pack.root <- path.package("R2BGLiMS")
-  bayesglm.jar <- file.path(pack.root, "BGLiMS", "BGLiMS.jar", fsep=fsep)
-  if (!is.null(debug.path)) {
-    debug.path <- file.path(debug.path, fsep=fsep)
-    main.path <- debug.path
-    clean.up.data <- FALSE
-    clean.up.results <- FALSE
-    clean.up.arguments <- FALSE
-  } else {
-    main.path <- tempdir()
-    clean.up.data <- TRUE
-    clean.up.results <- TRUE
-    clean.up.arguments <- TRUE
-  }
-  if (!is.null(results.path)) { # Must be run after the above
-    results.path <- file.path(results.path, fsep=fsep)    
-    clean.up.results <- FALSE
-  }
+  bayesglm.jar <- file.path(pack.root, "BGLiMS", "BGLiMS.jar")
   
   ###########################
   ###########################
@@ -344,19 +354,14 @@ R2BGLiMS <- function(
   
   ### --- Write BGLiMS Arguments
   t1 <- proc.time()["elapsed"]
-  now <-format(Sys.time(), "%b%d%H%M%S") # Used to ensure unique names in the temp directory
   # Set arguments
-  load(file.path(pack.root, "data", "DefaultArguments.rda", fsep=fsep))
+  load(file.path(pack.root, "data", "DefaultArguments.rda"))
   if (!is.null(extra.arguments)) {
     for (arg in names(extra.arguments)) {
       cat("Setting user specified argument ",arg,"\n")    
       default.arguments[[arg]] <- extra.arguments[[arg]]
     }    
   }
-  # Setup arguments file
-  arguments.path <- file.path(main.path, paste(results.label,"_Arguments_",now, sep=""), fsep=fsep)
-  try(system(paste("mkdir \"",arguments.path,"\"", sep="")))
-  arguments.file <- file.path(arguments.path, paste(results.label,"_Arguments.txt",sep=""), fsep=fsep)
   # Write arguments
   write(paste(names(default.arguments)[1],default.arguments[[1]]), file = arguments.file)    
   for (arg in names(default.arguments)[-1]) {
@@ -401,49 +406,36 @@ R2BGLiMS <- function(
   }
 
   ### --- Write data
-  data.file <- NULL
-  if (is.null(data.file)) {
-    cat("\nWriting temporary data files...\n")
-    data.path <- file.path(main.path, paste(results.label,"_Data_",now, sep=""), fsep=fsep)      
-    system(paste("mkdir \"",data.path,"\"", sep=""))
-    data.file <- file.path(data.path, paste(results.label,".txt",sep=""), fsep=fsep)
-    .WriteData(
-      data.file=data.file,
-      likelihood=likelihood,
-      data=data,
-      outcome.var=outcome.var,
-      times.var=times.var,
-      confounders=confounders, 
-      predictors=predictors,
-      model.space.priors=model.space.priors,
-      beta.priors=beta.priors,
-      g.prior=g.prior,
-      model.tau=model.tau,
-      tau=tau,
-      enumerate.up.to.dim=enumerate.up.to.dim,
-      xTx=xTx,
-      z=z,
-      max.fpr=max.fpr,
-      min.tpr=min.tpr,
-      initial.model=initial.model
-      )
-    cat("\n...finished writing temporary data files.\n")
-  }
+  cat("\nWriting temporary data files...\n")
+  .WriteData(
+    data.file=data.file,
+    likelihood=likelihood,
+    data=data,
+    outcome.var=outcome.var,
+    times.var=times.var,
+    confounders=confounders, 
+    predictors=predictors,
+    model.space.priors=model.space.priors,
+    beta.priors=beta.priors,
+    g.prior=g.prior,
+    model.tau=model.tau,
+    tau=tau,
+    enumerate.up.to.dim=enumerate.up.to.dim,
+    xTx=xTx,
+    z=z,
+    max.fpr=max.fpr,
+    min.tpr=min.tpr,
+    initial.model=initial.model
+  )
+  cat("\n...finished writing temporary data files.\n")  
+  
   t2 <- proc.time()["elapsed"]
   write.time <- t2-t1
   hrs <-floor( (t2-t1)/(60*60) )
   mins <- floor( (t2-t1-60*60*hrs)/60 )
   secs <- round(t2-t1-hrs*60*60 - mins*60)
   cat(paste("\nData written in",hrs,"hrs",mins,"mins and",secs,"seconds"))
-  
-  ### --- Generate results root filenames
-  if (is.null(results.path)) { # Will write to a temporary directory
-    results.path <- file.path(main.path, paste(results.label,"_Results_",now,sep=""), fsep=fsep)
-  }
-  try(system(paste("mkdir \"",results.path,"\"", sep="")))
-  results.file <- file.path(results.path, paste(results.label,".txt",sep=""), fsep=fsep)
-  plot.file <- file.path(results.path, paste(results.label,".pdf",sep=""), fsep=fsep)
-  
+    
   ### --- Generate commands
   n.thin <- max(100*n.mil,1)
   n.its <- n.mil*1e6
@@ -582,9 +574,9 @@ R2BGLiMS <- function(
   ########################
   
   cat("\nCleaning up...")
-  if(clean.up.arguments) { system(paste(del.command," \"",arguments.path,"\"",sep="")) }
-  if(clean.up.data) { system(paste(del.command," \"",data.path,"\"",sep="")) }
-  if(clean.up.results) { system(paste(del.command," \"",results.path,"\"",sep="")) }
+  if (clean.up.bglims.files) {
+    unlink(c(arguments.file, data.file, results.file), recursive = FALSE, force = TRUE)
+  }
   hrs <-floor( (t2-t1)/(60*60) )
   mins <- floor( (t2-t1-60*60*hrs)/60 )
   secs <- round(t2-t1-hrs*60*60 - mins*60)
