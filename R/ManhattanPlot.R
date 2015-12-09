@@ -7,8 +7,7 @@
 #' latter is implemented to allow easy comparison between analysis frameworks using the same plot style,
 #' and only works if a vector of p-values is supplied. ABF is for plotting Approximate Bayes Factors
 #' in favour of the null (i.e. small values correspond to evidence of association), as proposed in 
-#' Wakefield, J. (2009). "Bayes factors for genome-wide association studies: comparison with P-values." 
-#' Genetic Epidemiology, 33(1), 79–86. 
+#' Wakefield, J. (2009). Genetic Epidemiology.
 #' @param results.vector Alternatively can simply pass a named vector of probabilties
 #' @param plot.title Optional character string to name the plot with
 #' @param y.max If plotting Bayes Factors, this is an optional upper limit for the y-axis (e.g. 
