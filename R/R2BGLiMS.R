@@ -264,7 +264,23 @@ R2BGLiMS <- function(
   
   # Setup file paths
   pack.root <- path.package("R2BGLiMS")
-  bayesglm.jar <- paste(pack.root,"/BGLiMS/BGLiMS.jar",sep="")
+  bayesglm.jar <- file.path(pack.root,"BGLiMS","BGLiMS.jar")
+  if (!is.null(debug.path)) {
+    debug.path <- file.path(debug.path)
+    main.path <- debug.path
+    clean.up.data <- FALSE
+    clean.up.results <- FALSE
+    clean.up.arguments <- FALSE
+  } else {
+    main.path <- tempdir()
+    clean.up.data <- TRUE
+    clean.up.results <- TRUE
+    clean.up.arguments <- TRUE
+  }
+  if (!is.null(results.path)) { # Must be run after the above
+    results.path <- file.path(results.path)    
+    clean.up.results <- FALSE
+  }
   
   ###########################
   ###########################
@@ -320,14 +336,10 @@ R2BGLiMS <- function(
   }
   
   ### --- Write BGLiMS Arguments
-  #arguments.file <- paste(pack.root,"/BGLiMS/Arguments_Package.txt",sep="")      
   t1 <- proc.time()["elapsed"]
-  clean.up.data <- FALSE
-  clean.up.results <- FALSE
-  clean.up.arguments <- FALSE
   now <-format(Sys.time(), "%b%d%H%M%S") # Used to ensure unique names in the temp directory
   # Set arguments
-  load(paste(pack.root,"/data/DefaultArguments.rda",sep=""))
+  load(file.path(pack.root,"data","DefaultArguments.rda"))
   if (!is.null(extra.arguments)) {
     for (arg in names(extra.arguments)) {
       cat("Setting user specified argument ",arg,"\n")    
@@ -335,15 +347,9 @@ R2BGLiMS <- function(
     }    
   }
   # Setup arguments file
-  if (!is.null(debug.path)) {
-    arguments.path <- paste(debug.path,"/",results.label,"_Arguments_",now, sep="")
-  } else {
-    arguments.path <- paste(tempdir(),"/",results.label,"_Arguments_",now, sep="")      
-    clean.up.arguments <- TRUE
-  }
+  arguments.path <- file.path(main.path, paste(results.label,"_Arguments_",now, sep=""))
   try(system(paste("mkdir '",arguments.path,"'", sep="")))
-  arguments.root <- paste(arguments.path, results.label, sep="/")
-  arguments.file <- paste(arguments.root,"_Arguments.txt",sep="")
+  arguments.file <- file.path(arguments.path, paste(results.label,"_Arguments.txt",sep=""))
   # Write arguments
   write(paste(names(default.arguments)[1],default.arguments[[1]]), file = arguments.file)    
   for (arg in names(default.arguments)[-1]) {
@@ -391,14 +397,9 @@ R2BGLiMS <- function(
   data.file <- NULL
   if (is.null(data.file)) {
     cat("\nWriting temporary data files...\n")
-    if (!is.null(debug.path)) {
-      data.path <- paste(debug.path,"/",results.label,"_Data_",now, sep="")      
-    } else {
-      clean.up.data <- TRUE
-      data.path <- paste(tempdir(),"/",results.label,"_Data_",now, sep="")      
-    }
+    data.path <- file.path(main.path, paste(results.label,"_Data_",now, sep=""))      
     system(paste("mkdir '",data.path,"'", sep=""))
-    data.file <- paste(data.path, "/",results.label,".txt", sep="")
+    data.file <- file.path(data.path, paste(results.label,".txt", sep=""))
     .WriteData(
       data.file=data.file,
       likelihood=likelihood,
@@ -430,17 +431,11 @@ R2BGLiMS <- function(
   
   ### --- Generate results root filenames
   if (is.null(results.path)) { # Will write to a temporary directory
-    if (!is.null(debug.path)) {
-      results.path <- paste(debug.path,"/",results.label,"_Results_",now, sep="")
-    } else {
-      results.path <- paste(tempdir(),"/",results.label,"_Results_",now, sep="")      
-      clean.up.results <- TRUE
-    }
+    results.path <- file.path(main.path, paste(results.label,"_Results_",now, sep=""))
   }
   try(system(paste("mkdir '",results.path,"'", sep="")))
-  results.root <- paste(results.path, results.label, sep="/")
-  results.file <- paste(results.root,".txt",sep="")
-  plot.file <- paste(results.root,".pdf",sep="")    
+  results.file <- file.path(results.path, paste(results.label,".txt",sep=""))
+  plot.file <- file.path(results.path, paste(results.label,".pdf",sep=""))
   
   ### --- Generate commands
   n.thin <- max(100*n.mil,1)
@@ -499,7 +494,6 @@ R2BGLiMS <- function(
   
   cat("\n\nReading in the BGLiMS results file...\n")  
   t1 <- proc.time()["elapsed"]
-  results <- list()  # Initialise list
   
   ### --- Read BGLiMS arguments
   bglims.arguments <- as.list(read.table(results.file, header=T, sep=" ", nrows=1))
@@ -581,11 +575,14 @@ R2BGLiMS <- function(
   ########################
   
   cat("\nCleaning up...")
-  if(clean.up.arguments) { system(paste("rm -rf ",arguments.path, sep="")) }
-  if(clean.up.data) { system(paste("rm -rf ",data.path, sep="")) }
-  if(clean.up.results) { system(paste("rm -rf ",results.path, sep="")) } else {
-    results[["raw.results.file"]] <- results.file
+  if (.Platform$OS.type=="windows") {
+    del.command <- "rmdir /s /q"
+  } else {
+    del.command <- "rm -rf"
   }
+  if(clean.up.arguments) { system(paste(del.command,arguments.path)) }
+  if(clean.up.data) { system(paste(del.command,data.path)) }
+  if(clean.up.results) { system(paste(del.command,results.path)) }    
   hrs <-floor( (t2-t1)/(60*60) )
   mins <- floor( (t2-t1-60*60*hrs)/60 )
   secs <- round(t2-t1-hrs*60*60 - mins*60)
