@@ -138,7 +138,7 @@ R2BGLiMS <- function(
   
   ### --- Java installation error messages
   try.java <- try(system("java -version"), silent=TRUE)
-  if (try.java!=0) stop("Java is not installed and is required to run BGLiMS.\nPlease install from java.com/download.")  
+  if (try.java!=0) stop("Java is not installed and is required to run BGLiMS.\nPlease install a Java JDK from java.com/download.")  
   
   ### --- Basic input checks
   if (is.null(likelihood)) stop("No likelihood, i.e. the model type, has been specified; please specify as Logistic,
@@ -262,11 +262,18 @@ R2BGLiMS <- function(
     if (sum(names(marginal.betas) %in% unlist(lapply(X.ref, colnames))) < length(marginal.betas)) {stop("Reference genotype matrices do not include all SNPs in the marginal.betas vector")}
   }
   
-  # Setup file paths
+  # Setup file paths/sytem command information
+  if (.Platform$OS.type == "windows") {
+    fsep <- "\\"
+    del.command <- "rmdir /s /q"
+  } else {
+    fsep <- "/"
+    del.command <- "rm -rf"
+  }  
   pack.root <- path.package("R2BGLiMS")
-  bayesglm.jar <- file.path(pack.root,"BGLiMS","BGLiMS.jar")
+  bayesglm.jar <- file.path(pack.root, "BGLiMS", "BGLiMS.jar", fsep=fsep)
   if (!is.null(debug.path)) {
-    debug.path <- file.path(debug.path)
+    debug.path <- file.path(debug.path, fsep=fsep)
     main.path <- debug.path
     clean.up.data <- FALSE
     clean.up.results <- FALSE
@@ -278,7 +285,7 @@ R2BGLiMS <- function(
     clean.up.arguments <- TRUE
   }
   if (!is.null(results.path)) { # Must be run after the above
-    results.path <- file.path(results.path)    
+    results.path <- file.path(results.path, fsep=fsep)    
     clean.up.results <- FALSE
   }
   
@@ -339,7 +346,7 @@ R2BGLiMS <- function(
   t1 <- proc.time()["elapsed"]
   now <-format(Sys.time(), "%b%d%H%M%S") # Used to ensure unique names in the temp directory
   # Set arguments
-  load(file.path(pack.root,"data","DefaultArguments.rda"))
+  load(file.path(pack.root, "data", "DefaultArguments.rda", fsep=fsep))
   if (!is.null(extra.arguments)) {
     for (arg in names(extra.arguments)) {
       cat("Setting user specified argument ",arg,"\n")    
@@ -347,9 +354,9 @@ R2BGLiMS <- function(
     }    
   }
   # Setup arguments file
-  arguments.path <- file.path(main.path, paste(results.label,"_Arguments_",now, sep=""))
+  arguments.path <- file.path(main.path, paste(results.label,"_Arguments_",now, sep=""), fsep=fsep)
   try(system(paste("mkdir '",arguments.path,"'", sep="")))
-  arguments.file <- file.path(arguments.path, paste(results.label,"_Arguments.txt",sep=""))
+  arguments.file <- file.path(arguments.path, paste(results.label,"_Arguments.txt",sep=""), fsep=fsep)
   # Write arguments
   write(paste(names(default.arguments)[1],default.arguments[[1]]), file = arguments.file)    
   for (arg in names(default.arguments)[-1]) {
@@ -397,9 +404,9 @@ R2BGLiMS <- function(
   data.file <- NULL
   if (is.null(data.file)) {
     cat("\nWriting temporary data files...\n")
-    data.path <- file.path(main.path, paste(results.label,"_Data_",now, sep=""))      
+    data.path <- file.path(main.path, paste(results.label,"_Data_",now, sep=""), fsep=fsep)      
     system(paste("mkdir '",data.path,"'", sep=""))
-    data.file <- file.path(data.path, paste(results.label,".txt", sep=""))
+    data.file <- file.path(data.path, paste(results.label,".txt",sep=""), fsep=fsep)
     .WriteData(
       data.file=data.file,
       likelihood=likelihood,
@@ -431,11 +438,11 @@ R2BGLiMS <- function(
   
   ### --- Generate results root filenames
   if (is.null(results.path)) { # Will write to a temporary directory
-    results.path <- file.path(main.path, paste(results.label,"_Results_",now, sep=""))
+    results.path <- file.path(main.path, paste(results.label,"_Results_",now,sep=""), fsep=fsep)
   }
   try(system(paste("mkdir '",results.path,"'", sep="")))
-  results.file <- file.path(results.path, paste(results.label,".txt",sep=""))
-  plot.file <- file.path(results.path, paste(results.label,".pdf",sep=""))
+  results.file <- file.path(results.path, paste(results.label,".txt",sep=""), fsep=fsep)
+  plot.file <- file.path(results.path, paste(results.label,".pdf",sep=""), fsep=fsep)
   
   ### --- Generate commands
   n.thin <- max(100*n.mil,1)
@@ -575,11 +582,6 @@ R2BGLiMS <- function(
   ########################
   
   cat("\nCleaning up...")
-  if (.Platform$OS.type=="windows") {
-    del.command <- "rmdir /s /q"
-  } else {
-    del.command <- "rm -rf"
-  }
   if(clean.up.arguments) { system(paste(del.command,arguments.path)) }
   if(clean.up.data) { system(paste(del.command,data.path)) }
   if(clean.up.results) { system(paste(del.command,results.path)) }    
