@@ -5,7 +5,7 @@
 \title{Coefficient history trace plots from a Reversible Jump results object}
 \usage{
 ChainPlots(results, vars.to.include = NULL, var.dictionary = NULL,
-  predictors.only = FALSE, plot.file = NULL, add.to.title = NULL,
+  predictors.only = FALSE, file = NULL, add.to.title = NULL,
   par.mfrow = NULL, add.panel.labels = FALSE)
 }
 \arguments{
@@ -14,7 +14,7 @@ ChainPlots(results, vars.to.include = NULL, var.dictionary = NULL,
 \item{predictors.only}{If true only chain plots for predictors are plotted (and intercept,
 likelihood etc. are excluded). Default is FALSE.}
 
-\item{plot.file}{PDF path}
+\item{file}{PDF path}
 
 \item{add.to.title}{Optional character string to add to the start of each plot title}
 

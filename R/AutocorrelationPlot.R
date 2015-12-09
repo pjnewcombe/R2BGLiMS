@@ -6,7 +6,7 @@
 #' @name AutocorrelationPlot
 #' @inheritParams ManhattanPlot
 #' @param plot.title Optionally specify a title for the plot.
-#' @param plot.file Path to a PDF to print plot to.
+#' @param file Path to a PDF to print plot to.
 #' @param include.var.names Include variable names perpendicularly below the x-axis. Turn off if it looks too crowded.
 #' @param include.post.probs Include a barplot of posterior probabilities at the top.
 #' @param cex.x.axis.ticks Control the size of tick marks for the covariates along the X-axis. Decrease if there are many.
@@ -21,7 +21,7 @@ AutocorrelationPlot <- function(
   results,
   plot.title=NULL,
   vars.to.include=NULL,
-  plot.file=NULL,
+  file=NULL,
   include.var.names=TRUE,
   var.dictionary=NULL,
   include.post.probs=TRUE,
@@ -43,8 +43,8 @@ AutocorrelationPlot <- function(
   z <- t(z)+0 # Makes numeric
   
   # Initiate Plot
-  if(!is.null(plot.file)) {
-    pdf(file=plot.file,
+  if(!is.null(file)) {
+    pdf(file=file,
         paper="special",
         width=8,
         height=11)
@@ -95,7 +95,7 @@ AutocorrelationPlot <- function(
   axis(side=2, at=y.ticks, labels=y.tick.labs, col.axis="black", cex.axis=cex.y.axis.ticks)
   
   # Close pdf
-	if(!is.null(plot.file)) {
+	if(!is.null(file)) {
 	  dev.off()
 	}
 	

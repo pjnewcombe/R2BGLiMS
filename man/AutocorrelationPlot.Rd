@@ -6,7 +6,7 @@
 represented across all iterations as a black and white "heatmap".}
 \usage{
 AutocorrelationPlot(results, plot.title = NULL, vars.to.include = NULL,
-  plot.file = NULL, include.var.names = TRUE, var.dictionary = NULL,
+  file = NULL, include.var.names = TRUE, var.dictionary = NULL,
   include.post.probs = TRUE, cex.x.axis.ticks = 1, cex.y.axis.ticks = 1,
   cex.y.axis.labels = 1, mar.for.varnames = 8)
 }
@@ -15,7 +15,7 @@ AutocorrelationPlot(results, plot.title = NULL, vars.to.include = NULL,
 
 \item{plot.title}{Optionally specify a title for the plot.}
 
-\item{plot.file}{Path to a PDF to print plot to.}
+\item{file}{Path to a PDF to print plot to.}
 
 \item{include.var.names}{Include variable names perpendicularly below the x-axis. Turn off if it looks too crowded.}
 

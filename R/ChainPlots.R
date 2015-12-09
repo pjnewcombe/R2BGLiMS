@@ -5,7 +5,7 @@
 #' @inheritParams ManhattanPlot
 #' @param predictors.only If true only chain plots for predictors are plotted (and intercept,
 #'  likelihood etc. are excluded). Default is FALSE.
-#' @param plot.file PDF path
+#' @param file PDF path
 #' @param add.to.title Optional character string to add to the start of each plot title
 #' @param add.panel.labels Add lower case letter labels to panel titles. Default FALSE.
 #' Note: Does not work when providing a var.dictionary
@@ -18,7 +18,7 @@ ChainPlots <- function(
   vars.to.include=NULL,
   var.dictionary=NULL,
   predictors.only=FALSE,
-  plot.file=NULL,
+  file=NULL,
   add.to.title=NULL,
   par.mfrow=NULL,
   add.panel.labels=FALSE) {
@@ -27,8 +27,8 @@ ChainPlots <- function(
     add.panel.labels <- FALSE
   }
   
-  if(!is.null(plot.file)) {
-    pdf(file=plot.file,
+  if(!is.null(file)) {
+    pdf(file=file,
         paper="special",
         width=8,
         height=11)
@@ -109,7 +109,7 @@ ChainPlots <- function(
     }    
   }
   	
-	if(!is.null(plot.file)) {
+	if(!is.null(file)) {
 	  dev.off()
 	}
 	

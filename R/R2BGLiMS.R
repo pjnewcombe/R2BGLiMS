@@ -355,7 +355,7 @@ R2BGLiMS <- function(
   }
   # Setup arguments file
   arguments.path <- file.path(main.path, paste(results.label,"_Arguments_",now, sep=""), fsep=fsep)
-  try(system(paste("mkdir '",arguments.path,"'", sep="")))
+  try(system(paste("mkdir \"",arguments.path,"\"", sep="")))
   arguments.file <- file.path(arguments.path, paste(results.label,"_Arguments.txt",sep=""), fsep=fsep)
   # Write arguments
   write(paste(names(default.arguments)[1],default.arguments[[1]]), file = arguments.file)    
@@ -405,7 +405,7 @@ R2BGLiMS <- function(
   if (is.null(data.file)) {
     cat("\nWriting temporary data files...\n")
     data.path <- file.path(main.path, paste(results.label,"_Data_",now, sep=""), fsep=fsep)      
-    system(paste("mkdir '",data.path,"'", sep=""))
+    system(paste("mkdir \"",data.path,"\"", sep=""))
     data.file <- file.path(data.path, paste(results.label,".txt",sep=""), fsep=fsep)
     .WriteData(
       data.file=data.file,
@@ -440,7 +440,7 @@ R2BGLiMS <- function(
   if (is.null(results.path)) { # Will write to a temporary directory
     results.path <- file.path(main.path, paste(results.label,"_Results_",now,sep=""), fsep=fsep)
   }
-  try(system(paste("mkdir '",results.path,"'", sep="")))
+  try(system(paste("mkdir \"",results.path,"\"", sep="")))
   results.file <- file.path(results.path, paste(results.label,".txt",sep=""), fsep=fsep)
   plot.file <- file.path(results.path, paste(results.label,".pdf",sep=""), fsep=fsep)
   
@@ -582,9 +582,9 @@ R2BGLiMS <- function(
   ########################
   
   cat("\nCleaning up...")
-  if(clean.up.arguments) { system(paste(del.command,arguments.path)) }
-  if(clean.up.data) { system(paste(del.command,data.path)) }
-  if(clean.up.results) { system(paste(del.command,results.path)) }    
+  if(clean.up.arguments) { system(paste(del.command," \"",arguments.path,"\"",sep="")) }
+  if(clean.up.data) { system(paste(del.command," \"",data.path,"\"",sep="")) }
+  if(clean.up.results) { system(paste(del.command," \"",results.path,"\"",sep="")) }
   hrs <-floor( (t2-t1)/(60*60) )
   mins <- floor( (t2-t1-60*60*hrs)/60 )
   secs <- round(t2-t1-hrs*60*60 - mins*60)
