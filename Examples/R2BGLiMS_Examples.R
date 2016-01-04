@@ -16,6 +16,8 @@ lm.hierarchical.prior.results <- R2BGLiMS(
   model.space.priors = poisson.model.space.prior
 )
 PrettyResultsTable(lm.hierarchical.prior.results)
+# A numeric representation of the results is stored in the slot 'posterior.summary.table':
+lm.hierarchical.prior.results@posterior.summary.table
 # Re-analyse using fixed priors
 # (not enough covariates to estimate effect variance)
 beta.priors <- data.frame(

@@ -1,7 +1,7 @@
 #' Creates a `pretty' summary results table from a Reversible Jump results object
 #' @export
-#' @title A pretty summary results table for reports - note that entries are formatted as character strings so,
-#' for processing results use \code{\link{ResultsTable}}.
+#' @title A pretty summary results table for reports. NOTE: This function outputs a table formatted with character strings.
+#' A numeric representation of the results are stored in the slot 'posterior.summary.table'.
 #' @name PrettyResultsTable
 #' @inheritParams ManhattanPlot
 #' @param round.digits.betas Number of decimal places to include for effect estimates. (Default is 2)

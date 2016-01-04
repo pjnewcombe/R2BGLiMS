@@ -89,7 +89,7 @@ NULL
 #' 
 #' @seealso For a nicer summary of all covariates see 
 #' \code{\link{PrettyResultsTable}} and \code{\link{ManhattanPlot}}. For posterior model space
-#' summaries see \code{\link{ModelSizes}} and \code{\link{TopModels}}. For convergence check
+#' summaries see \code{\link{TopModels}}. For convergence checks
 #' plots see \code{\link{ChainPlots}} and \code{\link{AutocorrelationPlot}}.
 #' 
 #' @author Paul Newcombe

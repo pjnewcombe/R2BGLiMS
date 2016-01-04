@@ -2,8 +2,8 @@
 % Please edit documentation in R/PrettyResultsTable.R
 \name{PrettyResultsTable}
 \alias{PrettyResultsTable}
-\title{A pretty summary results table for reports - note that entries are formatted as character strings so,
-for processing results use \code{\link{ResultsTable}}.}
+\title{A pretty summary results table for reports. NOTE: This function outputs a table formatted with character strings.
+A numeric representation of the results are stored in the slot 'posterior.summary.table'.}
 \usage{
 PrettyResultsTable(results, round.digits.betas = 2,
   round.digits.postprob = 2, round.digits.bf = 1, normalised.sds = NULL)

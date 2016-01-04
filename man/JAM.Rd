@@ -69,6 +69,8 @@ lm.hierarchical.prior.results <- R2BGLiMS(
   model.space.priors = poisson.model.space.prior
 )
 PrettyResultsTable(lm.hierarchical.prior.results)
+# A numeric representation of the results is stored in the slot 'posterior.summary.table':
+lm.hierarchical.prior.results@posterior.summary.table
 # Re-analyse using fixed priors
 # (not enough covariates to estimate effect variance)
 beta.priors <- data.frame(
@@ -152,7 +154,7 @@ Paul Newcombe
 \seealso{
 Summary results are stored in the slot posterior.summary.table. See also
 \code{\link{PrettyResultsTable}} and \code{\link{ManhattanPlot}}. For posterior model space
-summaries see \code{\link{ModelSizes}} and \code{\link{TopModels}}. For convergence check
+summaries see \code{\link{TopModels}}. For convergence checks
 plots see \code{\link{ChainPlots}} and \code{\link{AutocorrelationPlot}}.
 }
 
