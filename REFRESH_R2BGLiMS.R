@@ -18,5 +18,5 @@ RefreshPackage(package.name=package.name,commit.message=commit.message)
 do.not.run <- FALSE
 if (do.not.run) {
   library(devtools)
-  install_github(username="pjnewcombe", repo="R2BGLiMS")
+  install_github("pjnewcombe/R2BGLiMS")
 }
