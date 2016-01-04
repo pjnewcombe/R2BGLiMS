@@ -17,7 +17,7 @@
 #' @slot run.times A list containing run times broken down into different processes.
 #' @slot n.covariate.blocks.for.jam The number of partitioned LD blocks used for JAM.
 #' @slot bglims.arguments The arguments passed to the Java BGLiMS function. This is a named list - the different arguments are a range of datatypes.
-#' @slot bglims.rjmcmc.output The Reversible Jump MCMC output from BGLiMS. Columns are parameters, rows are iterations.
+#' @slot mcmc.output The Reversible Jump MCMC output from BGLiMS. Columns are parameters, rows are iterations.
 #'   
 #' @author Paul J. Newcombe \email{paul.newcombe@@mrc-bsu.cam.ac.uk}
 setClass("R2BGLiMS_Results",
@@ -33,7 +33,7 @@ setClass("R2BGLiMS_Results",
            run.times = "list",
            n.covariate.blocks.for.jam = "numeric",
            bglims.arguments = "list",
-           bglims.rjmcmc.output = "data.frame"),
+           mcmc.output = "data.frame"),
          validity = function(object){
            errors <- character()           
            if (length(errors) == 0) TRUE else errors

@@ -29,7 +29,7 @@ PrettyResultsTable <- function(
   # Normalise if provided
   cols.to.normalise <- c("Median", "CrI_Lower", "CrI_Upper", "Median_Present", "CrI_Lower_Present", "CrI_Upper_Present")
   if (!is.null(normalised.sds) ) {
-    for (v in intersect(names(normalised.sds), colnames(results@bglims.rjmcmc.output)) ) {
+    for (v in intersect(names(normalised.sds), colnames(results@mcmc.output)) ) {
       res.tab[v, cols.to.normalise] <-  res.tab[v, cols.to.normalise]/normalised.sds[v]   # If the original scale was huge, then the effects are much smaller for a unit on the original scale
     }
   }

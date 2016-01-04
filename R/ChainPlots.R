@@ -35,13 +35,13 @@ ChainPlots <- function(
   }
 
   ### --- Rename key model parameters (likelihood etc) and add dimension
-  results@bglims.rjmcmc.output <- cbind("ModelDimension"=apply(results@bglims.rjmcmc.output, MAR=1, function(x) sum(x!=0) ), results@bglims.rjmcmc.output)
+  results@mcmc.output <- cbind("ModelDimension"=apply(results@mcmc.output, MAR=1, function(x) sum(x!=0) ), results@mcmc.output)
   cols.keep <- c("ModelDimension", "LogLikelihood", "alpha")
   cols.new.names <- c("Model Dimension", "Log-likelihood", "Intercept")
-  if ("LogWeibullScale" %in% colnames(results@bglims.rjmcmc.output)) {
+  if ("LogWeibullScale" %in% colnames(results@mcmc.output)) {
     cols.keep <- c(cols.keep, "LogWeibullScale")
     cols.new.names <- c(cols.new.names, "Scale")
-  } else if ("LogGaussianResidual" %in% colnames(results@bglims.rjmcmc.output)) {
+  } else if ("LogGaussianResidual" %in% colnames(results@mcmc.output)) {
     cols.keep <- c(cols.keep, "LogGaussianResidual")
     cols.new.names <- c(cols.new.names, "Residual")
   }
@@ -56,7 +56,7 @@ ChainPlots <- function(
   if(!is.null(vars.to.include)) {
     predictors <- vars.to.include
   } else {
-    predictors <- colnames(results@bglims.rjmcmc.output)[!colnames(results@bglims.rjmcmc.output)%in%c(
+    predictors <- colnames(results@mcmc.output)[!colnames(results@mcmc.output)%in%c(
       "LogWeibullScale", "LogGaussianResidual", "alpha",
       paste("LogBetaPriorSd",c(1:results@bglims.arguments$nBetaHyperPriorComp), sep=""),
       "LogLikelihood")]
@@ -67,8 +67,8 @@ ChainPlots <- function(
     cols.keep <- predictors
     cols.new.names <- predictors
   }
-  results@bglims.rjmcmc.output <- results@bglims.rjmcmc.output[,cols.keep]
-  colnames(results@bglims.rjmcmc.output) <- cols.new.names
+  results@mcmc.output <- results@mcmc.output[,cols.keep]
+  colnames(results@mcmc.output) <- cols.new.names
   
   ### --- Plot
   if (!is.null(par.mfrow)) {
@@ -77,31 +77,31 @@ ChainPlots <- function(
     par(mfrow=c(5,2))
   }
   letter.ind <- 0
-  for (v in colnames(results@bglims.rjmcmc.output)) {
+  for (v in colnames(results@mcmc.output)) {
     letter.ind <- letter.ind+1
     main.title <- add.to.title
     if (add.panel.labels) {
       main.title <- paste(letters[letter.ind],") ",main.title,sep="")
     }
     main.title <- paste(main.title, v, sep="")    
-    if (sum(!is.na(results@bglims.rjmcmc.output[,v]))==0) {
+    if (sum(!is.na(results@mcmc.output[,v]))==0) {
       main.title <- paste(main.title,"*",sep="")
     }
-    results@bglims.rjmcmc.output[,v][results@bglims.rjmcmc.output[,v]==0] <- NA
+    results@mcmc.output[,v][results@mcmc.output[,v]==0] <- NA
     if (!is.null(var.dictionary)) {
       # Overrides everything previously
       if (v %in% names(var.dictionary)) {
         main.title <- var.dictionary[v]
       }
     }
-    if (sum(!is.na(results@bglims.rjmcmc.output[,v]))>0) {
-      plot(results@bglims.rjmcmc.output[,v],
+    if (sum(!is.na(results@mcmc.output[,v]))>0) {
+      plot(results@mcmc.output[,v],
            type="l",
            ylab="Value",
            xlab="Saved Iteration",
            main=main.title )				
     } else {
-      plot(rep(0,nrow(results@bglims.rjmcmc.output)),
+      plot(rep(0,nrow(results@mcmc.output)),
            type="n",
            ylab="Value",
            xlab="Saved Iteration",

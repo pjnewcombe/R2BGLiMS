@@ -33,7 +33,7 @@ up to this dimension.}
 
 \item{\code{bglims.arguments}}{The arguments passed to the Java BGLiMS function. This is a named list - the different arguments are a range of datatypes.}
 
-\item{\code{bglims.rjmcmc.output}}{The Reversible Jump MCMC output from BGLiMS. Columns are parameters, rows are iterations.}
+\item{\code{mcmc.output}}{The Reversible Jump MCMC output from BGLiMS. Columns are parameters, rows are iterations.}
 }}
 \author{
 Paul J. Newcombe \email{paul.newcombe@mrc-bsu.cam.ac.uk}

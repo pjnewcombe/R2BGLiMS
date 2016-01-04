@@ -26,12 +26,12 @@ TopModels <- function(
 	  #########################
 	  vars.to.include <- unlist(lapply(results@model.space.priors, function(x) x$Variables))
 	  all.models <- apply(
-	    results@bglims.rjmcmc.output[,vars.to.include],
+	    results@mcmc.output[,vars.to.include],
 	    MAR=1,
 	    function(r) paste( as.integer(r!=0), collapse="_")
 	  )
 	  ### --- Make table
-	  models.table <- sort(table(all.models),d=T)/nrow(results@bglims.rjmcmc.output) # Tabulates to unique models
+	  models.table <- sort(table(all.models),d=T)/nrow(results@mcmc.output) # Tabulates to unique models
 	  n.top.models <- min(n.top.models, length(models.table))
 	  models.table <- models.table[1:n.top.models]
 	  models.tab.str <- strsplit(names(models.table), split="_")

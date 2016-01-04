@@ -521,21 +521,21 @@ R2BGLiMS <- function(
   
   ### --- Read MCMC output
   n.rows.written <- bglims.arguments$iterations/bglims.arguments$thin
-  bglims.rjmcmc.output <- read.table(
+  mcmc.output <- read.table(
     results.file,
     skip = n.lines.until.rjmcmc.output,
     header=TRUE,
     nrows=n.rows.written)
-  Lhalf <- round(nrow(bglims.rjmcmc.output)/2)     	 # Burnin is a half	
-  bglims.rjmcmc.output <- bglims.rjmcmc.output[(Lhalf+1):nrow(bglims.rjmcmc.output),]   # Remove burnin
+  Lhalf <- round(nrow(mcmc.output)/2)     	 # Burnin is a half	
+  mcmc.output <- mcmc.output[(Lhalf+1):nrow(mcmc.output),]   # Remove burnin
 
   cat("... finished reading BGLiMS results.\n")  
   
   ### --- Summary table
-  posterior.summary.table <- matrix(NA,ncol(bglims.rjmcmc.output),8)
+  posterior.summary.table <- matrix(NA,ncol(mcmc.output),8)
   colnames(posterior.summary.table) = c("PostProb","Median","CrI_Lower","CrI_Upper",
     "Median_Present","CrI_Lower_Present","CrI_Upper_Present","BF")
-  rownames(posterior.summary.table) <- colnames(bglims.rjmcmc.output)
+  rownames(posterior.summary.table) <- colnames(mcmc.output)
   # Prior probabilties - used for Bayes Factors below
   prior.probs <- rep(NA, nrow(posterior.summary.table))
   names(prior.probs) <- rownames(posterior.summary.table)
@@ -548,10 +548,10 @@ R2BGLiMS <- function(
   }
   # Fill in the summary table
   for (v in rownames(posterior.summary.table)) {
-    posterior.summary.table[v,c("CrI_Lower", "Median", "CrI_Upper")] <- quantile(bglims.rjmcmc.output[,v],c(0.025, 0.5, 0.975))
-    posterior.summary.table[v,c("CrI_Lower_Present", "Median_Present", "CrI_Upper_Present")] <- quantile(bglims.rjmcmc.output[,v][bglims.rjmcmc.output[,v]!=0],c(0.025, 0.5, 0.975) )
+    posterior.summary.table[v,c("CrI_Lower", "Median", "CrI_Upper")] <- quantile(mcmc.output[,v],c(0.025, 0.5, 0.975))
+    posterior.summary.table[v,c("CrI_Lower_Present", "Median_Present", "CrI_Upper_Present")] <- quantile(mcmc.output[,v][mcmc.output[,v]!=0],c(0.025, 0.5, 0.975) )
     if (v %in% unlist(lapply(model.space.priors, function(x) x$Variables))) {
-      posterior.summary.table[v,"PostProb"] <- length( bglims.rjmcmc.output[,v][bglims.rjmcmc.output[,v]!=0] ) / nrow(bglims.rjmcmc.output)      
+      posterior.summary.table[v,"PostProb"] <- length( mcmc.output[,v][mcmc.output[,v]!=0] ) / nrow(mcmc.output)      
       if (enumerate.up.to.dim>0) {
         # Replace with enumeration probs
         posterior.summary.table[v,"PostProb"] <- enumerated.posterior.inference$marg.probs[v]
@@ -614,7 +614,7 @@ R2BGLiMS <- function(
     run.times=run.times,
     n.covariate.blocks.for.jam = 1,
     bglims.arguments=bglims.arguments,
-    bglims.rjmcmc.output=bglims.rjmcmc.output
+    mcmc.output=mcmc.output
     )
   
   return(results)

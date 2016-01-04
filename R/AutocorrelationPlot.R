@@ -35,11 +35,11 @@ AutocorrelationPlot <- function(
     # If variable lsit not provided, take from the model space prior
     vars.to.include <- unlist(lapply(results@model.space.priors, function(x) x$Variables))
   }
-  results@bglims.rjmcmc.output <- results@bglims.rjmcmc.output[,vars.to.include]
-  n.var <- ncol(results@bglims.rjmcmc.output)
+  results@mcmc.output <- results@mcmc.output[,vars.to.include]
+  n.var <- ncol(results@mcmc.output)
   x <- c(1:n.var)
   y <- seq(from=(results@bglims.arguments$iterations/2+results@bglims.arguments$thin),to=results@bglims.arguments$iterations, by=results@bglims.arguments$thin)
-  z <- results@bglims.rjmcmc.output!=0
+  z <- results@mcmc.output!=0
   z <- t(z)+0 # Makes numeric
   
   # Initiate Plot
@@ -56,15 +56,15 @@ AutocorrelationPlot <- function(
     
     # 1 - Barplot  
     barplot(
-      height=apply(results@bglims.rjmcmc.output,MAR=2,function(x) sum(x!=0)/length(x) ),
+      height=apply(results@mcmc.output,MAR=2,function(x) sum(x!=0)/length(x) ),
       ylim=c(0,1),
       main=plot.title,
       axes=FALSE,
       ylab="Post Prob",
       xlab="",
-      names.arg=rep("",ncol(results@bglims.rjmcmc.output)),
+      names.arg=rep("",ncol(results@mcmc.output)),
       space=0,
-      xlim=c(0,ncol(results@bglims.rjmcmc.output)),
+      xlim=c(0,ncol(results@mcmc.output)),
       xaxs="i",
       col="black", cex.lab=cex.y.axis.labels)
     axis(2,
@@ -79,11 +79,11 @@ AutocorrelationPlot <- function(
   if (include.var.names) {
     par(mar=c(mar.for.varnames, 4*cex.y.axis.labels, mar.top, 2) + 0.1)
     image(x,y,z, axes=F, xlab="", ylab="Iteration", col=c("white", "black"), cex.lab=cex.y.axis.labels)
-    tick.labels <- colnames(results@bglims.rjmcmc.output)
+    tick.labels <- colnames(results@mcmc.output)
     if (!is.null(var.dictionary)) {
       tick.labels[tick.labels%in%names(var.dictionary)] <- var.dictionary[tick.labels[tick.labels%in%names(var.dictionary)]]
     }
-    axis(side=1, at=c(1:ncol(results@bglims.rjmcmc.output)), labels=tick.labels, las=2, cex.axis=cex.x.axis.ticks)
+    axis(side=1, at=c(1:ncol(results@mcmc.output)), labels=tick.labels, las=2, cex.axis=cex.x.axis.ticks)
   } else {
     par(mar=c(5, 4*cex.y.axis.labels, mar.top, 2) + 0.1)
     image(x,y,z, axes=F, xlab="Predictors", ylab="Iteration", col=c("white", "black"), cex.lab=cex.y.axis.labels)
