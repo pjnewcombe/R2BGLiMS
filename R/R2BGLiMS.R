@@ -50,13 +50,11 @@ NULL
 #' beta.priors (a matrix/data.frame) can be used to provide fixed priors; rows must be named with the corresponding 
 #' variable names in the data, and include Guassian prior means and sds in the first and 
 #' second columns respectively.
-#' @param g.prior Whether to use a g-prior for the beta's - i.e. a multivariate normal 
-#' with correlation structure proportional to sigma^2*X'X^-1 (set to TRUE) or to use independence priors (leave as FALSE).
-#' @param model.tau Whether to model tau or not (default FALSE). If set to true,
-#' then a Zellner-Siow prior is used, centred on the value provide by tau. The value provided in tau is also used as the
-#' initial value.
+#' @param g.prior Whether to use a g-prior for the beta's, i.e. a multivariate normal 
+#' with correlation structure proportional to sigma^2*X'X^-1, which is thought to aid
+#' variable selection in the presence of strong correlation. By default this is enabled.
 #' @param tau Value to use for sparsity parameter tau (under the tau*sigma^2 parameterisation).
-#' A recommended default is max(n, P^2) where n is the number of individuals, and P the number of predictors. 
+#' When using the g-prior, a recommended default is max(n, P^2) where n is the number of individuals, and P is the number of predictors. 
 #' @param enumerate.up.to.dim Whether to make posterior inference by exhaustively calculating
 #' the posterior support for every possible model up to this dimension. Leaving at 0 to disable
 #' and use RJMCMC instead. The current maximum allowed value is 5.
@@ -105,8 +103,7 @@ R2BGLiMS <- function(
   model.selection=TRUE,
   model.space.priors=NULL,
   beta.priors=NULL,
-  g.prior=FALSE,
-  model.tau=FALSE,
+  g.prior=TRUE,
   tau=NULL,
   enumerate.up.to.dim=0,
   X.ref=NULL,
@@ -127,6 +124,7 @@ R2BGLiMS <- function(
   ### --- Old options --- ###
   ###########################
   alt.initial.values <- FALSE # Now done using the extra.arguments option
+  model.tau <- FALSE # Stochastic modelling of Tau. Too experimental to offer as an option for now.
   
   ##############################
   ##############################
@@ -159,13 +157,20 @@ R2BGLiMS <- function(
     }    
     if (length(table(data[,outcome.var]))!=2) stop("Outcome variable must be binary")    
   }
-  if (likelihood %in% c("GaussianConj") & is.null(tau)) {
-    cat("tau was not provided, setting to the maximum of n and P^2\n")
-    tau <- max(nrow(data), ncol(data)^2)
-  }
-  if (likelihood %in% c("JAM") & is.null(tau)) {
-    cat("tau was not provided, setting to P^2\n")
-    tau <- length(marginal.betas)^2
+  if (likelihood %in% c("GaussianConj", "JAM") & is.null(tau)) {
+    if (g.prior) {
+      if (likelihood %in% c("GaussianConj")) {
+        cat("tau was not provided. Since the g-prior is in use, setting to the recommended maximum of n and P^2\n")
+        tau <- max(nrow(data), ncol(data)^2)        
+      } else if (likelihood %in% c("JAM")) {
+        cat("tau was not provided. Since the g-prior is in use, setting to the recommended maximum of n and P^2\n")
+#        cat("tau was not provided, setting to P^2 - which we recommend for JAM\n")
+        tau <- max(n,length(marginal.betas)^2)
+      }
+    } else {
+      stop("Please choose a value for tau. Note that you have selected to use independent priors.
+           Did you mean to use the g-prior?")
+    }
   }
   
   ### --- Enumeration error messages

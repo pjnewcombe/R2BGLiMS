@@ -4,6 +4,23 @@ author: "Paul Newcombe"
 date: "19 November 2015"
 output: pdf_document
 toc : true
+references:
+- id: pirinen2013
+  title: Efficient computation with a linear mixed model on large-scale data sets with applications to genetic studies
+  author:
+  - family: Pirinen
+    given: Matti
+  - family: Donnelly
+    given: Peter
+  - family: Spencer
+    given: Chris
+  container-title: The Annals of Applied Statistics
+  volume: 7
+  issue: 1
+  page: 369-90
+  type: article-journal
+  issued:
+    year: 2013
 ---
 
 ```{r set-options, echo=FALSE, cache=TRUE}
@@ -41,7 +58,7 @@ jam.results <- JAM(
   marginal.betas=marginal.betas[snps.region1],
   X.ref=X.ref.region1,
   model.space.prior = list("Rate"=0.1, "Variables"=snps.region1),
-  n=1000)
+  n=n)
 PrettyResultsTable(jam.results)
 ```
 
@@ -56,7 +73,7 @@ library(R2BGLiMS)
 data(JAM_Example)
 ```
 
-One-a-a-time SNP effect estimates from an analysis of `n=1,000` people for 20 SNPs, divided into two regions (`snps.region1` and `snps.region2`) are stored in `marginal.betas`. The true effects used in the simulations are stored in `true.betas`. You can see the level of confounding due to LD by comparing `marginal.betas` vs `true.betas`. For region 1 a single effect at SNP 5 was simulated, and for region 2 two effects were simulated. 
+One-a-a-time SNP effect estimates from an analysis of `n=15,000` people for 20 SNPs, divided into two regions (`snps.region1` and `snps.region2`) are stored in `marginal.betas`. The true effects used in the simulations are stored in `true.betas`. You can see the level of confounding due to LD by comparing `marginal.betas` vs `true.betas`. For region 1 a single effect at SNP 5 was simulated, and for region 2 two effects were simulated. 
 
 ## JAM's main arguments
 
@@ -105,7 +122,7 @@ region1.results <- JAM(
   X.ref=X.ref.region1,
   model.space.prior = list("a"=1, "b"=1, "Variables"=snps.region1),
   n.mil=1,
-  n=1000)
+  n=n)
 ```
 
 Posterior probabilities for different SNPs and SNP combinations are obtained, by default, from `n.mil` million iterations of a stochastic model search. Convergence/mixing can be checked using the `AutocorrelationPlot` function. The plot indicates inclusion in the model of the different covariates at different iterations; iterations are ordered vertically, and covariates along the X-axis. If the reversible jump MCMC is mixing well (as below), covariates should be regularly jumping in and out, and not "sticking". The top part of the plot indicates the marginal posterior probability of association for each covariate. Note that JAM has correctly identified the 5th SNP as the single simulated causal effect.
@@ -123,7 +140,6 @@ PrettyResultsTable(region1.results)
 and a summary of the top supported SNP combinations can be obtained using the `TopModels` command. As expected the top model is one which only includes SNP 5:
 
 ```{r}
-PrettyResultsTable(region1.results)
 TopModels(region1.results)
 ```
 
@@ -137,7 +153,7 @@ region1.results.enum <- JAM(
   X.ref=X.ref.region1,
   model.space.prior = list("a"=1, "b"=1, "Variables"=snps.region1),
   enumerate.up.to.dim=3,
-  n=1000)
+  n=n)
 ```
 
 Encouragingly, inference is equivalent...
@@ -160,7 +176,7 @@ two.regions.results <- JAM(
   X.ref=list(X.ref.region1, X.ref.region2),
   model.space.prior = list("a"=1, "b"=9, "Variables"=c(snps.region1,snps.region2) ),
   n.mil=1,
-  n=1000)
+  n=n)
 ```
 
 The autocorrelation plot suggests good mixing:
@@ -187,10 +203,71 @@ two.regions.results.enum <- JAM(
   X.ref=list(X.ref.region1, X.ref.region2),
   model.space.prior = list("a"=1, "b"=9, "Variables"=c(snps.region1,snps.region2) ),
   enumerate.up.to.dim=3,
-  n=1000)
+  n=n)
 ```
 
 Results are very similar to above:
 ```{r}
 PrettyResultsTable(two.regions.results.enum)
 ```
+
+# Application to binary data (log-odds ratios)
+JAM is formulated as a linear model (with Gaussian residuals), and this formulation is responsible for the efficiency due to the conjugate results available for this class of models. In order to apply JAM to binary data (i.e. marginal Odds Ratios from logistic regressions) it is necessary to invoke a transformation between the logistic and linear scales. Fortunately, an approximate transformation has been derived by Pirinen et al [@pirinen2013]. 
+
+## Simpler linear transformation
+Pirinen et al derived a linear approximation of $\beta$, the effect estimates we would obtain analysing binary data with a linear regression model, in terms of $\gamma$, the reported summary log-odds ratios:
+
+$$
+\hat{\beta} = \hat{\gamma} \phi (1-\phi)
+$$
+
+where $\phi$ is the proportion of cases in the sample.
+
+## Prior for the residual variance
+After using the above formula to transform the log-odds ratios to the linear scale used by JAM, we must also consider an appropiate prior for the residual variance parameter. Under JAM, the prior distribution for $\sigma^2$ is inverse-gamma:
+$$
+\sigma ^ 2 \sim Inverse-Gamma(a,b)
+$$
+With mean and variance:
+$$
+E(\sigma^2) = \frac{b}{a-1}
+$$
+$$
+Var(\sigma^2) = \frac{b^2}{ (a-1)^2 (a-2)}
+$$
+Note that $a>2$ to insure a non-negative variance. The residual variance for a binary outcome under the null linear model would be equvialent to the bernoulli variance, which is given by:
+$$
+\hat{\sigma^2} = \phi (1 - \phi)
+$$
+Since genetic effects are generally small, when applying JAM with binary data we choose an informative prior centred on this bernoulli variance which would be the correct value if the binary data were analysed with JAM under a null model. To insure an informative prior we start with $a=n$. In order to achieve the desired expectation $b$ is then given by:
+$$
+b = (n-1) \phi (1-\phi)
+$$
+
+## Example
+The example dataset also includes marginal log-Odds Ratios from analyses of binary data simulated
+from exactly the same genotype matrix as above for $n=15,000$, with causal effects placed at the same two SNPs. To analyse these data with JAM and flag them as log-Odds ratios, we must also pass
+the n.cases argument (included in the example data). This tells JAM to invoke the approximate logistic -> linear transform above, and the corresponding prior for the residual variance.
+
+```{r, results="hide", cache=TRUE}
+binary.results <- JAM(
+  marginal.betas=marginal.logors,
+  X.ref=list(X.ref.region1, X.ref.region2),
+  model.space.prior = list("a"=1, "b"=9, "Variables"=c(snps.region1,snps.region2) ),
+  n.mil=1,
+  n=n,
+  n.cases=n.cases)
+```
+
+JAM has correctly placed compelling evidence at both causal SNPs:
+
+```{r}
+PrettyResultsTable(binary.results)
+```
+
+
+# Additions to JAM:
+Simply add a n.case and n.control options? Which will then invoke the transformation and set the inverse-gamma prior?
+
+# References
+

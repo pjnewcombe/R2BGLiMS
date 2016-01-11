@@ -6,8 +6,8 @@
 \usage{
 R2BGLiMS(likelihood = NULL, data = NULL, outcome.var = NULL,
   times.var = NULL, confounders = NULL, model.selection = TRUE,
-  model.space.priors = NULL, beta.priors = NULL, g.prior = FALSE,
-  model.tau = FALSE, tau = NULL, enumerate.up.to.dim = 0, X.ref = NULL,
+  model.space.priors = NULL, beta.priors = NULL, g.prior = TRUE,
+  tau = NULL, enumerate.up.to.dim = 0, X.ref = NULL,
   marginal.betas = NULL, n = NULL, max.fpr = 1, min.tpr = 0,
   n.mil = 1, seed = 1, extra.arguments = NULL, initial.model = NULL,
   max.model.dim = -1, results.label = NULL, save.path = NULL)
@@ -62,15 +62,12 @@ beta.priors (a matrix/data.frame) can be used to provide fixed priors; rows must
 variable names in the data, and include Guassian prior means and sds in the first and
 second columns respectively.}
 
-\item{g.prior}{Whether to use a g-prior for the beta's - i.e. a multivariate normal
-with correlation structure proportional to sigma^2*X'X^-1 (set to TRUE) or to use independence priors (leave as FALSE).}
-
-\item{model.tau}{Whether to model tau or not (default FALSE). If set to true,
-then a Zellner-Siow prior is used, centred on the value provide by tau. The value provided in tau is also used as the
-initial value.}
+\item{g.prior}{Whether to use a g-prior for the beta's, i.e. a multivariate normal
+with correlation structure proportional to sigma^2*X'X^-1, which is thought to aid
+variable selection in the presence of strong correlation. By default this is enabled.}
 
 \item{tau}{Value to use for sparsity parameter tau (under the tau*sigma^2 parameterisation).
-A recommended default is max(n, P^2) where n is the number of individuals, and P the number of predictors.}
+When using the g-prior, a recommended default is max(n, P^2) where n is the number of individuals, and P is the number of predictors.}
 
 \item{enumerate.up.to.dim}{Whether to make posterior inference by exhaustively calculating
 the posterior support for every possible model up to this dimension. Leaving at 0 to disable

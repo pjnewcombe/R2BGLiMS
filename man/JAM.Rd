@@ -5,8 +5,8 @@
 \title{JAM (Joint Analysis of Marginal statistics)}
 \usage{
 JAM(marginal.betas = NULL, n = NULL, X.ref = NULL,
-  model.space.priors = NULL, g.prior = FALSE, tau = NULL,
-  enumerate.up.to.dim = 0, n.mil = 1, seed = 1)
+  model.space.priors = NULL, g.prior = TRUE, tau = NULL,
+  enumerate.up.to.dim = 0, n.mil = 1, seed = 1, n.cases = NULL)
 }
 \arguments{
 \item{marginal.betas}{Vector of marginal effect estimates to re-analyse with JAM under multivariate models.}
@@ -25,11 +25,12 @@ NOTE: It is easy to specify different model space priors for different collectio
 covariates by providing a list of lists, each element of which is itself a model.space.prior
 list asm described above for a particular subset of the covariates.}
 
-\item{g.prior}{Whether to use a g-prior for the beta's - i.e. a multivariate normal
-with correlation structure proportional to sigma^2*X'X^-1 (set to TRUE) or to use independence priors (leave as FALSE).}
+\item{g.prior}{Whether to use a g-prior for the beta's, i.e. a multivariate normal
+with correlation structure proportional to sigma^2*X'X^-1, which is thought to aid
+variable selection in the presence of strong correlation. By default this is enabled.}
 
 \item{tau}{Value to use for sparsity parameter tau (under the tau*sigma^2 parameterisation).
-A recommended default is max(n, P^2) where n is the number of individuals, and P the number of predictors.}
+When using the g-prior, a recommended default is max(n, P^2) where n is the number of individuals, and P is the number of predictors.}
 
 \item{enumerate.up.to.dim}{Whether to make posterior inference by exhaustively calculating
 the posterior support for every possible model up to this dimension. Leaving at 0 to disable
@@ -38,6 +39,10 @@ and use RJMCMC instead. The current maximum allowed value is 5.}
 \item{n.mil}{Number of million iterations to run (default is 1)}
 
 \item{seed}{Which random number seed to use in the RJMCMC sampler.}
+
+\item{n.cases}{If the marginal.betas contain log-Odds Ratios, please specify the number of cases
+with this option, so that JAM can calculate the case proportion in order to invoke an approximate
+transformation between the linear and logistic scales.}
 }
 \value{
 A Reversible Jump results object is returned. This is a list of two elements: "args" which records various modelling

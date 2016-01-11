@@ -7,6 +7,9 @@ NULL
 #' @title JAM (Joint Analysis of Marginal statistics)
 #' @name JAM
 #' @inheritParams R2BGLiMS
+#' @param n.cases If the marginal.betas contain log-Odds Ratios, please specify the number of cases
+#' with this option, so that JAM can calculate the case proportion in order to invoke an approximate 
+#' transformation between the linear and logistic scales.
 #' 
 #' @return A Reversible Jump results object is returned. This is a list of two elements: "args" which records various modelling
 #' arguments used in the analysis, and "results" - a matrix containing all saved posterior samples from the analysis. Columns
@@ -29,11 +32,12 @@ JAM <- function(
   n=NULL,
   X.ref=NULL,
   model.space.priors=NULL,
-  g.prior=FALSE,
+  g.prior=TRUE,
   tau=NULL,
   enumerate.up.to.dim=0,
   n.mil=1,
-  seed=1
+  seed=1,
+  n.cases=NULL
 ) {
   
   #######################################
@@ -43,6 +47,22 @@ JAM <- function(
   if (is.null(tau)) {
     cat("\nSetting tau to max(n,P^2)\n")
     tau <- max(n, length(marginal.betas)^2)
+  }
+  
+  #######################################
+  ### --- Logistic transformation --- ###
+  #######################################
+  
+  extra.arguments <- NULL
+  if (!is.null(n.cases)) {
+    cat("\nLog-Odds Ratios were provided.\n")
+    cat("\nInvoking the logistic -> linear transformation.")
+    phi <- n.cases/n
+    marginal.betas <- marginal.betas*phi*(1-phi)
+    extra.arguments=list(
+      "GaussianResidualVarianceInvGammaPrior_a" = n,
+      "GaussianResidualVarianceInvGammaPrior_b" = (n-1)*phi*(1-phi)
+    )
   }
   
   ############################
@@ -66,7 +86,8 @@ JAM <- function(
         tau=tau,
         enumerate.up.to.dim=enumerate.up.to.dim,
         n.mil=n.mil,
-        seed=seed
+        seed=seed,
+        extra.arguments=extra.arguments
       )
     } else {
       ##############################################
@@ -91,7 +112,8 @@ JAM <- function(
           tau=tau,
           enumerate.up.to.dim=enumerate.up.to.dim,
           n.mil=n.mil,
-          seed=seed
+          seed=seed,
+          extra.arguments=extra.arguments
         )
         if (ld.block==1) {
           results <- results.r2bglims.g
@@ -120,7 +142,8 @@ JAM <- function(
       tau=tau,
       enumerate.up.to.dim=enumerate.up.to.dim,
       n.mil=n.mil,
-      seed=seed
+      seed=seed,
+      extra.arguments=extra.arguments      
     )
   }
 
