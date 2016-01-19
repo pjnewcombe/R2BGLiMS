@@ -13,6 +13,7 @@ default.arguments <- list(
   "GaussianResidualPrior_UnifArg2" = 2,
   "GaussianResidualVarianceInvGammaPrior_a" = 0.01,
   "GaussianResidualVarianceInvGammaPrior_b" = 0.01,
+  "aucMultiplierWeight" = 1,
   "Alpha_Initial_Value" =0,
   "Beta_Initial_Value" =0,
   "BetaPriorSd_Initial_Value" =0.1,
