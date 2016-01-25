@@ -265,9 +265,5 @@ JAM has correctly placed compelling evidence at both causal SNPs:
 PrettyResultsTable(binary.results)
 ```
 
-
-# Additions to JAM:
-Simply add a n.case and n.control options? Which will then invoke the transformation and set the inverse-gamma prior?
-
 # References
 

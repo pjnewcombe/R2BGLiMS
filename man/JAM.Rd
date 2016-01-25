@@ -6,7 +6,8 @@
 \usage{
 JAM(marginal.betas = NULL, n = NULL, X.ref = NULL,
   model.space.priors = NULL, g.prior = TRUE, tau = NULL,
-  enumerate.up.to.dim = 0, n.mil = 1, seed = 1, n.cases = NULL)
+  enumerate.up.to.dim = 0, full.mcmc.sampling = FALSE, n.mil = 1,
+  seed = 1, n.cases = NULL, extra.arguments = NULL)
 }
 \arguments{
 \item{marginal.betas}{Vector of marginal effect estimates to re-analyse with JAM under multivariate models.}
@@ -36,6 +37,11 @@ When using the g-prior, a recommended default is max(n, P^2) where n is the numb
 the posterior support for every possible model up to this dimension. Leaving at 0 to disable
 and use RJMCMC instead. The current maximum allowed value is 5.}
 
+\item{full.mcmc.sampling}{By default JAM only samples models, since the parameters can be analytically integrated out.
+If you would like to force JAM to perform full Reversible Jump MCMC of models and parameters (effects and residual), then
+set this to TRUE. The posterior summaries can be seen using \code{\link{PrettyResultsTable}}. Note that this option is
+forced to false if inference via model enumeration is requested by setting enumerate.up.to.dim>0.}
+
 \item{n.mil}{Number of million iterations to run (default is 1)}
 
 \item{seed}{Which random number seed to use in the RJMCMC sampler.}
@@ -43,6 +49,10 @@ and use RJMCMC instead. The current maximum allowed value is 5.}
 \item{n.cases}{If the marginal.betas contain log-Odds Ratios, please specify the number of cases
 with this option, so that JAM can calculate the case proportion in order to invoke an approximate
 transformation between the linear and logistic scales.}
+
+\item{extra.arguments}{A named list of any additional arguments for BGLiMS. Type "data(DefaultArguments)" and look in the
+"default.arguments" list to see the names (which must match) and default values of available extra arguments. Currently these
+are not documented - please contact the package author, Paul Newcombe for details.}
 }
 \value{
 A Reversible Jump results object is returned. This is a list of two elements: "args" which records various modelling
