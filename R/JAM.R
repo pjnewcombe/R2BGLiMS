@@ -46,6 +46,58 @@ JAM <- function(
   extra.arguments=NULL
 ) {
   
+  ##################################################################
+  ### --- Error messages (moved from R2BGLiMS on 2016-01-29) --- ###
+  ##################################################################
+  
+  # --- X.ref
+  
+  # Force to list
+  if (is.data.frame(X.ref)) {
+    X.ref <- matrix(X.ref) # convert to matrix
+  }
+  if (!is.list(X.ref)) {
+    X.ref <- list(X.ref) # convert to list if there is a single block
+  }
+  
+  # Check Rank
+  for (ld.block in 1:length(X.ref)) {
+    qr.decomp <- qr(X.ref[[ld.block]])
+    if (qr.decomp$rank < ncol(X.ref[[ld.block]])) stop (
+      paste("The reference matrix for block",ld.block,"/",length(X.ref),"is not full rank.
+              Ideally a larger reference sample should be used, 
+              or you could try pruning correlated SNPs.")
+    )
+  }
+    
+  # Check format
+  if (sum(unlist(lapply(X.ref, function(x) !is.numeric(x) )))>0) {stop("Reference genotype matrices must be numeric, coded as risk allele countsin the 0 to 2 range")}
+  if (max(unlist(X.ref))>2 | min(unlist(X.ref)) < 0) {stop("Reference genotype matrices must be coded coded as risk allele counts in the 0 to 2 range")}
+  for (ld.block in 1:length(X.ref)) {
+    if (is.null(colnames(X.ref[[ld.block]]))) stop ("All columns of the X reference matrice(s) must be named, corresponding to SNP effects in marginal.betas")
+  }
+  
+  # --- Marginal betas
+  if (is.null(marginal.betas)) { stop("For analysis with JAM you must provide a vector of marginal summary statistics") }
+  if (is.null(names(marginal.betas))) stop ("All effects in marginal.betas must be named, corresponding to columns in X.ref")
+  if (sum(names(marginal.betas) %in% unlist(lapply(X.ref, colnames))) < length(marginal.betas)) {stop("Reference genotype matrices do not include all SNPs in the marginal.betas vector")}
+  
+  # -- N
+  if (is.null(n)) { stop("You must specificy the number of individuals the marginal effect estimates were calculated in.") }
+  
+  #######################################################################
+  ### --- Take subset of X.refs correpsonding to elements of beta --- ###
+  #######################################################################
+  
+  for (ld.block in 1:length(X.ref)) {
+    original.n.snps <- ncol(X.ref[[ld.block]])
+    X.ref[[ld.block]] <- X.ref[[ld.block]][,colnames(X.ref[[ld.block]]) %in% names(marginal.betas)]
+    final.n.snps <- ncol(X.ref[[ld.block]])
+    if (final.n.snps!=original.n.snps) {
+      cat((original.n.snps-final.n.snps),"extra SNPs removed from the reference matrix for LD block",ld.block,"\n")
+    }
+  }
+  
   #######################################
   ### --- Set tau if not provided --- ###
   #######################################
