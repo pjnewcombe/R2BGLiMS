@@ -585,7 +585,6 @@ R2BGLiMS <- function(
   hrs <-floor( (t2-t1)/(60*60) )
   mins <- floor( (t2-t1-60*60*hrs)/60 )
   secs <- round(t2-t1-hrs*60*60 - mins*60)
-  cat(paste("\nResults processed in",hrs,"hrs",mins,"mins and",secs,"seconds"))
   
   #########################
   #########################
@@ -621,6 +620,7 @@ R2BGLiMS <- function(
     bglims.arguments=bglims.arguments,
     mcmc.output=mcmc.output
     )
-  
+
   return(results)
+  cat(paste("\nFinished - Results processed in",hrs,"hrs",mins,"mins and",secs,"seconds\n."))
 }
