@@ -40,7 +40,8 @@ JAM <- function(
   tau=NULL,
   enumerate.up.to.dim=0,
   full.mcmc.sampling=FALSE,
-  n.mil=1,
+  n.iter=1e6,
+  n.mil.iter=NULL,
   seed=1,
   n.cases=NULL,
   extra.arguments=NULL
@@ -144,7 +145,7 @@ JAM <- function(
   if (enumerate.up.to.dim > 0) {
     which.blgims.jam.method <- "JAM" # Full MCMC sampling is disabled for model enumeration
     ### --- Enumeration
-    n.mil <- 0.000001 # Set to minimum number of iterations
+    n.iter <- 1 # Set to minimum number of iterations
     if (!is.list(X.ref)|length(X.ref)==1) {
       ######################################
       ### --- Enumeration - 1 region --- ###
@@ -158,7 +159,8 @@ JAM <- function(
         g.prior=g.prior,
         tau=tau,
         enumerate.up.to.dim=enumerate.up.to.dim,
-        n.mil=n.mil,
+        n.iter=n.iter,
+        n.mil.iter=n.mil.iter,
         seed=seed,
         extra.arguments=extra.arguments
       )
@@ -184,7 +186,8 @@ JAM <- function(
           g.prior=g.prior,
           tau=tau,
           enumerate.up.to.dim=enumerate.up.to.dim,
-          n.mil=n.mil,
+          n.iter=n.iter,
+          n.mil.iter=n.mil.iter,
           seed=seed,
           extra.arguments=extra.arguments
         )
@@ -214,7 +217,8 @@ JAM <- function(
       g.prior=g.prior,
       tau=tau,
       enumerate.up.to.dim=enumerate.up.to.dim,
-      n.mil=n.mil,
+      n.iter=n.iter,
+      n.mil.iter=n.mil.iter,
       seed=seed,
       extra.arguments=extra.arguments      
     )

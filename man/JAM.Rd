@@ -6,8 +6,8 @@
 \usage{
 JAM(marginal.betas = NULL, n = NULL, X.ref = NULL,
   model.space.priors = NULL, g.prior = TRUE, tau = NULL,
-  enumerate.up.to.dim = 0, full.mcmc.sampling = FALSE, n.mil = 1,
-  seed = 1, n.cases = NULL, extra.arguments = NULL)
+  enumerate.up.to.dim = 0, full.mcmc.sampling = FALSE, n.iter = 1e+06,
+  n.mil.iter = NULL, seed = 1, n.cases = NULL, extra.arguments = NULL)
 }
 \arguments{
 \item{marginal.betas}{Vector of marginal effect estimates to re-analyse with JAM under multivariate models.}
@@ -42,7 +42,9 @@ If you would like to force JAM to perform full Reversible Jump MCMC of models an
 set this to TRUE. The posterior summaries can be seen using \code{\link{PrettyResultsTable}}. Note that this option is
 forced to false if inference via model enumeration is requested by setting enumerate.up.to.dim>0.}
 
-\item{n.mil}{Number of million iterations to run (default is 1)}
+\item{n.iter}{Number of iterations to run (default is 1e6)}
+
+\item{n.mil.iter}{Number of million iterations to run. Can optionally be used instead of n.iter for convenience, which it will overide if specified.}
 
 \item{seed}{Which random number seed to use in the RJMCMC sampler.}
 

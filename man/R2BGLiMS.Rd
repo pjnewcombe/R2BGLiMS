@@ -9,8 +9,9 @@ R2BGLiMS(likelihood = NULL, data = NULL, outcome.var = NULL,
   model.space.priors = NULL, beta.priors = NULL, g.prior = TRUE,
   tau = NULL, enumerate.up.to.dim = 0, X.ref = NULL,
   marginal.betas = NULL, n = NULL, max.fpr = 1, min.tpr = 0,
-  n.mil = 1, seed = 1, extra.arguments = NULL, initial.model = NULL,
-  max.model.dim = -1, results.label = NULL, save.path = NULL)
+  n.iter = 1e+06, n.mil.iter = NULL, seed = 1, extra.arguments = NULL,
+  initial.model = NULL, max.model.dim = -1, results.label = NULL,
+  save.path = NULL)
 }
 \arguments{
 \item{likelihood}{Type of model to fit. Current options are
@@ -79,7 +80,9 @@ and use RJMCMC instead. The current maximum allowed value is 5.}
 
 \item{min.tpr}{ROC AUC ONLY: Minimum acceptable true positive rate, i.e. sensitivity (or y-axis value) to optimise a truncated ROC AUC.}
 
-\item{n.mil}{Number of million iterations to run (default is 1)}
+\item{n.iter}{Number of iterations to run (default is 1e6)}
+
+\item{n.mil.iter}{Number of million iterations to run. Can optionally be used instead of n.iter for convenience, which it will overide if specified.}
 
 \item{seed}{Which random number seed to use in the RJMCMC sampler.}
 

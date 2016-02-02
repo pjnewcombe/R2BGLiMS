@@ -67,7 +67,8 @@ NULL
 #' @param n: Sample size which marginal.betas were calculated in.
 #' @param max.fpr ROC AUC ONLY: Maximum acceptable false positive rate (or x-axis value) to optimise a truncated ROC AUC.
 #' @param min.tpr ROC AUC ONLY: Minimum acceptable true positive rate, i.e. sensitivity (or y-axis value) to optimise a truncated ROC AUC.
-#' @param n.mil Number of million iterations to run (default is 1)
+#' @param n.iter Number of iterations to run (default is 1e6)
+#' @param n.mil.iter Number of million iterations to run. Can optionally be used instead of n.iter for convenience, which it will overide if specified.
 #' @param seed Which random number seed to use in the RJMCMC sampler.
 #' @param results.label Optional label for algorithm output files (if you have specified save.path).
 #' @param extra.arguments A named list of any additional arguments for BGLiMS. Type "data(DefaultArguments)" and look in the 
@@ -111,7 +112,8 @@ R2BGLiMS <- function(
   n=NULL,
   max.fpr=1,
   min.tpr=0,
-  n.mil=1,
+  n.iter=1e6,
+  n.mil.iter=NULL,
   seed=1,
   extra.arguments=NULL,
   initial.model=NULL,
@@ -131,6 +133,13 @@ R2BGLiMS <- function(
   ### --- Error messages --- ###
   ##############################
   ##############################
+  
+  ### --- Number of iterations
+  if (!is.null(n.mil.iter)) {
+    cat("Number of million iterations specified. Overriding n.iter.\n")
+    n.iter <- n.mil.iter*1e6
+  }
+  cat(n.iter,"iterations will be run...\n")
   
   ### --- Java installation error messages
   try.java <- try(system("java -version"), silent=TRUE)
@@ -164,7 +173,6 @@ R2BGLiMS <- function(
         tau <- max(nrow(data), ncol(data)^2)        
       } else if (likelihood %in% c("JAM")) {
         cat("tau was not provided. Since the g-prior is in use, setting to the recommended maximum of n and P^2\n")
-#        cat("tau was not provided, setting to P^2 - which we recommend for JAM\n")
         tau <- max(n,length(marginal.betas)^2)
       }
     } else {
@@ -363,7 +371,7 @@ R2BGLiMS <- function(
   load(file.path(pack.root, "data", "DefaultArguments.rda"))
   if (!is.null(extra.arguments)) {
     for (arg in names(extra.arguments)) {
-      cat("Setting user specified argument ",arg,"\n")    
+      cat("Setting user specified argument",arg,"\n")    
       default.arguments[[arg]] <- extra.arguments[[arg]]
     }    
   }
@@ -411,7 +419,7 @@ R2BGLiMS <- function(
   }
 
   ### --- Write data
-  cat("\nWriting temporary data files...\n")
+  cat("Writing temporary data files...\n")
   .WriteData(
     data.file=data.file,
     likelihood=likelihood,
@@ -431,27 +439,24 @@ R2BGLiMS <- function(
     max.fpr=max.fpr,
     min.tpr=min.tpr,
     initial.model=initial.model
-  )
-  cat("\n...finished writing temporary data files.\n")  
-  
+  )  
   t2 <- proc.time()["elapsed"]
   write.time <- t2-t1
   hrs <-floor( (t2-t1)/(60*60) )
   mins <- floor( (t2-t1-60*60*hrs)/60 )
   secs <- round(t2-t1-hrs*60*60 - mins*60)
-  cat(paste("\nData written in",hrs,"hrs",mins,"mins and",secs,"seconds"))
+  cat(paste("Data written in",hrs,"hrs",mins,"mins and",secs,"seconds.\n"))
     
   ### --- Generate commands
-  n.thin <- max(100*n.mil,1)
-  n.its <- n.mil*1e6
-  n.output <- round(n.its/10)
+  n.thin <- max(n.iter/1e4, 1) # If 1 million iterations, save every 100th
+  n.iter.report.output <- round(n.iter/10) # How often to report progress to console
   comm <- paste(
     "java -jar \"", bayesglm.jar, "\" \"",
     arguments.file, "\" \"", data.file, "\" \"",
     results.file, "\" ",
-    format(n.its,sci=F)," ",0," ",
+    format(n.iter,sci=F)," ",0," ",
     format(n.thin,sci=F)," ",
-    format(n.output,sci=F)," ",
+    format(n.iter.report.output, sci=F)," ",
     seed," ",
     as.integer(model.selection)," ",
     as.integer(g.prior)," ",
@@ -475,8 +480,7 @@ R2BGLiMS <- function(
   }
   
   ### --- Run commands
-  cat("\nCalling BGLiMS...\n\n")
-  cat("\nCommand: \n")
+  cat("Calling BGLiMS Java algorithm with command: \n")
   cat(comm, "\n")
   jobs <- list()  
   t1 <- proc.time()["elapsed"]
@@ -486,7 +490,7 @@ R2BGLiMS <- function(
   hrs <-floor( (t2-t1)/(60*60) )
   mins <- floor( (t2-t1-60*60*hrs)/60 )
   secs <- round(t2-t1-hrs*60*60 - mins*60)
-  cat(paste("\nBGLiMS analysis finished in",hrs,"hrs",mins,"mins and",secs,"seconds"))
+  cat(paste("BGLiMS Java computation finished in",hrs,"hrs",mins,"mins and",secs,"seconds.\n"))
   
   ##################################
   ##################################
@@ -496,7 +500,7 @@ R2BGLiMS <- function(
   ##################################
   ##################################
   
-  cat("\n\nReading in the BGLiMS results file...\n")  
+  cat("Reading BGLiMS posterior output...\n")  
   t1 <- proc.time()["elapsed"]
   
   ### --- Read BGLiMS arguments
@@ -534,8 +538,6 @@ R2BGLiMS <- function(
   Lhalf <- round(nrow(mcmc.output)/2)     	 # Burnin is a half	
   mcmc.output <- mcmc.output[(Lhalf+1):nrow(mcmc.output),]   # Remove burnin
 
-  cat("... finished reading BGLiMS results.\n")  
-  
   ### --- Summary table
   posterior.summary.table <- matrix(NA,ncol(mcmc.output),8)
   colnames(posterior.summary.table) = c("PostProb","Median","CrI_Lower","CrI_Upper",
@@ -571,6 +573,7 @@ R2BGLiMS <- function(
   
   t2 <- proc.time()["elapsed"]  
   results.processing.time <- t2-t1
+  cat(paste("Posterior output processed in",hrs,"hrs",mins,"mins and",secs,"seconds.\n"))
   
   ########################
   ########################
@@ -578,7 +581,6 @@ R2BGLiMS <- function(
   ########################
   ########################
   
-  cat("\nCleaning up...")
   if (clean.up.bglims.files) {
     unlink(c(arguments.file, data.file, results.file), recursive = FALSE, force = TRUE)
   }
@@ -602,6 +604,7 @@ R2BGLiMS <- function(
   ### --- Create S4 Object --- ###
   ################################
   ################################
+
   if (is.null(confounders)) {
     confounders <- c("None")
   }
@@ -611,7 +614,7 @@ R2BGLiMS <- function(
     posterior.summary.table = posterior.summary.table,
     enumerate.up.to.dim = enumerate.up.to.dim,
     enumerated.posterior.inference = enumerated.posterior.inference,
-    n.iterations = n.its,
+    n.iterations = n.iter,
     thin = bglims.arguments$thin,
     model.space.priors = model.space.priors,
     confounders = confounders,
@@ -620,7 +623,11 @@ R2BGLiMS <- function(
     bglims.arguments=bglims.arguments,
     mcmc.output=mcmc.output
     )
-
+  
+  ########################
+  ### --- Finished --- ###
+  ########################
+  
+  cat(paste("Finished.\n"))
   return(results)
-  cat(paste("\nFinished - Results processed in",hrs,"hrs",mins,"mins and",secs,"seconds\n."))
 }

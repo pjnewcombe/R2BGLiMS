@@ -114,7 +114,7 @@
 		write(0, file = data.file , ncolumns = 1, append = T)		
 	}
   # N x V matrix of covariate values
-  cat("\n\nWriting a BGLiMS formatted datafile...\n")
+  cat("Writing data into an input file for BGLiMS...\n")
   # Conjugate Gaussian models
   if (likelihood %in% c("GaussianConj", "JAM")) {
     write(as.integer(g.prior), file = data.file , ncolumns = 1, append = T)
@@ -137,7 +137,6 @@
         write.table(L, row.names=F, col.names=F, file = data.file, append = T) # Multiply by L' (like in JAVA_test)
         cat("Taking Cholesky decomposition of block",b,"...\n")
         Lt_Inv[[b]] <- solve(t(L)) # Take TRANSPOSE inverse
-        cat("...done")
       }      
     }
   } else { 
@@ -217,7 +216,5 @@
   
   ########################
   ### --- Finished --- ###
-  ########################
-  
-  cat("... finished writing datafile.\n")
+  ########################  
 }
