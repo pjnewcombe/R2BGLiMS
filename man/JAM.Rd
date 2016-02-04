@@ -7,7 +7,8 @@
 JAM(marginal.betas = NULL, n = NULL, X.ref = NULL,
   model.space.priors = NULL, g.prior = TRUE, tau = NULL,
   enumerate.up.to.dim = 0, full.mcmc.sampling = FALSE, n.iter = 1e+06,
-  n.mil.iter = NULL, seed = 1, n.cases = NULL, extra.arguments = NULL)
+  n.mil.iter = NULL, seed = 1, n.cases = NULL, extra.arguments = NULL,
+  save.path = NULL)
 }
 \arguments{
 \item{marginal.betas}{Vector of marginal effect estimates to re-analyse with JAM under multivariate models.}
@@ -55,6 +56,9 @@ transformation between the linear and logistic scales.}
 \item{extra.arguments}{A named list of any additional arguments for BGLiMS. Type "data(DefaultArguments)" and look in the
 "default.arguments" list to see the names (which must match) and default values of available extra arguments. Currently these
 are not documented - please contact the package author, Paul Newcombe for details.}
+
+\item{save.path}{Optional path to save BGLiMS's data and results files. These are usually written as temporary files, and deleted
+after running R2BGLiMS. However, this option might help for debugging.}
 }
 \value{
 A Reversible Jump results object is returned. This is a list of two elements: "args" which records various modelling
