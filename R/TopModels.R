@@ -3,7 +3,8 @@
 #' @title Table of top models
 #' @name TopModels
 #' @inheritParams ManhattanPlot
-#' @param n.top.models number of top models to include in the table (default 20)
+#' @param n.top.models number of top models to include in the table (default 20).
+#' @param var.subset Subset of covariates to calculate marginal posterior combinations for. NOTE: Not yet implemented for enumeration.
 #' @return Ordered table of best models, with corresponding posterior probabilities. If JAM
 #' was run with multiple covariate blocks, a list of model tables is returned.
 #' @author Paul Newcombe
@@ -11,6 +12,7 @@
 TopModels <- function(
   results,
   n.top.models=20,
+  var.subset=NULL,
   remove.empty.cols=TRUE) {
   
   ######################
@@ -19,12 +21,19 @@ TopModels <- function(
   
   if (n.top.models < 2) {stop("n.top.models must be atleast 2")}
 
+  ### Error check
+  if (results@enumerate.up.to.dim!=0 & !is.null(var.subset)) stop(
+    "Variable subsetting is not yet implemented for inference via enumeration.")
 	### Get list of all models differently depending on MCMC vs enumeration
 	if (results@enumerate.up.to.dim==0) {
 	  #########################
 	  # --- MCMC was done --- #
 	  #########################
-	  vars.to.include <- unlist(lapply(results@model.space.priors, function(x) x$Variables))
+    if (!is.null(var.subset)) {
+      vars.to.include <- var.subset
+    } else {
+      vars.to.include <- unlist(lapply(results@model.space.priors, function(x) x$Variables))      
+    }
 	  all.models <- apply(
 	    results@mcmc.output[,vars.to.include],
 	    MAR=1,
