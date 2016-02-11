@@ -14,6 +14,7 @@ NULL
 #' "Weibull" (for survival data), 
 #' "Cox" (for survival data), 
 #' "RocAUC" (to optimise ROC AUC),
+#' "RocAUC_Anchoring" (to optimise ROC AUC using the anchoring formulation),
 #' "Gaussian" (for linear regression), 
 #' "GaussianConj" (linear regression exploiting conjugate results), 
 #' "JAM" (for conjugate linear regression using summary statistics, integrating out parameters) 
@@ -50,6 +51,8 @@ NULL
 #' beta.priors (a matrix/data.frame) can be used to provide fixed priors; rows must be named with the corresponding 
 #' variable names in the data, and include Guassian prior means and sds in the first and 
 #' second columns respectively.
+#' @param dirichlet.alphas.for.roc.model This can either be a single number, if you wish the same concentration parameter 
+#' to be used for every covariate. Alternatively a vector can be supplied, with an element corresponding to every variable.
 #' @param g.prior Whether to use a g-prior for the beta's, i.e. a multivariate normal 
 #' with correlation structure proportional to sigma^2*X'X^-1, which is thought to aid
 #' variable selection in the presence of strong correlation. By default this is enabled.
@@ -104,6 +107,7 @@ R2BGLiMS <- function(
   model.selection=TRUE,
   model.space.priors=NULL,
   beta.priors=NULL,
+  dirichlet.alphas.for.roc.model=0.01,
   g.prior=TRUE,
   tau=NULL,
   enumerate.up.to.dim=0,
@@ -147,9 +151,9 @@ R2BGLiMS <- function(
   
   ### --- Basic input checks
   if (is.null(likelihood)) stop("No likelihood, i.e. the model type, has been specified; please specify as Logistic,
-                                Weibull, Cox, Gaussian, GaussianConj, RocAUC, JAM_MCMC or JAM")
+                                Weibull, Cox, Gaussian, GaussianConj, RocAUC, RocAUC_Anchoring, JAM_MCMC or JAM")
   if (!is.null(likelihood)) {
-    if (!likelihood %in% c("Logistic", "Weibull", "Cox", "Gaussian", "GaussianConj", "JAM_MCMC", "JAM", "RocAUC", "RocAUC_Testing")) {
+    if (!likelihood %in% c("Logistic", "Weibull", "Cox", "Gaussian", "GaussianConj", "JAM_MCMC", "JAM", "RocAUC", "RocAUC_Anchoring")) {
       stop("Likelihood must be specified as Logistic, Weibull, Cox, Gaussian, GaussianConj, RocAUC, JAM_MCMC, or JAM")
     }
   }
@@ -157,7 +161,7 @@ R2BGLiMS <- function(
   if (is.null(outcome.var)&is.null(marginal.betas)) stop("An outcome variable has not been specified")
   
   ### --- Likelihood specific checks
-  if (likelihood %in% c("Logistic", "Weibull", "RocAUC", "RocAUC_Testing")) {
+  if (likelihood %in% c("Logistic", "Weibull", "RocAUC", "RocAUC_Anchoring")) {
     # This check is not done for Cox - since with uncensored data the outcome is not binary
     if (is.factor(data[,outcome.var])) {
       data[,outcome.var] <- as.integer(data[,outcome.var])-1
@@ -180,7 +184,10 @@ R2BGLiMS <- function(
            Did you mean to use the g-prior?")
     }
   }
-  
+  if (likelihood %in% c("RocAUC")) {
+    if (model.selection) {if(is.null(initial.model)){stop("Must specify an inital model for ROC AUC model 
+                                                     selection")}}
+  }
   ### --- Enumeration error messages
   if (enumerate.up.to.dim>0) {
     if (model.tau) stop ("Tau must be fixed to enumerate model specific posterior
@@ -419,7 +426,6 @@ R2BGLiMS <- function(
   }
 
   ### --- Write data
-  cat("Writing temporary data files...\n")
   .WriteData(
     data.file=data.file,
     likelihood=likelihood,
@@ -430,6 +436,7 @@ R2BGLiMS <- function(
     predictors=predictors,
     model.space.priors=model.space.priors,
     beta.priors=beta.priors,
+    dirichlet.alphas.for.roc.model=dirichlet.alphas.for.roc.model,
     g.prior=g.prior,
     model.tau=model.tau,
     tau=tau,
@@ -564,7 +571,7 @@ R2BGLiMS <- function(
         posterior.summary.table[v,"PostProb"] <- enumerated.posterior.inference$marg.probs[v]
       }
       posterior.summary.table[v,"BF"] <- .BayesFactor(prior.probs[v], posterior.summary.table[v,"PostProb"])
-      if (likelihood %in% c("Weibull", "Cox", "Logistic", "RocAUC", "RocAUC_Testing") ) {
+      if (likelihood %in% c("Weibull", "Cox", "Logistic", "RocAUC_Anchoring") ) {
         # Exponentiate quantiles
         posterior.summary.table[v,c("CrI_Lower", "Median", "CrI_Upper","CrI_Lower_Present", "Median_Present","CrI_Upper_Present")] <- exp(posterior.summary.table[v,c("CrI_Lower", "Median", "CrI_Upper","CrI_Lower_Present", "Median_Present","CrI_Upper_Present")])
       }

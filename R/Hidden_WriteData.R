@@ -41,6 +41,7 @@
   predictors=NULL,
   model.space.priors,
   beta.priors=NULL,
+  dirichlet.alphas.for.roc.model=NULL,
   g.prior=FALSE,
   model.tau=FALSE,
   tau=NULL,
@@ -152,7 +153,7 @@
 		write(t(clusters), file = data.file , ncolumns = n.clusters, append = T)
 	}
   # Vector of disease labels
-  if (likelihood %in% c("Logistic", "Weibull", "Cox", "RocAUC", "RocAUC_Testing")) {
+  if (likelihood %in% c("Logistic", "Weibull", "Cox", "RocAUC", "RocAUC_Anchoring")) {
     write(t(as.integer(disease)), file = data.file , ncolumns = N, append = T)    
   } else if (likelihood %in% c("Gaussian","GaussianConj")) {
     if (likelihood == "GaussianConj") { disease <- disease - mean(disease) }
@@ -171,23 +172,33 @@
   if (likelihood=="Weibull") {
     write(t(times), file = data.file , ncolumns = N, append = T)    
   }
-  if (likelihood=="RocAUC") {
+  if (likelihood %in% c("RocAUC","RocAUC_Anchoring") ) {
     write(max.fpr, file = data.file , ncolumns = N, append = T)    
     write(min.tpr, file = data.file , ncolumns = N, append = T)    
   }
   
-  ### --- Fixed beta priors
-  use.unknown.priors <- TRUE
-  if (is.null(beta.priors)) {
-    write(0, file = data.file , ncolumns = 1, append = T)    
-  } else {
-    write(nrow(beta.priors), file = data.file , ncolumns = 1, append = T)
-    for (v in 1:nrow(beta.priors)) {
-      write( c(beta.priors[v,1],beta.priors[v,2]), file = data.file , ncolumns = 2, append = T)
+  ### --- Dirichlet alphas
+  if (likelihood %in% c("RocAUC")) {
+    use.unknown.priors <- FALSE # This forces numberOfHierarchicalCovariatePriorPartitions to 0
+    if (length(dirichlet.alphas.for.roc.model)==1) {
+      dirichlet.alphas.for.roc.model <- c(rep(dirichlet.alphas.for.roc.model,V))
     }
-    if (nrow(beta.priors)==length(predictors)) {
-      use.unknown.priors <- FALSE
+    for (v in 1:length(dirichlet.alphas.for.roc.model)) {
+      write( dirichlet.alphas.for.roc.model[v], file = data.file , ncolumns = 2, append = T)
     }
+  } else { # Fixed beta priors
+    use.unknown.priors <- TRUE
+    if (is.null(beta.priors)) {
+      write(0, file = data.file , ncolumns = 1, append = T)    
+    } else {
+      write(nrow(beta.priors), file = data.file , ncolumns = 1, append = T)
+      for (v in 1:nrow(beta.priors)) {
+        write( c(beta.priors[v,1],beta.priors[v,2]), file = data.file , ncolumns = 2, append = T)
+      }
+      if (nrow(beta.priors)==length(predictors)) {
+        use.unknown.priors <- FALSE
+      }
+    }    
   }
   
   ### --- Shared unknown beta priors
