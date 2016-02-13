@@ -8,7 +8,7 @@ JAM(marginal.betas = NULL, n = NULL, X.ref = NULL,
   model.space.priors = NULL, g.prior = TRUE, tau = NULL,
   enumerate.up.to.dim = 0, full.mcmc.sampling = FALSE, n.iter = 1e+06,
   n.mil.iter = NULL, seed = 1, n.cases = NULL, extra.arguments = NULL,
-  save.path = NULL)
+  save.path = NULL, max.model.dim = -1)
 }
 \arguments{
 \item{marginal.betas}{Vector of marginal effect estimates to re-analyse with JAM under multivariate models.}
@@ -59,6 +59,8 @@ are not documented - please contact the package author, Paul Newcombe for detail
 
 \item{save.path}{Optional path to save BGLiMS's data and results files. These are usually written as temporary files, and deleted
 after running R2BGLiMS. However, this option might help for debugging.}
+
+\item{max.model.dim}{Optional specification of maximum model dimension (default -1 means no maximum is set).}
 }
 \value{
 A Reversible Jump results object is returned. This is a list of two elements: "args" which records various modelling

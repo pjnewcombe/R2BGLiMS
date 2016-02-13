@@ -45,7 +45,8 @@ JAM <- function(
   seed=1,
   n.cases=NULL,
   extra.arguments=NULL,
-  save.path=NULL
+  save.path=NULL,
+  max.model.dim=-1
 ) {
   
   ##################################################################
@@ -164,7 +165,8 @@ JAM <- function(
         n.mil.iter=n.mil.iter,
         seed=seed,
         extra.arguments=extra.arguments,
-        save.path=save.path
+        save.path=save.path,
+        max.model.dim=max.model.dim
       )
     } else {
       ##############################################
@@ -192,7 +194,8 @@ JAM <- function(
           n.mil.iter=n.mil.iter,
           seed=seed,
           extra.arguments=extra.arguments,
-          save.path=save.path
+          save.path=save.path,
+          max.model.dim=max.model.dim          
         )
         if (ld.block==1) {
           results <- results.r2bglims.g
@@ -224,7 +227,8 @@ JAM <- function(
       n.mil.iter=n.mil.iter,
       seed=seed,
       extra.arguments=extra.arguments,
-      save.path=save.path
+      save.path=save.path,
+      max.model.dim=max.model.dim      
     )
   }
 
