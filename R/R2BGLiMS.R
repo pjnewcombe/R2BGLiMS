@@ -580,6 +580,9 @@ R2BGLiMS <- function(
   
   t2 <- proc.time()["elapsed"]  
   results.processing.time <- t2-t1
+  hrs <-floor( (t2-t1)/(60*60) )
+  mins <- floor( (t2-t1-60*60*hrs)/60 )
+  secs <- round(t2-t1-hrs*60*60 - mins*60)
   cat(paste("Posterior output processed in",hrs,"hrs",mins,"mins and",secs,"seconds.\n"))
   
   ########################
