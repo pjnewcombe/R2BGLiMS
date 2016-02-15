@@ -79,6 +79,12 @@ When using the g-prior, a recommended default is max(n, P^2) where n is the numb
 the posterior support for every possible model up to this dimension. Leaving at 0 to disable
 and use RJMCMC instead. The current maximum allowed value is 5.}
 
+\item{X.ref}{Reference genotype matrix used by JAM to impute the SNP-SNP correlations. If multiple regions are to be
+analysed this should be a list containing reference genotype matrices for each region. Individual's genotype
+must be coded as a numeric risk allele count 0/1/2. Non-integer values reflecting imputation may be given.
+NB: The risk allele coding MUST correspond to that used in marginal.betas. These matrices must each be positive definite and
+the column names must correspond to the names of the marginal.betas vector.}
+
 \item{marginal.betas}{Vector of marginal effect estimates to re-analyse with JAM under multivariate models.}
 
 \item{max.fpr}{ROC AUC ONLY: Maximum acceptable false positive rate (or x-axis value) to optimise a truncated ROC AUC.}
@@ -104,12 +110,6 @@ and the null model is used. If set to 1, the saturated model is used.}
 
 \item{save.path}{Optional path to save BGLiMS's data and results files. These are usually written as temporary files, and deleted
 after running R2BGLiMS. However, this option might help for debugging.}
-
-\item{X.ref:}{Reference genotype matrix used by JAM to impute the SNP-SNP correlations. If multiple regions are to be
-analysed this should be a list containing reference genotype matrices for each region. Individual's genotype
-must be coded as a numeric risk allele count 0/1/2. Non-integer values reflecting imputation may be given.
-NB: The risk allele coding MUST correspond to that used in marginal.betas. These matrices must each be positive definite and
-the column names must correspond to the names of the marginal.betas vector.}
 
 \item{n:}{Sample size which marginal.betas were calculated in.}
 }

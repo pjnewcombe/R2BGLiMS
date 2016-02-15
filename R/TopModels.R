@@ -4,7 +4,7 @@
 #' @name TopModels
 #' @inheritParams ManhattanPlot
 #' @param n.top.models number of top models to include in the table (default 20).
-#' @param var.subset Subset of covariates to calculate marginal posterior combinations for. NOTE: Not yet implemented for enumeration.
+#' @param covariates.to.include Character vector indicating a subset of covariates to calculate marginal posterior combinations for. NOTE: Not yet implemented for enumeration.
 #' @return Ordered table of best models, with corresponding posterior probabilities. If JAM
 #' was run with multiple covariate blocks, a list of model tables is returned.
 #' @author Paul Newcombe
@@ -12,7 +12,7 @@
 TopModels <- function(
   results,
   n.top.models=20,
-  var.subset=NULL,
+  covariates.to.include=NULL,
   remove.empty.cols=TRUE) {
   
   ######################
@@ -22,20 +22,20 @@ TopModels <- function(
   if (n.top.models < 2) {stop("n.top.models must be atleast 2")}
 
   ### Error check
-  if (results@enumerate.up.to.dim!=0 & !is.null(var.subset)) stop(
+  if (results@enumerate.up.to.dim!=0 & !is.null(covariates.to.include)) stop(
     "Variable subsetting is not yet implemented for inference via enumeration.")
 	### Get list of all models differently depending on MCMC vs enumeration
 	if (results@enumerate.up.to.dim==0) {
 	  #########################
 	  # --- MCMC was done --- #
 	  #########################
-    if (!is.null(var.subset)) {
-      vars.to.include <- var.subset
+    if (!is.null(covariates.to.include)) {
+      vars.to.include.in.table <- covariates.to.include
     } else {
-      vars.to.include <- unlist(lapply(results@model.space.priors, function(x) x$Variables))      
+      vars.to.include.in.table <- unlist(lapply(results@model.space.priors, function(x) x$Variables))      
     }
 	  all.models <- apply(
-	    results@mcmc.output[,vars.to.include],
+	    results@mcmc.output[,vars.to.include.in.table],
 	    MAR=1,
 	    function(r) paste( as.integer(r!=0), collapse="_")
 	  )
@@ -48,7 +48,7 @@ TopModels <- function(
 	  for (m in 1:length(models.tab.str)) {
 	    models.tab <- rbind(models.tab, as.integer(models.tab.str[[m]]) )
 	  }
-	  colnames(models.tab) <- vars.to.include
+	  colnames(models.tab) <- vars.to.include.in.table
 	  models.tab <- cbind(models.tab, "Post Prob"=models.table)
 	  rownames(models.tab) <- NULL
 	  # --- Remove empty columns

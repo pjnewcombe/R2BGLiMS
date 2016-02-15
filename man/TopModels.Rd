@@ -4,7 +4,7 @@
 \alias{TopModels}
 \title{Table of top models}
 \usage{
-TopModels(results, n.top.models = 20, var.subset = NULL,
+TopModels(results, n.top.models = 20, covariates.to.include = NULL,
   remove.empty.cols = TRUE)
 }
 \arguments{
@@ -12,7 +12,7 @@ TopModels(results, n.top.models = 20, var.subset = NULL,
 
 \item{n.top.models}{number of top models to include in the table (default 20).}
 
-\item{var.subset}{Subset of covariates to calculate marginal posterior combinations for. NOTE: Not yet implemented for enumeration.}
+\item{covariates.to.include}{Character vector indicating a subset of covariates to calculate marginal posterior combinations for. NOTE: Not yet implemented for enumeration.}
 }
 \value{
 Ordered table of best models, with corresponding posterior probabilities. If JAM

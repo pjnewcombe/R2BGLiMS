@@ -9,12 +9,13 @@
 #' in favour of the null (i.e. small values correspond to evidence of association), as proposed in 
 #' Wakefield, J. (2009). Genetic Epidemiology.
 #' @param results.vector Alternatively can simply pass a named vector of probabilties
+#' @param covariates.to.include Character vector indicating a subset of covariates to include in the plot.
+#' @param var.dictionary Character vector containing a mapping of covariate names to substitutions for the plot. The names of the elements are
+#' the variable names as in the original analysis (i.e. as named in the results object).
 #' @param plot.title Optional character string to name the plot with
 #' @param y.max If plotting Bayes Factors, this is an optional upper limit for the y-axis (e.g. 
 #' to make comparison with a different set of results easier on the eye). Note that if p-values are
 #' being plotted, then this can be used to supply the maximum -log10(p-value) on the y-axis.
-#' @param cex.axis Optional size setting for the variable names relative to the x-axis. May want to
-#' adjust if variable names are not legible. (default is 0.5)
 #' @param add.bonferroni If plotting p-values this option draws a dashed red line at the Bonferroni
 #' threshold. (default is TRUE).
 #' @param top.hits If a list of "top hits" are provided here, along with the original X matrix below,
@@ -24,7 +25,7 @@
 #' order as the covariates)
 #' @param point.labs Optional vector of labels to use for the points (as many and in the same
 #' order as the covariates)
-#' @param supress.x.ticks Set to TRUE to avoid adding x tick mark labels (e.g. if there are many many
+#' @param include.var.names.on.x.axis Set to TRUE to avoid adding x tick mark labels (e.g. if there are many many
 #' variables)
 #' @author Paul Newcombe
 #' @example Examples/ManhattanPlot_Examples.R 
@@ -32,7 +33,7 @@ ManhattanPlot <- function(
   results=NULL,
   plot.quantity="PosteriorProbability",
   results.vector=NULL,
-  vars.to.include=NULL,
+  covariates.to.include=NULL,
   var.dictionary=NULL,
   plot.title="Manhattan Plot",
   y.max=NULL,
@@ -41,8 +42,9 @@ ManhattanPlot <- function(
   X.mat=NULL,
   point.cols=NULL,
   point.labs=NULL,
-  suppress.x.ticks=FALSE
+  include.var.names.on.x.axis=FALSE
   ) {
+  
   ### --- Errors
   if (!is.null(top.hits)) {
     if(is.null(X.mat)) stop("Must provide original X matrix to indictae correlation with top hits")
@@ -50,21 +52,20 @@ ManhattanPlot <- function(
   
   ### --- Setup PROVIDED results.vector
   if (!is.null(results.vector)){
-    if(!is.null(vars.to.include)) {
-      results.vector <- results.vector[vars.to.include]
+    if(!is.null(covariates.to.include)) {
+      results.vector <- results.vector[covariates.to.include]
     } else {
-      vars.to.include <- names(results.vector)
+      covariates.to.include <- names(results.vector)
     }
   }
   
   ### --- Pre-process results object -> results.vector
   if (!is.null(results)) {
     # By default exclude these boring modelling parameters
-    if (is.null(vars.to.include)) {
-      vars.to.include <- unlist(lapply(results@model.space.priors, function(x) x$Variables))
+    if (is.null(covariates.to.include)) {
+      covariates.to.include <- unlist(lapply(results@model.space.priors, function(x) x$Variables))
     }
-    results.table <- results@posterior.summary.table
-    results.table <- results.table[vars.to.include,]
+    results.table <- results@posterior.summary.table[covariates.to.include,]
     if (plot.quantity=="PosteriorProbability") {
       results.vector <- results.table[,"PostProb"]      
     } else if (plot.quantity=="BayesFactor") {
@@ -79,18 +80,18 @@ ManhattanPlot <- function(
   }
   if (!is.null(top.hits)) {
     library(gplots)
-    rsqmat <- cor(X.mat[,vars.to.include], use="pairwise.complete.obs")
+    rsqmat <- cor(X.mat[,covariates.to.include], use="pairwise.complete.obs")
     cor.with.top.hit <- NULL
-    for (v in vars.to.include) {
+    for (v in covariates.to.include) {
       cor.with.top.hit <- c(cor.with.top.hit, max(abs(rsqmat[v,top.hits])))
     }
-    names(cor.with.top.hit) <- vars.to.include
+    names(cor.with.top.hit) <- covariates.to.include
     palette( rev(rich.colors(32)) ) # colors: 1 to 32
     point.cols <- 1+31*(1-cor.with.top.hit)
   }
   
   ### --- Setup x tick labels
-  if (suppress.x.ticks) {
+  if (include.var.names.on.x.axis) {
     x.ticks <- FALSE
     x.tick.labels <- FALSE    
   } else {
@@ -215,4 +216,5 @@ ManhattanPlot <- function(
       labels = point.labs[which(point.labs!="")]
       )
   }
+  
 }

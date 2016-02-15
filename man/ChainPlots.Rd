@@ -11,6 +11,9 @@ ChainPlots(results, vars.to.include = NULL, var.dictionary = NULL,
 \arguments{
 \item{results}{A \code{\link[R2BGLiMS]{R2BGLiMS_Results-class}} object frum running the \code{\link[R2BGLiMS]{R2BGLiMS}} command.}
 
+\item{var.dictionary}{Character vector containing a mapping of covariate names to substitutions for the plot. The names of the elements are
+the variable names as in the original analysis (i.e. as named in the results object).}
+
 \item{predictors.only}{If true only chain plots for predictors are plotted (and intercept,
 likelihood etc. are excluded). Default is FALSE.}
 

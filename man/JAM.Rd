@@ -13,6 +13,12 @@ JAM(marginal.betas = NULL, n = NULL, X.ref = NULL,
 \arguments{
 \item{marginal.betas}{Vector of marginal effect estimates to re-analyse with JAM under multivariate models.}
 
+\item{X.ref}{Reference genotype matrix used by JAM to impute the SNP-SNP correlations. If multiple regions are to be
+analysed this should be a list containing reference genotype matrices for each region. Individual's genotype
+must be coded as a numeric risk allele count 0/1/2. Non-integer values reflecting imputation may be given.
+NB: The risk allele coding MUST correspond to that used in marginal.betas. These matrices must each be positive definite and
+the column names must correspond to the names of the marginal.betas vector.}
+
 \item{model.space.priors}{Must be specified if model.selection is set to TRUE.
 Two options are available. 1) A fixed prior is placed on the proportion of causal
 covariates, and all models with the same number of covariates is equally likely. This

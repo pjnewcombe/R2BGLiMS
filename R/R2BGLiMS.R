@@ -61,7 +61,7 @@ NULL
 #' @param enumerate.up.to.dim Whether to make posterior inference by exhaustively calculating
 #' the posterior support for every possible model up to this dimension. Leaving at 0 to disable
 #' and use RJMCMC instead. The current maximum allowed value is 5.
-#' @param X.ref: Reference genotype matrix used by JAM to impute the SNP-SNP correlations. If multiple regions are to be 
+#' @param X.ref Reference genotype matrix used by JAM to impute the SNP-SNP correlations. If multiple regions are to be 
 #' analysed this should be a list containing reference genotype matrices for each region. Individual's genotype
 #' must be coded as a numeric risk allele count 0/1/2. Non-integer values reflecting imputation may be given.
 #' NB: The risk allele coding MUST correspond to that used in marginal.betas. These matrices must each be positive definite and
@@ -195,7 +195,7 @@ R2BGLiMS <- function(
     if ((enumerate.up.to.dim>5)) stop ("Currenly only possible to enumerate models
                                      up to dimension 5") # If change edit help above    
   }  
-  
+    
   ### --- Model space prior error messages
   if (is.null(model.space.priors)) stop("Must specify a prior over the model space.")
   if (!is.null(model.space.priors)) {
@@ -526,7 +526,7 @@ R2BGLiMS <- function(
         results.file,
         skip = n.lines.until.rjmcmc.output,
         header=FALSE,
-        nrows=n.models.this.dimension)    
+        nrows=n.models.this.dimension)
       n.lines.until.rjmcmc.output <- n.lines.until.rjmcmc.output+n.models.this.dimension
       enumerated.model.posterior.scores <- rbind(enumerated.model.posterior.scores, model.scores.this.dimension)    
     }

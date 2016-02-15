@@ -7,7 +7,7 @@
 #' @inheritParams ManhattanPlot
 #' @param plot.title Optionally specify a title for the plot.
 #' @param file Path to a PDF to print plot to.
-#' @param include.var.names Include variable names perpendicularly below the x-axis. Turn off if it looks too crowded.
+#' @param include.var.names.on.x.axis Include variable names perpendicularly below the x-axis. Turn off if it looks too crowded.
 #' @param include.post.probs Include a barplot of posterior probabilities at the top.
 #' @param cex.x.axis.ticks Control the size of tick marks for the covariates along the X-axis. Decrease if there are many.
 #' @param cex.y.axis.ticks Control the size of tick marks for the Y-axis.
@@ -20,9 +20,9 @@
 AutocorrelationPlot <- function(
   results,
   plot.title=NULL,
-  vars.to.include=NULL,
   file=NULL,
-  include.var.names=TRUE,
+  include.var.names.on.x.axis=TRUE,
+  covariates.to.include=NULL,
   var.dictionary=NULL,
   include.post.probs=TRUE,
   cex.x.axis.ticks=1,
@@ -30,12 +30,15 @@ AutocorrelationPlot <- function(
   cex.y.axis.labels=1,
   mar.for.varnames=8) {
     
+  # Save initial graphical parameters
+  original.par <- par(no.readonly = TRUE)
+  
   # Setup for plot
-  if (is.null(vars.to.include)) {
+  if (is.null(covariates.to.include)) {
     # If variable lsit not provided, take from the model space prior
-    vars.to.include <- unlist(lapply(results@model.space.priors, function(x) x$Variables))
+    covariates.to.include <- unlist(lapply(results@model.space.priors, function(x) x$Variables))
   }
-  results@mcmc.output <- results@mcmc.output[,vars.to.include]
+  results@mcmc.output <- results@mcmc.output[,covariates.to.include]
   n.var <- ncol(results@mcmc.output)
   x <- c(1:n.var)
   y <- seq(from=(results@bglims.arguments$iterations/2+results@bglims.arguments$thin),to=results@bglims.arguments$iterations, by=results@bglims.arguments$thin)
@@ -76,7 +79,7 @@ AutocorrelationPlot <- function(
   }
   
   # 2 - Autocorrelation plot
-  if (include.var.names) {
+  if (include.var.names.on.x.axis) {
     par(mar=c(mar.for.varnames, 4*cex.y.axis.labels, mar.top, 2) + 0.1)
     image(x,y,z, axes=F, xlab="", ylab="Iteration", col=c("white", "black"), cex.lab=cex.y.axis.labels)
     tick.labels <- colnames(results@mcmc.output)
@@ -95,8 +98,8 @@ AutocorrelationPlot <- function(
   axis(side=2, at=y.ticks, labels=y.tick.labs, col.axis="black", cex.axis=cex.y.axis.ticks)
   
   # Close pdf
-	if(!is.null(file)) {
-	  dev.off()
-	}
-	
+  if (!is.null(file)) {
+    dev.off()    
+  }
+  
 }	

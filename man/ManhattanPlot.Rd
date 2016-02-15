@@ -5,10 +5,11 @@
 \title{Manhattan Plot}
 \usage{
 ManhattanPlot(results = NULL, plot.quantity = "PosteriorProbability",
-  results.vector = NULL, vars.to.include = NULL, var.dictionary = NULL,
-  plot.title = "Manhattan Plot", y.max = NULL, add.bonferroni = FALSE,
-  top.hits = NULL, X.mat = NULL, point.cols = NULL, point.labs = NULL,
-  suppress.x.ticks = FALSE)
+  results.vector = NULL, covariates.to.include = NULL,
+  var.dictionary = NULL, plot.title = "Manhattan Plot", y.max = NULL,
+  add.bonferroni = FALSE, top.hits = NULL, X.mat = NULL,
+  point.cols = NULL, point.labs = NULL,
+  include.var.names.on.x.axis = FALSE)
 }
 \arguments{
 \item{results}{A \code{\link[R2BGLiMS]{R2BGLiMS_Results-class}} object frum running the \code{\link[R2BGLiMS]{R2BGLiMS}} command.}
@@ -20,6 +21,11 @@ in favour of the null (i.e. small values correspond to evidence of association),
 Wakefield, J. (2009). Genetic Epidemiology.}
 
 \item{results.vector}{Alternatively can simply pass a named vector of probabilties}
+
+\item{covariates.to.include}{Character vector indicating a subset of covariates to include in the plot.}
+
+\item{var.dictionary}{Character vector containing a mapping of covariate names to substitutions for the plot. The names of the elements are
+the variable names as in the original analysis (i.e. as named in the results object).}
 
 \item{plot.title}{Optional character string to name the plot with}
 
@@ -41,10 +47,7 @@ order as the covariates)}
 \item{point.labs}{Optional vector of labels to use for the points (as many and in the same
 order as the covariates)}
 
-\item{cex.axis}{Optional size setting for the variable names relative to the x-axis. May want to
-adjust if variable names are not legible. (default is 0.5)}
-
-\item{supress.x.ticks}{Set to TRUE to avoid adding x tick mark labels (e.g. if there are many many
+\item{include.var.names.on.x.axis}{Set to TRUE to avoid adding x tick mark labels (e.g. if there are many many
 variables)}
 }
 \description{

@@ -5,10 +5,10 @@
 \title{Autocorrelation plot for model selection. Model inclusion of each predictor is
 represented across all iterations as a black and white "heatmap".}
 \usage{
-AutocorrelationPlot(results, plot.title = NULL, vars.to.include = NULL,
-  file = NULL, include.var.names = TRUE, var.dictionary = NULL,
-  include.post.probs = TRUE, cex.x.axis.ticks = 1, cex.y.axis.ticks = 1,
-  cex.y.axis.labels = 1, mar.for.varnames = 8)
+AutocorrelationPlot(results, plot.title = NULL, file = NULL,
+  include.var.names.on.x.axis = TRUE, covariates.to.include = NULL,
+  var.dictionary = NULL, include.post.probs = TRUE, cex.x.axis.ticks = 1,
+  cex.y.axis.ticks = 1, cex.y.axis.labels = 1, mar.for.varnames = 8)
 }
 \arguments{
 \item{results}{A \code{\link[R2BGLiMS]{R2BGLiMS_Results-class}} object frum running the \code{\link[R2BGLiMS]{R2BGLiMS}} command.}
@@ -17,7 +17,12 @@ AutocorrelationPlot(results, plot.title = NULL, vars.to.include = NULL,
 
 \item{file}{Path to a PDF to print plot to.}
 
-\item{include.var.names}{Include variable names perpendicularly below the x-axis. Turn off if it looks too crowded.}
+\item{include.var.names.on.x.axis}{Include variable names perpendicularly below the x-axis. Turn off if it looks too crowded.}
+
+\item{covariates.to.include}{Character vector indicating a subset of covariates to include in the plot.}
+
+\item{var.dictionary}{Character vector containing a mapping of covariate names to substitutions for the plot. The names of the elements are
+the variable names as in the original analysis (i.e. as named in the results object).}
 
 \item{include.post.probs}{Include a barplot of posterior probabilities at the top.}
 
