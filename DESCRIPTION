@@ -2,8 +2,8 @@ Package: R2BGLiMS
 Type: Package
 Title: R interface to the java package BGLiMS (Bayesian Generalised Linear Model
     Selection).
-Version: 0.1-15-02-2016
-Date: 15-02-2016
+Version: 0.1-16-02-2016
+Date: 16-02-2016
 Author: Paul J Newcombe <paul.newcombe@mrc-bsu.cam.ac.uk>
 Maintainer: Paul J Newcombe <paul.newcombe@mrc-bsu.cam.ac.uk>
 Description: Provides an R interface to a Java package for fitting Bayesian
