@@ -519,7 +519,7 @@ R2BGLiMS <- function(
   enumerated.posterior.inference <- list("No enumeration was done.")
   if (enumerate.up.to.dim>0) {
     ### -- Read enumerated posterior scores
-    enumerated.model.posterior.scores <- NULL
+    enumerated.model.likelihood.scores <- NULL
     for (max.model.dimension in c(0:enumerate.up.to.dim)) { # From 0 to account for the null model
       n.models.this.dimension <- choose(bglims.arguments$V - bglims.arguments$startRJ, max.model.dimension)
       model.scores.this.dimension <- read.table(
@@ -528,11 +528,11 @@ R2BGLiMS <- function(
         header=FALSE,
         nrows=n.models.this.dimension)
       n.lines.until.rjmcmc.output <- n.lines.until.rjmcmc.output+n.models.this.dimension
-      enumerated.model.posterior.scores <- rbind(enumerated.model.posterior.scores, model.scores.this.dimension)    
+      enumerated.model.likelihood.scores <- rbind(enumerated.model.likelihood.scores, model.scores.this.dimension)    
     }
-    colnames(enumerated.model.posterior.scores) <- c("Model", "PosteriorScore")
-    enumerated.model.posterior.scores$Model <- as.character(enumerated.model.posterior.scores$Model)
-    enumerated.posterior.inference <- .ApproxPostProbsByModelEnumeration(enumerated.model.posterior.scores, model.space.priors, enumerate.up.to.dim)
+    colnames(enumerated.model.likelihood.scores) <- c("Model", "PosteriorScore")
+    enumerated.model.likelihood.scores$Model <- as.character(enumerated.model.likelihood.scores$Model)
+    enumerated.posterior.inference <- .ApproxPostProbsByModelEnumeration(enumerated.model.likelihood.scores, model.space.priors, enumerate.up.to.dim)
   }
   
   ### --- Read MCMC output

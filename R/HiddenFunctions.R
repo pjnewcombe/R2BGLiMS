@@ -11,7 +11,8 @@
   return(bayesFactor)
 }
 
-#' Calculates a Bayes Facotor, give a prior and posterior probabiltiies. Check2
+#' Calculates a Beta-Binomial prior probability for a SPECIFIC model. From Bottolo et al.
+#' This is not the prior on a particular dimension (that would required the binomial co-efficient).
 #' 
 #' @param k dimension to calculate probability for
 #' @param n total number of covariates
@@ -19,8 +20,8 @@
 #' @param b beta-binomial hyper parameter b
 #' @return Probability
 #' @author Paul Newcombe
-.BetaBinomialProbability <- function(k, n, a, b) {
-  choose(n, k)*beta( (k+a), (n-k+b) )/beta(a,b)
+.BetaBinomialProbabilitySpecificModel <- function(k, n, a, b) {
+  beta( (k+a), (n-k+b) )/beta(a,b)
 }
 
 #' Calculates prior probabability of causality for a particular variable, when a Poisson prior is used for model space
@@ -160,7 +161,7 @@
 #' what was passed to R2BGLiMS). If left NULL the value passed to R2BGLiMS will be used.
 #' @return A list containing all model, marginal and dimension approximate posterior probabilities 
 #' @author Paul Newcombe
-.ApproxPostProbsByModelEnumeration <- function(enumerated.model.posterior.scores, model.space.priors, enumerate.up.to.dim) {
+.ApproxPostProbsByModelEnumeration <- function(enumerated.model.likelihood.scores, model.space.priors, enumerate.up.to.dim) {
   
   # Determine model space prior
   if ("a" %in% names(model.space.priors[[1]])) {
@@ -177,16 +178,16 @@
   P <- length(vars)
   
   # Setup approx probs and model dimensions
-  approx.probs <- enumerated.model.posterior.scores
+  approx.probs <- enumerated.model.likelihood.scores
   approx.probs$Prob <- NULL
-  model.dims <- unlist(lapply(strsplit(split="_AND_",as.character(enumerated.model.posterior.scores$Model)),length))
+  model.dims <- unlist(lapply(strsplit(split="_AND_",as.character(enumerated.model.likelihood.scores$Model)),length))
   model.dims[1] <- 0
   approx.probs <- approx.probs[which(model.dims<=enumerate.up.to.dim),]
   model.dims <- model.dims[which(model.dims<=enumerate.up.to.dim)]
   
   # Null model
   if (model.space.prior=="beta.binom") {
-    prior.prob.0 <- .BetaBinomialProbability(k=0,n=P,a=a,b=b)    
+    prior.prob.0 <- .BetaBinomialProbabilitySpecificModel(k=0,n=P,a=a,b=b)    
   } else if (model.space.prior=="poisson") {
     prior.prob.0 <- dpois(0, poisson.lambda)
   }
@@ -194,7 +195,7 @@
   
   # Single SNP model
   if (model.space.prior=="beta.binom") {
-    prior.prob.1 <- .BetaBinomialProbability(k=1,n=P,a=a,b=b)
+    prior.prob.1 <- .BetaBinomialProbabilitySpecificModel(k=1,n=P,a=a,b=b)
   } else if (model.space.prior=="poisson") {
     prior.prob.1 <- dpois(1, poisson.lambda)
   }  
@@ -203,7 +204,7 @@
   # Dual SNP models
   if (enumerate.up.to.dim>=2) {
     if (model.space.prior=="beta.binom") {
-      prior.prob.2 <- .BetaBinomialProbability(k=2,n=P,a=a,b=b)
+      prior.prob.2 <- .BetaBinomialProbabilitySpecificModel(k=2,n=P,a=a,b=b)
     } else if (model.space.prior=="poisson") {
       prior.prob.2 <- dpois(2, poisson.lambda)
     }    
@@ -213,7 +214,7 @@
   # Triple SNP models
   if (enumerate.up.to.dim>=3) {
     if (model.space.prior=="beta.binom") {
-      prior.prob.3 <- .BetaBinomialProbability(k=3,n=P,a=a,b=b)
+      prior.prob.3 <- .BetaBinomialProbabilitySpecificModel(k=3,n=P,a=a,b=b)
     } else if (model.space.prior=="poisson") {
       prior.prob.3 <- dpois(3, poisson.lambda)
     }
@@ -223,7 +224,7 @@
   # Quadruple SNP models
   if (enumerate.up.to.dim>=4) {
     if (model.space.prior=="beta.binom") {
-      prior.prob.4 <- .BetaBinomialProbability(k=4,n=P,a=a,b=b)
+      prior.prob.4 <- .BetaBinomialProbabilitySpecificModel(k=4,n=P,a=a,b=b)
     } else if (model.space.prior=="poisson") {
       prior.prob.4 <- dpois(4, poisson.lambda)
     }
