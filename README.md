@@ -5,6 +5,7 @@ Bayesian variable selection for binary and survial outcomes, and (under the "JAM
 
 To install using the `devtools` library, run:
 
-```library(devtools)
-install_github("pjnewcombe/R2BGLiMS")```
+  library(devtools)
+  install_github("pjnewcombe/R2BGLiMS")
+
 
