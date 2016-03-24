@@ -5,8 +5,8 @@
 \title{Call BGLiMS from R}
 \usage{
 R2BGLiMS(likelihood = NULL, data = NULL, outcome.var = NULL,
-  times.var = NULL, confounders = NULL, model.selection = TRUE,
-  model.space.priors = NULL, beta.priors = NULL,
+  times.var = NULL, subcohort.var = NULL, confounders = NULL,
+  model.selection = TRUE, model.space.priors = NULL, beta.priors = NULL,
   dirichlet.alphas.for.roc.model = 0.01, g.prior = TRUE, tau = NULL,
   enumerate.up.to.dim = 0, X.ref = NULL, marginal.betas = NULL,
   n = NULL, max.fpr = 1, min.tpr = 0, n.iter = 1e+06,
@@ -19,6 +19,7 @@ R2BGLiMS(likelihood = NULL, data = NULL, outcome.var = NULL,
 "Logistic" (for binary data),
 "Weibull" (for survival data),
 "Cox" (for survival data),
+"CaseCohort" (for case-cohort survival data),
 "RocAUC" (to optimise ROC AUC),
 "RocAUC_Anchoring" (to optimise ROC AUC using the anchoring formulation),
 "Gaussian" (for linear regression),
@@ -34,6 +35,9 @@ If modelling summary statistics specify X.ref, marginal.betas, and n instead (se
 If modelling summary statistics with JAM this can be left null but you must specify X.ref, marginal.beats and n instead (see below).}
 
 \item{times.var}{SURVIVAL DATA ONLY Name of column in data which contains the event times.}
+
+\item{subcohort.var}{CASE-COHORT DATA ONLY Name of column in data which contains a binary indicator of membership in the
+propsectviely sampled (and population representative) sub-cohort.}
 
 \item{confounders}{Optional vector of confounders to fix in the model at all times, i.e. exclude from model selection.}
 

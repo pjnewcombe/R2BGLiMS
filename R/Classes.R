@@ -23,6 +23,7 @@
 setClass("R2BGLiMS_Results",
          representation = representation(
            likelihood = "character",
+           n = "numeric",
            posterior.summary.table = "matrix",
            enumerate.up.to.dim = "numeric",
            enumerated.posterior.inference = "list",

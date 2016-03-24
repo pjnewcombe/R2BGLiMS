@@ -10,6 +10,8 @@
 #' @param outcome.var Which column in data contains the binary outcome for logistic and survival data, or the integer count for
 #' Poisson data (default "Disease")
 #' @param times.var If survival data or Poisson data, the column in data which contains the follow-up times (default NULL)
+#' @param subcohort.var CASE-COHORT DATA ONLY Name of column in data which contains a binary indicator of membership in the
+#' propsectviely sampled (and population representative) sub-cohort.
 #' @param predictors vector of predictors. Leave as the default NULL to include all variables available in the data.frame will be used.
 #' @param g.prior JAM ONLY: Whether to use a g-prior for the beta's - i.e. a multivariate normal 
 #' with correlation structure proportional to sigma^2*X'X^-1 or to use independence priors (default = FALSE).
@@ -37,6 +39,7 @@
   data,
   outcome.var=NULL,
   times.var=NULL,
+  subcohort.var=NULL,
   confounders=NULL,
   predictors=NULL,
   model.space.priors,
@@ -54,7 +57,7 @@
   cluster.var=NULL # OLD
 ) {
 	### Pre-processing
-  if (likelihood%in%c("Cox")) {
+  if (likelihood%in%c("Cox", "CaseCohort")) {
     # Re-order rows of data in ascending order of follow-up time
     # Must be done BEFORE extracting individual variables
     data <- data[order(data[,times.var], decreasing=T),]
@@ -62,18 +65,23 @@
   if (!likelihood%in%c("JAM_MCMC", "JAM")) {
     n.start <- nrow(data)
     if (!is.null(predictors)) {
-      data <- data[, c(outcome.var, times.var, cluster.var, predictors)]
+      data <- data[, c(outcome.var, times.var, subcohort.var, cluster.var, predictors)]
     }
     for (v in colnames(data)) {
       data <- data[!is.na(data[,v]), ]
     }
-    # Extract disease var
-    disease <- data[,outcome.var]
+    # Extract outcome var
+    outcome <- data[,outcome.var]
     data <- data[, colnames(data)[!colnames(data)%in%c(outcome.var)] ]
     # Extract survival times var from the main data
     if (!is.null(times.var) ) {
       times <- data[,times.var]
       data <- data[, colnames(data)[!colnames(data)%in%times.var] ]
+    }
+    # Extract sub-cohort var from the main data
+    if (!is.null(subcohort.var) ) {
+      subcohort.indicators <- data[,subcohort.var] # NB This is done after the ordering step above
+      data <- data[, colnames(data)[!colnames(data)%in%subcohort.var] ]
     }
     # Extract cluster var
     if (!is.null(cluster.var) ) {
@@ -152,12 +160,12 @@
 	if (!is.null(cluster.var) ) {
 		write(t(clusters), file = data.file , ncolumns = n.clusters, append = T)
 	}
-  # Vector of disease labels
-  if (likelihood %in% c("Logistic", "Weibull", "Cox", "RocAUC", "RocAUC_Anchoring")) {
-    write(t(as.integer(disease)), file = data.file , ncolumns = N, append = T)    
+  # Vector of outcomes
+  if (likelihood %in% c("Logistic", "Weibull", "Cox", "CaseCohort", "RocAUC", "RocAUC_Anchoring")) {
+    write(t(as.integer(outcome)), file = data.file , ncolumns = N, append = T)    
   } else if (likelihood %in% c("Gaussian","GaussianConj")) {
-    if (likelihood == "GaussianConj") { disease <- disease - mean(disease) }
-    write(t(disease), file = data.file , ncolumns = N, append = T)        
+    if (likelihood == "GaussianConj") { outcome <- outcome - mean(outcome) }
+    write(t(outcome), file = data.file , ncolumns = N, append = T)        
   } else if (likelihood %in% c("JAM_MCMC")) {
     write(t(z), file = data.file , ncolumns = V, append = T)        
   } else if (likelihood %in% c("JAM")) {
@@ -171,6 +179,9 @@
   }
   if (likelihood=="Weibull") {
     write(t(times), file = data.file , ncolumns = N, append = T)    
+  }
+  if (likelihood=="CaseCohort") {
+    write(t(as.integer(subcohort.indicators)), file = data.file , ncolumns = N, append = T)    
   }
   if (likelihood %in% c("RocAUC","RocAUC_Anchoring") ) {
     write(max.fpr, file = data.file , ncolumns = N, append = T)    

@@ -13,6 +13,7 @@ NULL
 #' "Logistic" (for binary data), 
 #' "Weibull" (for survival data), 
 #' "Cox" (for survival data), 
+#' "CaseCohort" (for case-cohort survival data), 
 #' "RocAUC" (to optimise ROC AUC),
 #' "RocAUC_Anchoring" (to optimise ROC AUC using the anchoring formulation),
 #' "Gaussian" (for linear regression), 
@@ -25,6 +26,8 @@ NULL
 #' @param outcome.var Name of outcome variable in data. For survival data see times.var below.
 #' If modelling summary statistics with JAM this can be left null but you must specify X.ref, marginal.beats and n instead (see below).
 #' @param times.var SURVIVAL DATA ONLY Name of column in data which contains the event times.
+#' @param subcohort.var CASE-COHORT DATA ONLY Name of column in data which contains a binary indicator of membership in the
+#' propsectviely sampled (and population representative) sub-cohort.
 #' @param confounders Optional vector of confounders to fix in the model at all times, i.e. exclude from model selection.
 #' @param model.selection Whether to use model selection (default is TRUE). NB: Even if set to FALSE, please provide a 
 #' dummy model.space.priors argument (see below). This will not be used mathematically, but the package requires taking the list of variable
@@ -103,6 +106,7 @@ R2BGLiMS <- function(
   data=NULL,
   outcome.var=NULL,
   times.var=NULL,
+  subcohort.var=NULL,
   confounders=NULL,
   model.selection=TRUE,
   model.space.priors=NULL,
@@ -151,18 +155,24 @@ R2BGLiMS <- function(
   
   ### --- Basic input checks
   if (is.null(likelihood)) stop("No likelihood, i.e. the model type, has been specified; please specify as Logistic,
-                                Weibull, Cox, Gaussian, GaussianConj, RocAUC, RocAUC_Anchoring, JAM_MCMC or JAM")
+                                Weibull, Cox, CaseCohort, Gaussian, GaussianConj, RocAUC, RocAUC_Anchoring, JAM_MCMC or JAM")
   if (!is.null(likelihood)) {
-    if (!likelihood %in% c("Logistic", "Weibull", "Cox", "Gaussian", "GaussianConj", "JAM_MCMC", "JAM", "RocAUC", "RocAUC_Anchoring")) {
-      stop("Likelihood must be specified as Logistic, Weibull, Cox, Gaussian, GaussianConj, RocAUC, JAM_MCMC, or JAM")
+    if (!likelihood %in% c("Logistic", "Weibull", "Cox", "CaseCohort", "Gaussian", "GaussianConj", "JAM_MCMC", "JAM", "RocAUC", "RocAUC_Anchoring")) {
+      stop("Likelihood must be specified as Logistic, Weibull, Cox, CaseCohort, Gaussian, GaussianConj, RocAUC, JAM_MCMC, or JAM")
     }
   }
   if (is.null(data)&is.null(X.ref)) stop("The data to analyse has not been specified")
   if (is.null(outcome.var)&is.null(marginal.betas)) stop("An outcome variable has not been specified")
   
   ### --- Likelihood specific checks
+  if (likelihood %in% c("CaseCohort")) {
+    # Check sub-cohort covariate given
+    if (is.null(subcohort.var)) stop("For the Case-Cohort model must specify which column of data contains the sub-cohort indicator")
+    if (length(table(data[,subcohort.var]))!=2) stop("Subcohort membership indicator must be binary")    
+  }
+  
   if (likelihood %in% c("Logistic", "Weibull", "RocAUC", "RocAUC_Anchoring")) {
-    # This check is not done for Cox - since with uncensored data the outcome is not binary
+    # This check is not done for Weibull, Cox or CaseCohort - since with uncensored data the outcome is not binary
     if (is.factor(data[,outcome.var])) {
       data[,outcome.var] <- as.integer(data[,outcome.var])-1
     } else if (is.character(data[,outcome.var])) {
@@ -432,6 +442,7 @@ R2BGLiMS <- function(
     data=data,
     outcome.var=outcome.var,
     times.var=times.var,
+    subcohort.var=subcohort.var,
     confounders=confounders, 
     predictors=predictors,
     model.space.priors=model.space.priors,
@@ -571,7 +582,7 @@ R2BGLiMS <- function(
         posterior.summary.table[v,"PostProb"] <- enumerated.posterior.inference$marg.probs[v]
       }
       posterior.summary.table[v,"BF"] <- .BayesFactor(prior.probs[v], posterior.summary.table[v,"PostProb"])
-      if (likelihood %in% c("Weibull", "Cox", "Logistic", "RocAUC_Anchoring") ) {
+      if (likelihood %in% c("Weibull", "Cox", "CaseCohort", "Logistic", "RocAUC_Anchoring") ) {
         # Exponentiate quantiles
         posterior.summary.table[v,c("CrI_Lower", "Median", "CrI_Upper","CrI_Lower_Present", "Median_Present","CrI_Upper_Present")] <- exp(posterior.summary.table[v,c("CrI_Lower", "Median", "CrI_Upper","CrI_Lower_Present", "Median_Present","CrI_Upper_Present")])
       }
@@ -618,9 +629,11 @@ R2BGLiMS <- function(
   if (is.null(confounders)) {
     confounders <- c("None")
   }
+  if (is.null(n)) {n <- nrow(data)}
   results <- new(
     "R2BGLiMS_Results",
     likelihood = likelihood,
+    n = n,
     posterior.summary.table = posterior.summary.table,
     enumerate.up.to.dim = enumerate.up.to.dim,
     enumerated.posterior.inference = enumerated.posterior.inference,
