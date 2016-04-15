@@ -524,8 +524,7 @@ R2BGLiMS <- function(
   ### --- Read BGLiMS arguments
   bglims.arguments <- as.list(read.table(results.file, header=T, sep=" ", nrows=1))
   bglims.arguments$Likelihood <- as.character(bglims.arguments$Likelihood)
-  bglims.arguments$ModelSpacePriorFamily <- as.character(bglims.arguments$ModelSpacePriorFamily)  
-
+  bglims.arguments$ModelSpacePriorFamily <- as.character(bglims.arguments$ModelSpacePriorFamily)
   n.lines.until.rjmcmc.output <- 3 # There are always three lines of meta-data
   enumerated.posterior.inference <- list("No enumeration was done.")
   if (enumerate.up.to.dim>0) {
@@ -557,25 +556,29 @@ R2BGLiMS <- function(
   mcmc.output <- mcmc.output[(Lhalf+1):nrow(mcmc.output),]   # Remove burnin
 
   ### --- Summary table
-  posterior.summary.table <- matrix(NA,ncol(mcmc.output),8)
+  posterior.summary.table <- matrix(NA,ncol(mcmc.output)+length(model.space.priors),8)
   colnames(posterior.summary.table) = c("PostProb","Median","CrI_Lower","CrI_Upper",
     "Median_Present","CrI_Lower_Present","CrI_Upper_Present","BF")
-  rownames(posterior.summary.table) <- colnames(mcmc.output)
+  rownames(posterior.summary.table) <- c(colnames(mcmc.output),paste("ModelSizePartition",c(1:length(model.space.priors)),sep=""))
   # Prior probabilties - used for Bayes Factors below
   prior.probs <- rep(NA, nrow(posterior.summary.table))
   names(prior.probs) <- rownames(posterior.summary.table)
   for (c in 1:length(model.space.priors)) {
+    # Calculate partition specific covariate specific prior probabilities of inclusion
     if ("Rate" %in% names(model.space.priors[[c]]) ) {
       prior.probs[model.space.priors[[c]]$Variables] <- .ModelSpaceSpecProb(length(model.space.priors[[c]]$Variables), model.space.priors[[c]]$Rate)
     } else {
-      prior.probs[model.space.priors[[c]]$Variables] <- model.space.priors[[c]]$a/(model.space.priors[[c]]$a + model.space.priors[[c]]$b)                
+      prior.probs[model.space.priors[[c]]$Variables] <- model.space.priors[[c]]$a/(model.space.priors[[c]]$a + model.space.priors[[c]]$b)
     }
+    # Calculate posterior on model dimension in each partition
+    model.dim.posterior.c <- apply(mcmc.output[,model.space.priors[[c]]$Variables],MAR=1,function(x)sum(x!=0))
+    posterior.summary.table[paste("ModelSizePartition",c,sep=""),c("CrI_Lower", "Median", "CrI_Upper")] <- quantile(model.dim.posterior.c,c(0.025, 0.5, 0.975))
   }
   # Fill in the summary table
-  for (v in rownames(posterior.summary.table)) {
+  for (v in colnames(mcmc.output)) {
     posterior.summary.table[v,c("CrI_Lower", "Median", "CrI_Upper")] <- quantile(mcmc.output[,v],c(0.025, 0.5, 0.975))
-    posterior.summary.table[v,c("CrI_Lower_Present", "Median_Present", "CrI_Upper_Present")] <- quantile(mcmc.output[,v][mcmc.output[,v]!=0],c(0.025, 0.5, 0.975) )
     if (v %in% unlist(lapply(model.space.priors, function(x) x$Variables))) {
+      posterior.summary.table[v,c("CrI_Lower_Present", "Median_Present", "CrI_Upper_Present")] <- quantile(mcmc.output[,v][mcmc.output[,v]!=0],c(0.025, 0.5, 0.975) )
       posterior.summary.table[v,"PostProb"] <- length( mcmc.output[,v][mcmc.output[,v]!=0] ) / nrow(mcmc.output)      
       if (enumerate.up.to.dim>0) {
         # Replace with enumeration probs
