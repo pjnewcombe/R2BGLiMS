@@ -633,7 +633,7 @@ R2BGLiMS <- function(
     confounders <- c("None")
   }
   if (is.null(n)) {n <- nrow(data)}
-  results <- new(
+  results <- methods::new(
     "R2BGLiMS_Results",
     likelihood = likelihood,
     n = n,
