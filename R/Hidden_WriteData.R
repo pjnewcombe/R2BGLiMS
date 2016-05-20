@@ -26,6 +26,7 @@
 #' to default 0 means this is not carried out. Can be used as an alternative to running the RJMCMC.
 #' @param xTx JAM_MCMC and JAM ONLY: List containing each block's plug-in estimate for X'X.
 #' @param z JAM_MCMC and JAM ONLY: Vector of quantities calculated from the summary statistics.
+#' @param subcohort.sampling.fraction: Subcohort sampling fraction for Barlow estimator of case-cohort model
 #' @param max.fpr ROC AUC ONLY: Maximum acceptable false positive rate (or x-axis value) to optimise a truncated ROC AUC.
 #' @param min.tpr ROC AUC ONLY: Minimum acceptable true positive rate, i.e. sensitivity (or y-axis value) to optimise a truncated ROC AUC.
 #' @param initial.model Optionally, an initial model can be provided as a vector of 0's and 1's. Default is NULL
@@ -51,13 +52,15 @@
   enumerate.up.to.dim=0,
   xTx=NULL,
   z=NULL,
+  subcohort.sampling.fraction=NULL,
+  casecohort.pseudo.weight=NULL,
   max.fpr=1,
   min.tpr=0,
   initial.model=NULL,
   cluster.var=NULL # OLD
 ) {
 	### Pre-processing
-  if (likelihood%in%c("Cox", "CaseCohort")) {
+  if (likelihood%in%c("Cox", "CaseCohort_Prentice", "CaseCohort_Barlow")) {
     # Re-order rows of data in ascending order of follow-up time
     # Must be done BEFORE extracting individual variables
     data <- data[order(data[,times.var], decreasing=T),]
@@ -161,7 +164,7 @@
 		write(t(clusters), file = data.file , ncolumns = n.clusters, append = T)
 	}
   # Vector of outcomes
-  if (likelihood %in% c("Logistic", "Weibull", "Cox", "CaseCohort", "RocAUC", "RocAUC_Anchoring")) {
+  if (likelihood %in% c("Logistic", "Weibull", "Cox", "CaseCohort_Prentice", "CaseCohort_Barlow", "RocAUC", "RocAUC_Anchoring")) {
     write(t(as.integer(outcome)), file = data.file , ncolumns = N, append = T)    
   } else if (likelihood %in% c("Gaussian","GaussianConj")) {
     if (likelihood == "GaussianConj") { outcome <- outcome - mean(outcome) }
@@ -180,8 +183,12 @@
   if (likelihood=="Weibull") {
     write(t(times), file = data.file , ncolumns = N, append = T)    
   }
-  if (likelihood=="CaseCohort") {
+  if (likelihood %in% c("CaseCohort_Prentice", "CaseCohort_Barlow") ) {
     write(t(as.integer(subcohort.indicators)), file = data.file , ncolumns = N, append = T)    
+    write(casecohort.pseudo.weight, file = data.file , ncolumns = 1, append = T)
+  }
+  if (likelihood == "CaseCohort_Barlow") {
+    write(subcohort.sampling.fraction, file = data.file , ncolumns = 1, append = T)
   }
   if (likelihood %in% c("RocAUC","RocAUC_Anchoring") ) {
     write(max.fpr, file = data.file , ncolumns = N, append = T)    

@@ -9,6 +9,7 @@ R2BGLiMS(likelihood = NULL, data = NULL, outcome.var = NULL,
   model.selection = TRUE, model.space.priors = NULL, beta.priors = NULL,
   dirichlet.alphas.for.roc.model = 0.01, g.prior = TRUE, tau = NULL,
   enumerate.up.to.dim = 0, X.ref = NULL, marginal.betas = NULL,
+  subcohort.sampling.fraction = NULL, casecohort.pseudo.weight = 1,
   n = NULL, max.fpr = 1, min.tpr = 0, n.iter = 1e+06,
   n.mil.iter = NULL, seed = 1, extra.arguments = NULL,
   initial.model = NULL, max.model.dim = -1, results.label = NULL,
@@ -19,7 +20,8 @@ R2BGLiMS(likelihood = NULL, data = NULL, outcome.var = NULL,
 "Logistic" (for binary data),
 "Weibull" (for survival data),
 "Cox" (for survival data),
-"CaseCohort" (for case-cohort survival data),
+"CaseCohort_Prentice" (for case-cohort survival data with Prentice weighting),
+"CaseCohort_Barlow" (for case-cohort survival data with Barlow weighting),
 "RocAUC" (to optimise ROC AUC),
 "RocAUC_Anchoring" (to optimise ROC AUC using the anchoring formulation),
 "Gaussian" (for linear regression),
@@ -116,6 +118,12 @@ and the null model is used. If set to 1, the saturated model is used.}
 after running R2BGLiMS. However, this option might help for debugging.}
 
 \item{n:}{Sample size which marginal.betas were calculated in.}
+
+\item{subcohort.sampling.fraction:}{CaseCohort_Barlow ONLY: The sampling fraction of the sub-cohort from the full cohort, in order
+to calculate weights for use with the Barlow Case-Cohort pseudo-likelihood (Barlow 1994) REF}
+
+\item{casecohort.pseudo.weight:}{CaseCohort ONLY: Multiplier for the pseudo log-likelihood relative to
+the prior.}
 }
 \value{
 A R2BGLiMS_Results class object is returned. See the slot 'posterior.summary.table' for a posterior

@@ -13,7 +13,8 @@ NULL
 #' "Logistic" (for binary data), 
 #' "Weibull" (for survival data), 
 #' "Cox" (for survival data), 
-#' "CaseCohort" (for case-cohort survival data), 
+#' "CaseCohort_Prentice" (for case-cohort survival data with Prentice weighting), 
+#' "CaseCohort_Barlow" (for case-cohort survival data with Barlow weighting), 
 #' "RocAUC" (to optimise ROC AUC),
 #' "RocAUC_Anchoring" (to optimise ROC AUC using the anchoring formulation),
 #' "Gaussian" (for linear regression), 
@@ -71,6 +72,10 @@ NULL
 #' the column names must correspond to the names of the marginal.betas vector.
 #' @param marginal.betas Vector of marginal effect estimates to re-analyse with JAM under multivariate models.
 #' @param n: Sample size which marginal.betas were calculated in.
+#' @param subcohort.sampling.fraction: CaseCohort_Barlow ONLY: The sampling fraction of the sub-cohort from the full cohort, in order
+#' to calculate weights for use with the Barlow Case-Cohort pseudo-likelihood (Barlow 1994) REF
+#' @param casecohort.pseudo.weight: CaseCohort ONLY: Multiplier for the pseudo log-likelihood relative to
+#' the prior.
 #' @param max.fpr ROC AUC ONLY: Maximum acceptable false positive rate (or x-axis value) to optimise a truncated ROC AUC.
 #' @param min.tpr ROC AUC ONLY: Minimum acceptable true positive rate, i.e. sensitivity (or y-axis value) to optimise a truncated ROC AUC.
 #' @param n.iter Number of iterations to run (default is 1e6)
@@ -117,6 +122,8 @@ R2BGLiMS <- function(
   enumerate.up.to.dim=0,
   X.ref=NULL,
   marginal.betas=NULL,
+  subcohort.sampling.fraction=NULL,
+  casecohort.pseudo.weight=1,
   n=NULL,
   max.fpr=1,
   min.tpr=0,
@@ -155,22 +162,24 @@ R2BGLiMS <- function(
   
   ### --- Basic input checks
   if (is.null(likelihood)) stop("No likelihood, i.e. the model type, has been specified; please specify as Logistic,
-                                Weibull, Cox, CaseCohort, Gaussian, GaussianConj, RocAUC, RocAUC_Anchoring, JAM_MCMC or JAM")
+                                Weibull, Cox, CaseCohort_Prentice, CaseCohort_Barlow, Gaussian, GaussianConj, RocAUC, RocAUC_Anchoring, JAM_MCMC or JAM")
   if (!is.null(likelihood)) {
-    if (!likelihood %in% c("Logistic", "Weibull", "Cox", "CaseCohort", "Gaussian", "GaussianConj", "JAM_MCMC", "JAM", "RocAUC", "RocAUC_Anchoring")) {
-      stop("Likelihood must be specified as Logistic, Weibull, Cox, CaseCohort, Gaussian, GaussianConj, RocAUC, JAM_MCMC, or JAM")
+    if (!likelihood %in% c("Logistic", "Weibull", "Cox", "CaseCohort_Prentice", "CaseCohort_Barlow", "Gaussian", "GaussianConj", "JAM_MCMC", "JAM", "RocAUC", "RocAUC_Anchoring")) {
+      stop("Likelihood must be specified as Logistic, Weibull, Cox, CaseCohort_Prentice, CaseCohort_Barlow, Gaussian, GaussianConj, RocAUC, JAM_MCMC, or JAM")
     }
   }
   if (is.null(data)&is.null(X.ref)) stop("The data to analyse has not been specified")
   if (is.null(outcome.var)&is.null(marginal.betas)) stop("An outcome variable has not been specified")
   
   ### --- Likelihood specific checks
-  if (likelihood %in% c("CaseCohort")) {
+  if (likelihood %in% c("CaseCohort_Prentice","CaseCohort_Barlow")) {
     # Check sub-cohort covariate given
     if (is.null(subcohort.var)) stop("For the Case-Cohort model must specify which column of data contains the sub-cohort indicator")
     if (length(table(data[,subcohort.var]))!=2) stop("Subcohort membership indicator must be binary")    
   }
-  
+  if (likelihood %in% c("CaseCohort_Barlow")) {
+    if (is.null(subcohort.sampling.fraction)) stop("For the Barlow Case-Cohort model must specify the subcohort sampling fraction")
+  }
   if (likelihood %in% c("Logistic", "Weibull", "RocAUC", "RocAUC_Anchoring")) {
     # This check is not done for Weibull, Cox or CaseCohort - since with uncensored data the outcome is not binary
     if (is.factor(data[,outcome.var])) {
@@ -454,6 +463,8 @@ R2BGLiMS <- function(
     enumerate.up.to.dim=enumerate.up.to.dim,
     xTx=xTx,
     z=z,
+    subcohort.sampling.fraction=subcohort.sampling.fraction,
+    casecohort.pseudo.weight=casecohort.pseudo.weight,
     max.fpr=max.fpr,
     min.tpr=min.tpr,
     initial.model=initial.model
@@ -585,7 +596,7 @@ R2BGLiMS <- function(
         posterior.summary.table[v,"PostProb"] <- enumerated.posterior.inference$marg.probs[v]
       }
       posterior.summary.table[v,"BF"] <- .BayesFactor(prior.probs[v], posterior.summary.table[v,"PostProb"])
-      if (likelihood %in% c("Weibull", "Cox", "CaseCohort", "Logistic", "RocAUC_Anchoring") ) {
+      if (likelihood %in% c("Weibull", "Cox", "CaseCohort_Prentice", "CaseCohort_Barlow", "Logistic", "RocAUC_Anchoring") ) {
         # Exponentiate quantiles
         posterior.summary.table[v,c("CrI_Lower", "Median", "CrI_Upper","CrI_Lower_Present", "Median_Present","CrI_Upper_Present")] <- exp(posterior.summary.table[v,c("CrI_Lower", "Median", "CrI_Upper","CrI_Lower_Present", "Median_Present","CrI_Upper_Present")])
       }
