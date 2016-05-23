@@ -582,7 +582,7 @@ R2BGLiMS <- function(
       prior.probs[model.space.priors[[c]]$Variables] <- model.space.priors[[c]]$a/(model.space.priors[[c]]$a + model.space.priors[[c]]$b)
     }
     # Calculate posterior on model dimension in each partition
-    model.dim.posterior.c <- apply(mcmc.output[,model.space.priors[[c]]$Variables],MAR=1,function(x)sum(x!=0))
+    model.dim.posterior.c <- apply(as.matrix(mcmc.output[,model.space.priors[[c]]$Variables]),MAR=1,function(x)sum(x!=0)) # Wrap in as.matrix incase model space partition has one variable
     posterior.summary.table[paste("ModelSizePartition",c,sep=""),c("CrI_Lower", "Median", "CrI_Upper")] <- quantile(model.dim.posterior.c,c(0.025, 0.5, 0.975))
   }
   # Fill in the summary table
