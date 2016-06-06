@@ -4,11 +4,7 @@
 \alias{JAM}
 \title{JAM (Joint Analysis of Marginal statistics)}
 \usage{
-JAM(marginal.betas = NULL, n = NULL, X.ref = NULL,
-  model.space.priors = NULL, g.prior = TRUE, tau = NULL,
-  enumerate.up.to.dim = 0, full.mcmc.sampling = FALSE, n.iter = 1e+06,
-  n.mil.iter = NULL, seed = 1, n.cases = NULL, extra.arguments = NULL,
-  save.path = NULL, max.model.dim = -1)
+JAM(marginal.betas = NULL, X.ref = NULL)
 }
 \arguments{
 \item{marginal.betas}{Vector of marginal effect estimates to re-analyse with JAM under multivariate models.}
@@ -19,54 +15,14 @@ must be coded as a numeric risk allele count 0/1/2. Non-integer values reflectin
 NB: The risk allele coding MUST correspond to that used in marginal.betas. These matrices must each be positive definite and
 the column names must correspond to the names of the marginal.betas vector.}
 
-\item{model.space.priors}{Must be specified if model.selection is set to TRUE.
-Two options are available. 1) A fixed prior is placed on the proportion of causal
-covariates, and all models with the same number of covariates is equally likely. This
-is effectively a Poisson prior over the different possible model sizes. A list must
-be supplied for `model.space.priors` with an element "Rate", specifying the prior
-proportion of causal covariates, and an element "Variables" containing the list of covariates
-included in the model search. 2) The prior proportion of causal covariates
-is treated as unknown and given a Beta(a, b) hyper-prior, in which case
-elements "a" and "b" must be included in the `model.space.priors` list rather
-than "Rate". Higher values of "b" relative to "a" will encourage sparsity.
-NOTE: It is easy to specify different model space priors for different collections of
-covariates by providing a list of lists, each element of which is itself a model.space.prior
-list asm described above for a particular subset of the covariates.}
-
-\item{g.prior}{Whether to use a g-prior for the beta's, i.e. a multivariate normal
-with correlation structure proportional to sigma^2*X'X^-1, which is thought to aid
-variable selection in the presence of strong correlation. By default this is enabled.}
-
-\item{tau}{Value to use for sparsity parameter tau (under the tau*sigma^2 parameterisation).
-When using the g-prior, a recommended default is max(n, P^2) where n is the number of individuals, and P is the number of predictors.}
-
-\item{enumerate.up.to.dim}{Whether to make posterior inference by exhaustively calculating
-the posterior support for every possible model up to this dimension. Leaving at 0 to disable
-and use RJMCMC instead. The current maximum allowed value is 5.}
-
 \item{full.mcmc.sampling}{By default JAM only samples models, since the parameters can be analytically integrated out.
 If you would like to force JAM to perform full Reversible Jump MCMC of models and parameters (effects and residual), then
 set this to TRUE. The posterior summaries can be seen using \code{\link{PrettyResultsTable}}. Note that this option is
 forced to false if inference via model enumeration is requested by setting enumerate.up.to.dim>0.}
 
-\item{n.iter}{Number of iterations to run (default is 1e6)}
-
-\item{n.mil.iter}{Number of million iterations to run. Can optionally be used instead of n.iter for convenience, which it will overide if specified.}
-
-\item{seed}{Which random number seed to use in the RJMCMC sampler.}
-
 \item{n.cases}{If the marginal.betas contain log-Odds Ratios, please specify the number of cases
 with this option, so that JAM can calculate the case proportion in order to invoke an approximate
 transformation between the linear and logistic scales.}
-
-\item{extra.arguments}{A named list of any additional arguments for BGLiMS. Type "data(DefaultArguments)" and look in the
-"default.arguments" list to see the names (which must match) and default values of available extra arguments. Currently these
-are not documented - please contact the package author, Paul Newcombe for details.}
-
-\item{save.path}{Optional path to save BGLiMS's data and results files. These are usually written as temporary files, and deleted
-after running R2BGLiMS. However, this option might help for debugging.}
-
-\item{max.model.dim}{Optional specification of maximum model dimension (default -1 means no maximum is set).}
 }
 \value{
 A Reversible Jump results object is returned. This is a list of two elements: "args" which records various modelling
