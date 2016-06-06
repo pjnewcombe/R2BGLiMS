@@ -2,19 +2,16 @@
 #' effects and a reference genotype matrix.
 #' @export
 #' @title JAM (Joint Analysis of Marginal statistics) multivariate point estimator.
-#' @name JAM_PointEstimate
+#' @name JAM_PointEstimates
 #' @inheritParams R2BGLiMS
 #' 
 #' @return A vector of multivariate point estimates.
-#' 
-#' The function \code{\link{PrettyResultsTable}} can be used to print summary posterior results for all parameters. Other functions
-#' for summarising results are listed under "see also".
 #' 
 #' @seealso See also \code{\link{JAM}}.
 #' 
 #' @author Paul Newcombe
 
-JAM <- function(
+JAM_PointEstimates <- function(
   marginal.betas=NULL,
   X.ref=NULL
 ) {

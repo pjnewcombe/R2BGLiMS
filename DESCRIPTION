@@ -22,7 +22,7 @@ Collate:
     'Hidden_WriteData.R'
     'R2BGLiMS.R'
     'JAM.R'
-    'JAM_PointEstimate.R'
+    'JAM_PointEstimates.R'
     'ManhattanPlot.R'
     'NormInvGamPosteriorSample.R'
     'PrettyResultsTable.R'
