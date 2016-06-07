@@ -432,9 +432,13 @@ R2BGLiMS <- function(
     for (ld.block in 1:length(X.ref)) {
       mafs <- apply(X.ref[[ld.block]], MAR=2, mean)/2 # Take MAFs from reference X
       for (snp in colnames(X.ref[[ld.block]])) {
-        # Group counts under HWE
-        n1 <- n*(1-mafs[snp])*mafs[snp]*2
-        n2 <- n*mafs[snp]*mafs[snp]
+        # OLD: Group counts from MAFs assuming HWE
+        # n1 <- n*(1-mafs[snp])*mafs[snp]*2
+        # n2 <- n*mafs[snp]*mafs[snp]
+        # NEW: Genotype group counts according to genotype proportions in X.ref
+        genotype.table <- table(round(X.ref[[ld.block]][,snp])) # Round in case of dosage data
+        n1 <- n * genotype.table[2]/sum(genotype.table)
+        n2 <- n * genotype.table[3]/sum(genotype.table)
         # Group means from beta-hat (mean-centred)
         y0 <- -(n1 * marginal.betas[snp] + n2 * 2 * marginal.betas[snp])/n
         y1 <- y0 + marginal.betas[snp]
