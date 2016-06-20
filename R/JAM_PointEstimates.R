@@ -16,33 +16,33 @@ JAM_PointEstimates <- function(
   X.ref=NULL
 ) {
   
-  n <- nrow(X.ref)
+  ################################################
+  # --- Construct the z = X'y outcome vector --- #
+  ################################################
   
-  # Construct the z_jam outcome vector. The element for each SNP is constructed from:
-  # 1) Genotype counts - inferred from proportions in reference X.ref
-  # 2) Mean y-values within each of the three genotype groups - inferred from marginal.betas
-  z_jam <- rep(NA,length(marginal.betas))
-  names(z_jam) <- names(marginal.betas)
+  # The element for each SNP is constructed from:
+  # 1) Infer predicted y-values from the marginal.betas. Then mean-center for 0-intercept model
+  # 2) Matrix multiply X.ref by the predicted y-values
+  z <- rep(NA,length(marginal.betas))
+  names(z) <- names(marginal.betas)
   for (v in 1:length(marginal.betas)) {
-    # Genotype group counts according to proportions in reference X.ref
-    genotype.table <- table(round(X.ref[,v])) # Round in case of dosage data
-    n1 <- n * genotype.table[2]/sum(genotype.table)
-    n2 <- n * genotype.table[3]/sum(genotype.table)
-    # Genotype group y-means (under a 0-intercept model)
-    y0 <- -(n1 * marginal.betas[v] + n2 * 2 *marginal.betas[v])/n # Makes overall y mean 0
-    y1 <- y0 + marginal.betas[v]
-    y2 <- y0 + 2*marginal.betas[v]
-    z_jam[v] <- y1 * n1 + 2 * y2 * n2 # t(X.ref)%*%y  
+    y.pred <- X.ref[,v]*marginal.betas[v]
+    y.pred.centered <- y.pred - mean(y.pred)
+    z[v] <- X.ref[,v] %*% y.pred.centered # t(X.ref)%*%y
   }
   
-  # MUST Mean centre the columns of X since z_jam is constructed under 0 intercept
+  #################################################
+  # --- Construct multivariate beta estimates --- #
+  #################################################
+  
+  # 1) Get Cholesky decomposition L
   for (v in 1:ncol(X.ref)) {
-    X.ref[,v] <- X.ref[,v] - mean(X.ref[,v])
+    X.ref[,v] <- X.ref[,v] - mean(X.ref[,v]) # MUST mean-center since z is constructed under 0 intercept 
   }
-  
-  # Take Cholesky decomposition and construct estimate. Formula is just below eq (13) in paper.
   L <- chol(t(X.ref) %*% X.ref)
-  z_L <- solve(t(L)) %*% z_jam
+  
+  # 2) Calculate MLE corresponding to the summary model, multipled through by L
+  z_L <- solve(t(L)) %*% z
   multivariate.beta.hat <- t(solve(t(L) %*% L) %*% t(L) %*% z_L)
   
   return(multivariate.beta.hat)
