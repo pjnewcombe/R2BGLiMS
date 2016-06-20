@@ -5,7 +5,8 @@
 \alias{JAM_PosteriorSampler}
 \title{JAM (Joint Analysis of Marginal statistics) multivariate point estimator.}
 \usage{
-JAM_PointEstimates(marginal.betas = NULL, X.ref = NULL)
+JAM_PointEstimates(marginal.betas = NULL, X.ref = NULL, n = NULL,
+  just.get.z = FALSE)
 
 JAM_PosteriorSampler(marginal.betas = NULL, X.ref = NULL)
 }
@@ -17,6 +18,9 @@ analysed this should be a list containing reference genotype matrices for each r
 must be coded as a numeric risk allele count 0/1/2. Non-integer values reflecting imputation may be given.
 NB: The risk allele coding MUST correspond to that used in marginal.betas. These matrices must each be positive definite and
 the column names must correspond to the names of the marginal.betas vector.}
+
+\item{just.get.z}{Return the estimated X'y outcome used in JAM (without actually calculating the corresponding point estimates). This is mainly
+for internal use.}
 }
 \value{
 A vector of multivariate point estimates.

@@ -293,19 +293,19 @@ R2BGLiMS <- function(
       X.ref <- list(X.ref) # convert to list if there is a single block
     }
     if (length(X.ref)==1) {
-      qr.decomp <- qr(X.ref[[1]])
-      if (qr.decomp$rank < ncol(X.ref[[1]])) stop ("The reference matrix is not full rank. 
-                                            Ideally a larger reference sample should be used, 
-                                            or you could try pruning correlated SNPs.")
+      #qr.decomp <- qr(X.ref[[1]])
+      #if (qr.decomp$rank < ncol(X.ref[[1]])) stop ("The reference matrix is not full rank. 
+      #                                      Ideally a larger reference sample should be used, 
+      #                                      or you could try pruning correlated SNPs.")
     } else {
-      for (ld.block in 1:length(X.ref)) {
-        qr.decomp <- qr(X.ref[[ld.block]])
-        if (qr.decomp$rank < ncol(X.ref[[ld.block]])) stop (
-          paste("The reference matrix for block",ld.block,"is not full rank.
-              Ideally a larger reference sample should be used, 
-              or you could try pruning correlated SNPs.")
-        )
-      }
+      #for (ld.block in 1:length(X.ref)) {
+      #  qr.decomp <- qr(X.ref[[ld.block]])
+      #  if (qr.decomp$rank < ncol(X.ref[[ld.block]])) stop (
+      #    paste("The reference matrix for block",ld.block,"is not full rank.
+      #        Ideally a larger reference sample should be used, 
+      #        or you could try pruning correlated SNPs.")
+      #  )
+      #}
     }
     if (is.null(marginal.betas)) { stop("For analysis with JAM you must provide a vector of marginal summary statistics") }
     if (is.null(n)) { stop("You must specificy the number of individuals the marginal effect estimates were calculated in.") }
@@ -426,26 +426,12 @@ R2BGLiMS <- function(
       xTx[[ld.block]] <- t(X.normalised) %*% X.normalised
     }
     
-    ### --- Generate Xy for JAM
-    z <- rep(NA,length(marginal.betas))
-    names(z) <- names(marginal.betas)
+    ### --- Generate z = X'y for JAM
+    z <- NULL
     for (ld.block in 1:length(X.ref)) {
-      mafs <- apply(X.ref[[ld.block]], MAR=2, mean)/2 # Take MAFs from reference X
-      for (snp in colnames(X.ref[[ld.block]])) {
-        # OLD: Group counts from MAFs assuming HWE
-        # n1 <- n*(1-mafs[snp])*mafs[snp]*2
-        # n2 <- n*mafs[snp]*mafs[snp]
-        # NEW: Genotype group counts according to genotype proportions in X.ref
-        genotype.table <- table(round(X.ref[[ld.block]][,snp])) # Round in case of dosage data
-        n1 <- n * genotype.table[2]/sum(genotype.table)
-        n2 <- n * genotype.table[3]/sum(genotype.table)
-        # Group means from beta-hat (mean-centred)
-        y0 <- -(n1 * marginal.betas[snp] + n2 * 2 * marginal.betas[snp])/n
-        y1 <- y0 + marginal.betas[snp]
-        y2 <- y0 + 2*marginal.betas[snp]
-        z[snp] <- y1 * n1 + 2 * y2 * n2
-      }
-    }    
+      snps.in.block <- colnames(X.ref[[ld.block]])
+      z <- c(z, JAM_PointEstimates(marginal.betas = marginal.betas[snps.in.block], X.ref=X.ref[[ld.block]], n=n, just.get.z=TRUE) )
+    }
   }
 
   ### --- Write data

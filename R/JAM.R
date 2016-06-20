@@ -64,14 +64,14 @@ JAM <- function(
   }
   
   # Check Rank
-  for (ld.block in 1:length(X.ref)) {
-    qr.decomp <- qr(X.ref[[ld.block]])
-    if (qr.decomp$rank < ncol(X.ref[[ld.block]])) stop (
-      paste("The reference matrix for block",ld.block,"/",length(X.ref),"is not full rank.
-              Ideally a larger reference sample should be used, 
-              or you could try pruning correlated SNPs.")
-    )
-  }
+  # for (ld.block in 1:length(X.ref)) {
+  #  qr.decomp <- qr(X.ref[[ld.block]])
+  #  if (qr.decomp$rank < ncol(X.ref[[ld.block]])) stop (
+  #    paste("The reference matrix for block",ld.block,"/",length(X.ref),"is not full rank.
+  #            Ideally a larger reference sample should be used, 
+  #            or you could try pruning correlated SNPs.")
+  #  )
+  #}
     
   # Check format
   if (sum(unlist(lapply(X.ref, function(x) !is.numeric(x) )))>0) {stop("Reference genotype matrices must be numeric, coded as risk allele countsin the 0 to 2 range")}
