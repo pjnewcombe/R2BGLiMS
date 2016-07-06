@@ -25,6 +25,8 @@ up to this dimension.}
 
 \item{\code{model.space.prior}}{List defining the model space prior. See \code{\link[R2BGLiMS]{R2BGLiMS}}.}
 
+\item{\code{beta.prior.partitions}}{List defining the covariate effect prior partitions. See \code{\link[R2BGLiMS]{R2BGLiMS}}.}
+
 \item{\code{confounders}}{Vectors of variables fixed in the model, and excluded from model selection.}
 
 \item{\code{run.times}}{A list containing run times broken down into different processes.}

@@ -2,36 +2,8 @@
 #' @export
 #' @title Write Java MCMC format data file
 #' @name .WriteData
+#' @inheritParams R2BGLiMS
 #' @param data.file Desired path for .txt data file to be written to
-#' @param likelihood Type of model to fit. Current options are "Logistic" (for binary data), "Weibull" (for survival data),  "RocAUC" (to optimise the ROC AUC), 
-#' "Gaussian" (for continuous data), "JAM_MCMC" (for analysis of univariate associations from Gaussian linear 
-#' regressions) and "JAM" (for analysis under a marginal conjugate linear regression model).
-#' @param data Matrix of data to write - rows indiviuals, columns variables.
-#' @param outcome.var Which column in data contains the binary outcome for logistic and survival data, or the integer count for
-#' Poisson data (default "Disease")
-#' @param times.var If survival data or Poisson data, the column in data which contains the follow-up times (default NULL)
-#' @param subcohort.var CASE-COHORT DATA ONLY Name of column in data which contains a binary indicator of membership in the
-#' propsectviely sampled (and population representative) sub-cohort.
-#' @param predictors vector of predictors. Leave as the default NULL to include all variables available in the data.frame will be used.
-#' @param g.prior JAM ONLY: Whether to use a g-prior for the beta's - i.e. a multivariate normal 
-#' with correlation structure proportional to sigma^2*X'X^-1 or to use independence priors (default = FALSE).
-#' @param model.tau JAM ONLY: Whether to model tau or not (default FALSE). If set to true,
-#' then a Zellner-Siow prior is used, centred on the value provide by tau. The value provided in tau is also used as the
-#' initial value.
-#' @param tau JAM ONLY: Value to use for sparsity parameter tau (tau*sigma^2 parameterisation).
-#' If modelling this parameter, this value is used to center the Zellner-Siow prior
-#' and as an intial value.
-#' @param enumerate.up.to.dim JAM ONLY: When NOT modelling tau, whether to output the posterior scores
-#' for every possible model of dimension up to the integer specified. Currenly maximum allowed dimension is 2. Setting
-#' to default 0 means this is not carried out. Can be used as an alternative to running the RJMCMC.
-#' @param xTx JAM_MCMC and JAM ONLY: List containing each block's plug-in estimate for X'X.
-#' @param z JAM_MCMC and JAM ONLY: Vector of quantities calculated from the summary statistics.
-#' @param subcohort.sampling.fraction: Subcohort sampling fraction for Barlow estimator of case-cohort model
-#' @param max.fpr ROC AUC ONLY: Maximum acceptable false positive rate (or x-axis value) to optimise a truncated ROC AUC.
-#' @param min.tpr ROC AUC ONLY: Minimum acceptable true positive rate, i.e. sensitivity (or y-axis value) to optimise a truncated ROC AUC.
-#' @param initial.model Optionally, an initial model can be provided as a vector of 0's and 1's. Default is NULL
-#' and the null model is used. If set to 1, the saturated model is used.
-#' @param cluster.var If hierarchical data and random intercepts are required, the column in data contains the clustering variable (default NULL)
 #' @return NA
 #' @author Paul Newcombe
 .WriteData <- function(
@@ -45,6 +17,7 @@
   predictors=NULL,
   model.space.priors,
   beta.priors=NULL,
+  beta.prior.partitions=NULL,
   dirichlet.alphas.for.roc.model=NULL,
   g.prior=FALSE,
   model.tau=FALSE,
@@ -56,8 +29,7 @@
   casecohort.pseudo.weight=NULL,
   max.fpr=1,
   min.tpr=0,
-  initial.model=NULL,
-  cluster.var=NULL # OLD
+  initial.model=NULL
 ) {
 	### Pre-processing
   if (likelihood%in%c("Cox", "CaseCohort_Prentice", "CaseCohort_Barlow")) {
@@ -68,7 +40,7 @@
   if (!likelihood%in%c("JAM_MCMC", "JAM")) {
     n.start <- nrow(data)
     if (!is.null(predictors)) {
-      data <- data[, c(outcome.var, times.var, subcohort.var, cluster.var, predictors)]
+      data <- data[, c(outcome.var, times.var, subcohort.var, predictors)]
     }
     for (v in colnames(data)) {
       data <- data[!is.na(data[,v]), ]
@@ -86,13 +58,7 @@
       subcohort.indicators <- data[,subcohort.var] # NB This is done after the ordering step above
       data <- data[, colnames(data)[!colnames(data)%in%subcohort.var] ]
     }
-    # Extract cluster var
-    if (!is.null(cluster.var) ) {
-      clusters <- as.integer(as.factor(as.integer(data[,cluster.var])))	# This makes range 1,..nClusters
-      data <- data[, colnames(data)[!colnames(data)%in%cluster.var] ]
-      n.clusters <- length(unique(clusters))
-    }
-    
+
     V <- ncol(data)
     N <- nrow(data)
     var.names <- colnames(data)
@@ -109,34 +75,102 @@
   }
   
 	### Writing
+  
 	# Model
-  write(likelihood, file = data.file , ncolumns = 1)    
+  write(likelihood, file = data.file , ncolumns = 1)
+  
 	# V: Total number of variables
-	write(V, file = data.file , ncolumns = 1, append = T)
+	write(paste("totalNumberOfCovariates",format(V,sci=F)), file = data.file , ncolumns = 1, append = T)
+	
   # Varnames: Variable names
 	write(var.names, file = data.file , ncolumns = V, append = T)
+	
   # VnoRJ: Total number of variables (from the beginning) to be fixed in the model
-	write(length(confounders), file = data.file , ncolumns = 1, append = T) 				# from which variable RJ is performed
-  # N: Number of individuals
-	write(N, file = data.file , ncolumns = 1, append = T)
-  # R: Number of clusters
-	if (!is.null(cluster.var) ) {
-		write( n.clusters, file = data.file , ncolumns = 1, append = T)				
-	} else {
-		write(0, file = data.file , ncolumns = 1, append = T)		
+	write(paste("numberOfCovariatesToFixInModel",format(length(confounders),sci=F)), file = data.file , ncolumns = 1, append = T)
+	
+	# N: Number of individuals
+	write(paste("numberOfIndividuals",format(N,sci=F)), file = data.file , ncolumns = 1, append = T)
+	
+	### --- Dirichlet alphas (if ROC model)
+	if (likelihood %in% c("RocAUC")) {
+	  if (length(dirichlet.alphas.for.roc.model)==1) {
+	    dirichlet.alphas.for.roc.model <- c(rep(dirichlet.alphas.for.roc.model,V))
+	  }
+	  for (v in 1:length(dirichlet.alphas.for.roc.model)) {
+	    write( dirichlet.alphas.for.roc.model[v], file = data.file , ncolumns = 2, append = T)
+	  }
 	}
-  # N x V matrix of covariate values
-  cat("Writing data into an input file for BGLiMS...\n")
-  # Conjugate Gaussian models
-  if (likelihood %in% c("GaussianConj", "JAM")) {
-    write(as.integer(g.prior), file = data.file , ncolumns = 1, append = T)
-    write(tau, file = data.file, ncolumns = 1, append = T)      
-    write(as.integer(model.tau), file = data.file , ncolumns = 1, append = T)      
-    write(enumerate.up.to.dim, file = data.file , ncolumns = 1, append = T)
-  }
+	
+	### --- Fixed beta priors
+	if (!likelihood %in% c("RocAUC")) {
+	  if (is.null(beta.priors)) {
+	    write(paste("numberOfCovariatesWithInformativePriors",0), file = data.file , ncolumns = 1, append = T)    
+	  } else {
+	    write(paste("numberOfCovariatesWithInformativePriors",nrow(beta.priors)), file = data.file , ncolumns = 1, append = T)
+	    write("FixedPriors", file = data.file , ncolumns = 1, append = T)
+	    for (v in 1:nrow(beta.priors)) {
+	      write( c(beta.priors[v,1],beta.priors[v,2]), file = data.file , ncolumns = 2, append = T)
+	    }
+	  }    
+	}
+	
+	### --- Hierarchical beta priors
+	write(paste("numberOfHierarchicalCovariatePriorPartitions",format(length(beta.prior.partitions),sci=F) ), file = data.file , ncolumns = 1, append = T)
+	if (length(beta.prior.partitions)>0) {
+	  # --- Partion indices
+	  partitioned.covariates <- var.names[var.names %in% unlist(lapply(beta.prior.partitions, function(x) x$Variables))] # Make sure order is consistent with the above
+	  partition.indices <- rep(NA, length(partitioned.covariates))
+	  for (c in 1:length(beta.prior.partitions)) {
+	    partition.indices[which(partitioned.covariates %in% beta.prior.partitions[[c]]$Variables)] <- c
+	  }
+	  write("hierarchicalCovariatePriorPartitionPicker", file = data.file , ncolumns = 1, append = T)
+	  write(t(partition.indices), file = data.file , ncolumns = length(partition.indices), append = T)
+	  # --- Partition-specific hyper priors
+	  write("BetaPriorPartitionVarianceHyperPriors", file = data.file , ncolumns = 1, append = T)
+	  for (c in 1:length(beta.prior.partitions)) {
+	    if (beta.prior.partitions[[c]]$Family=="Uniform") {
+	      hyperparam1 <- beta.prior.partitions[[c]]$UniformA
+	      hyperparam2 <- beta.prior.partitions[[c]]$UniformB
+	    } else if (beta.prior.partitions[[c]]$Family=="Gamma") {
+	      hyperparam1 <- beta.prior.partitions[[c]]$GammaA
+	      hyperparam2 <- beta.prior.partitions[[c]]$GammaB
+	    }
+	    write(paste(beta.prior.partitions[[c]]$Family,
+	                format(hyperparam1,sci=F),
+	                format(hyperparam2,sci=F),
+	                format(beta.prior.partitions[[c]]$Init,sci=F)),
+	          file = data.file, append = T)
+	  }
+	}
+	
+	# Initial model
+	if (is.null(initial.model)) {
+	  write("initialModelOption 0", file = data.file , ncolumns = 1, append = T)    
+	} else if (length(initial.model)==1) {
+	  write("initialModelOption 1", file = data.file , ncolumns = 1, append = T)    
+	} else {
+	  write("initialModelOption 2", file = data.file , ncolumns = 1, append = T)    
+	  write("InitialModel", file = data.file , ncolumns = 1, append = T)
+	  write(t(initial.model), file = data.file , ncolumns = length(initial.model), append = T)    
+	}
+	
+	# Conjugate-only modelling options
+	if (likelihood %in% c("GaussianConj", "JAM")) {
+	  write(paste("useGPrior", as.integer(g.prior)), file = data.file , ncolumns = 1, append = T)
+	  write(paste("tau",format(tau,sci=F)), file = data.file, ncolumns = 1, append = T)      
+	  write(paste("modelTau",as.integer(model.tau)), file = data.file , ncolumns = 1, append = T)      
+	  write(paste("enumerateUpToDim",format(enumerate.up.to.dim,sci=F)), file = data.file , ncolumns = 1, append = T)
+	}
+	
+	############################
+  # --- Covariate matrix --- #
+	############################
+	
+	cat("Writing data into an input file for BGLiMS...\n")
   # Covariate data - different if marginal setup
   if (likelihood %in% c("JAM", "JAM_MCMC")) { # Write summary data
-    write(length(xTx), file = data.file , ncolumns = 1, append = T)
+    write(paste("nBlocks",format(length(xTx),sci=F)), file = data.file , ncolumns = 1, append = T)
+    write("blockIndices", file = data.file , ncolumns = 1, append = T)
     write(block.indices, file = data.file , ncolumns = length(block.indices), append = T)
     if (likelihood == "JAM_MCMC") {
       for (b in 1:length(xTx)) {
@@ -148,7 +182,7 @@
         L <- chol(xTx[[b]]) # NB: UPPER triangle. So L'L = X'X (LIKE IN PAPER)
         write.table(L, row.names=F, col.names=F, file = data.file, append = T) # Multiply by L' (like in JAVA_test)
         cat("Taking Cholesky decomposition of block",b,"...\n")
-        Lt_Inv[[b]] <- solve(t(L)) # Take TRANSPOSE inverse
+        Lt_Inv[[b]] <- solve(t(L)) # Take TRANSPOSE inverse for below
       }      
     }
   } else { 
@@ -159,10 +193,7 @@
     }
     write.table(data, row.names=F, col.names=F, file = data.file , append = T)    
   }
-  # If R>0 the vector of cluster labels
-	if (!is.null(cluster.var) ) {
-		write(t(clusters), file = data.file , ncolumns = n.clusters, append = T)
-	}
+  
   # Vector of outcomes
   if (likelihood %in% c("Logistic", "Weibull", "Cox", "CaseCohort_Prentice", "CaseCohort_Barlow", "RocAUC", "RocAUC_Anchoring")) {
     write(t(as.integer(outcome)), file = data.file , ncolumns = N, append = T)    
@@ -193,54 +224,6 @@
   if (likelihood %in% c("RocAUC","RocAUC_Anchoring") ) {
     write(max.fpr, file = data.file , ncolumns = N, append = T)    
     write(min.tpr, file = data.file , ncolumns = N, append = T)    
-  }
-  
-  ### --- Dirichlet alphas
-  if (likelihood %in% c("RocAUC")) {
-    use.unknown.priors <- FALSE # This forces numberOfHierarchicalCovariatePriorPartitions to 0
-    if (length(dirichlet.alphas.for.roc.model)==1) {
-      dirichlet.alphas.for.roc.model <- c(rep(dirichlet.alphas.for.roc.model,V))
-    }
-    for (v in 1:length(dirichlet.alphas.for.roc.model)) {
-      write( dirichlet.alphas.for.roc.model[v], file = data.file , ncolumns = 2, append = T)
-    }
-  } else { # Fixed beta priors
-    use.unknown.priors <- TRUE
-    if (is.null(beta.priors)) {
-      write(0, file = data.file , ncolumns = 1, append = T)    
-    } else {
-      write(nrow(beta.priors), file = data.file , ncolumns = 1, append = T)
-      for (v in 1:nrow(beta.priors)) {
-        write( c(beta.priors[v,1],beta.priors[v,2]), file = data.file , ncolumns = 2, append = T)
-      }
-      if (nrow(beta.priors)==length(predictors)) {
-        use.unknown.priors <- FALSE
-      }
-    }    
-  }
-  
-  ### --- Shared unknown beta priors
-  if (!use.unknown.priors) {
-    # Fixed priors provided for everything, no need for common unknown prior
-    write(0, file = data.file , ncolumns = 1, append = T)    
-  } else {
-    # Use common unknown priors for model space components
-    write(length(model.space.priors), file = data.file , ncolumns = 1, append = T)
-    if (length(model.space.priors)>1) {
-      for (c in 1:(length(model.space.priors)-1)) {
-        write(length(model.space.priors[[c]]$Variables), file = data.file , ncolumns = 1, append = T)      
-      }
-    }    
-  }
-  
-  # Initial model
-  if (is.null(initial.model)) {
-    write(0, file = data.file , ncolumns = 1, append = T)    
-  } else if (length(initial.model)==1) {
-    write(initial.model, file = data.file , ncolumns = 1, append = T)    
-  } else {
-    write(2, file = data.file , ncolumns = 1, append = T)    
-    write(t(initial.model), file = data.file , ncolumns = length(initial.model), append = T)    
   }
   
   ########################
