@@ -7,11 +7,11 @@
 R2BGLiMS(likelihood = NULL, data = NULL, outcome.var = NULL,
   times.var = NULL, subcohort.var = NULL, confounders = NULL,
   model.selection = TRUE, model.space.priors = NULL, beta.priors = NULL,
-  dirichlet.alphas.for.roc.model = 0.01, g.prior = TRUE, tau = NULL,
-  enumerate.up.to.dim = 0, X.ref = NULL, marginal.betas = NULL,
-  subcohort.sampling.fraction = NULL, casecohort.pseudo.weight = 1,
-  n = NULL, max.fpr = 1, min.tpr = 0, n.iter = 1e+06,
-  n.mil.iter = NULL, seed = 1, extra.arguments = NULL,
+  beta.prior.partitions = NULL, dirichlet.alphas.for.roc.model = 0.01,
+  g.prior = TRUE, tau = NULL, enumerate.up.to.dim = 0, X.ref = NULL,
+  marginal.betas = NULL, subcohort.sampling.fraction = NULL,
+  casecohort.pseudo.weight = 1, n = NULL, max.fpr = 1, min.tpr = 0,
+  n.iter = 1e+06, n.mil.iter = NULL, seed = 1, extra.arguments = NULL,
   initial.model = NULL, max.model.dim = -1, results.label = NULL,
   save.path = NULL)
 }
@@ -70,6 +70,19 @@ common normal prior with unknown variance.
 beta.priors (a matrix/data.frame) can be used to provide fixed priors; rows must be named with the corresponding
 variable names in the data, and include Guassian prior means and sds in the first and
 second columns respectively.}
+
+\item{beta.prior.partitions}{By default, covariates without informative priors are
+ascribed a common Gaussian prior with a Unif(0.01,2) hyper-prior on the effect
+standard deviation. beta.prior.partitions can be used to partition the covariates
+into different prior groups, within each of which exchangeability can be assumed
+and a common prior with an independently estimated variance is used.
+beta.prior.partitions must be a list with as many elements as desired
+partitions. Each element must in turn be a list containing the following named
+elements: "Variables" - a list of covariates to be included in this partition,
+and "UniformA" and "UniformB" the Uniform hyper parameters. I.e., for a particular
+partition, for v in "Variables",
+beta[v] | sigma_beta ~ N(0, sigma_beta^2) and
+sigma_beta ~ Unif("UniformA", "UniformB").}
 
 \item{dirichlet.alphas.for.roc.model}{This can either be a single number, if you wish the same concentration parameter
 to be used for every covariate. Alternatively a vector can be supplied, with an element corresponding to every variable.}

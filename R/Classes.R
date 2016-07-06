@@ -13,6 +13,7 @@
 #' @slot n.iterations Number of iterations which the RJMCMC was run for.
 #' @slot thin Ith iterations which were saved.
 #' @slot model.space.prior List defining the model space prior. See \code{\link[R2BGLiMS]{R2BGLiMS}}.
+#' @slot beta.prior.partitions List defining the covariate effect prior partitions. See \code{\link[R2BGLiMS]{R2BGLiMS}}.
 #' @slot confounders Vectors of variables fixed in the model, and excluded from model selection.
 #' @slot run.times A list containing run times broken down into different processes.
 #' @slot n.covariate.blocks.for.jam The number of partitioned LD blocks used for JAM.
@@ -30,6 +31,7 @@ setClass("R2BGLiMS_Results",
            n.iterations = "numeric",
            thin = "numeric",
            model.space.priors = "list",
+           beta.prior.partitions = "list",
            confounders = "vector",
            run.times = "list",
            n.covariate.blocks.for.jam = "numeric",

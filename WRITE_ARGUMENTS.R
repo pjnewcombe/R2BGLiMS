@@ -1,11 +1,6 @@
 default.arguments <- list(
   "AlphaPriorMu" = 0,
   "AlphaPriorSd" = 1000,
-  "WhichBetaPrecisionPrior" = 1,
-  "BetaSigma_UnifArg1" = 0.01,
-  "BetaSigma_UnifArg2" = 2,
-  "BetaPrecision_GammaPrior_Shape" = 0.001,
-  "BetaPrecision_GammaPrior_Scale" = 0.001,
   "WeibullScalePrior_GammaArg1" = 1,
   "WeibullScalePrior_GammaArg2" = 0.001,
   "DirichletConcentration_GammaArg1" = 100,
@@ -19,7 +14,6 @@ default.arguments <- list(
   "aucMultiplierWeight" = 1,
   "Alpha_Initial_Value" =0,
   "Beta_Initial_Value" =0,
-  "BetaPriorSd_Initial_Value" =0.1,
   "WeibullScale_Initial_Value" =1,
   "DirichletConcentration_Initial_Value" =1,
   "GaussianResidual_Initial_Value" =1,    
@@ -40,7 +34,6 @@ default.arguments <- list(
   "Alt_Saturated_Initial_Model" =0,
   "Alt_Alpha_Initial_Value" =1,
   "Alt_Beta_Initial_Value" =1,
-  "Alt_BetaPriorSd_Initial_Value" =0.2,
   "Alt_WeibullScale_Initial_Value" =1.25
   )
 save(default.arguments,

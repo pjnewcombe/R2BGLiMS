@@ -55,6 +55,18 @@ NULL
 #' beta.priors (a matrix/data.frame) can be used to provide fixed priors; rows must be named with the corresponding 
 #' variable names in the data, and include Guassian prior means and sds in the first and 
 #' second columns respectively.
+#' @param beta.prior.partitions By default, covariates without informative priors are 
+#' ascribed a common Gaussian prior with a Unif(0.01,2) hyper-prior on the effect 
+#' standard deviation. beta.prior.partitions can be used to partition the covariates 
+#' into different prior groups, within each of which exchangeability can be assumed 
+#' and a common prior with an independently estimated variance is used. 
+#' beta.prior.partitions must be a list with as many elements as desired 
+#' partitions. Each element must in turn be a list containing the following named 
+#' elements: "Variables" - a list of covariates to be included in this partition, 
+#' and "UniformA" and "UniformB" the Uniform hyper parameters. I.e., for a particular
+#' partition, for v in "Variables", 
+#' beta[v] | sigma_beta ~ N(0, sigma_beta^2) and 
+#' sigma_beta ~ Unif("UniformA", "UniformB").
 #' @param dirichlet.alphas.for.roc.model This can either be a single number, if you wish the same concentration parameter 
 #' to be used for every covariate. Alternatively a vector can be supplied, with an element corresponding to every variable.
 #' @param g.prior Whether to use a g-prior for the beta's, i.e. a multivariate normal 
@@ -116,6 +128,7 @@ R2BGLiMS <- function(
   model.selection=TRUE,
   model.space.priors=NULL,
   beta.priors=NULL,
+  beta.prior.partitions=NULL,
   dirichlet.alphas.for.roc.model=0.01,
   g.prior=TRUE,
   tau=NULL,
@@ -244,7 +257,7 @@ R2BGLiMS <- function(
         if (sum(model.space.priors[[c]]$Variables%in%colnames(data))!=length(model.space.priors[[c]]$Variables)) {
           stop(paste("Not all variables in model space component",c,"are present in the data"))
         }
-        # Sort out any factors
+        # Sort out any factors - MOVE TO DATA FORMATTING?
         for (v in model.space.priors[[c]]$Variables) {
           if (is.factor(data[,v])) {
             data[,v] <- as.integer(data[,v])
@@ -254,12 +267,20 @@ R2BGLiMS <- function(
         }        
       }
     }
+    # Check partitions are dichotomous
+    if (length(unique(unlist(lapply(model.space.priors, function(x) x$Variables))))
+        != sum(unlist(lapply(model.space.priors, function(x) length(x$Variables))))) {
+      stop("There is overlap in the covariates between some of the model space prior partitions")
+    }
+    # Check confounders do not appear
+    if ( sum(unique(unlist(lapply(model.space.priors, function(x) x$Variables))) %in% confounders) > 0) {
+      stop("Some of the confounders also appear in the model space prior.")
+    }
   }
   
   ### --- Confounders error messages
   if (!is.null(confounders)) {
     if (sum(confounders%in%colnames(data))!=length(confounders)) stop("One or more confounders are not present in the data")
-    if (sum(confounders%in%unlist(model.space.priors))>0) stop("One or more confounders are also declared in the model space")
     for (v in confounders) {
       if (is.factor(data[,v])) {
         data[,v] <- as.integer(data[,v])
@@ -282,7 +303,78 @@ R2BGLiMS <- function(
     if (!likelihood %in% c("JAM_MCMC", "JAM")) {
       if (sum(rownames(beta.priors)%in%colnames(data))!=nrow(beta.priors)) stop("One or more variables in beta.priors are not present in the data")
     }
-  }  
+  } else if (length(confounders)>0) {
+    warning("beta.priors were not provided for the confounders (which should not be
+            treated as exchangeable with covariates under model selection). Setting to N(0,1e6).")
+    beta.priors <- data.frame(
+      cbind(rep(0,length(confounders)),rep(1000,length(confounders))),
+      row.names=confounders)
+  }
+  
+  ### --- Beta prior partition error messages
+  if (!is.null(beta.prior.partitions)) {
+    if (likelihood %in% c("GaussianConj", "JAM", "RocAUC")) {
+      stop("the beta.prior.partitions option is not available for the conjugate models.")
+    }
+    if (!is.list(beta.prior.partitions)) stop("beta.prior.partitions must be a list of list(s).")
+    if (!is.list(beta.prior.partitions[[1]])) stop("beta.prior.partitions must be a list of list(s).")
+    # Check structure
+    for (c in 1:length(beta.prior.partitions)) {
+      # Check Hyper-prior structure
+      no.hyperprior.parameters <- TRUE
+      if ("UniformA"%in%names(beta.prior.partitions[[c]]) & "UniformB"%in%names(beta.prior.partitions[[c]])) {
+        no.hyperprior.parameters <- FALSE
+        beta.prior.partitions[[c]]$Family <- "Uniform"
+        if (!"Init" %in% names(beta.prior.partitions[[c]])) { # Take as mean of Uniform limits
+          beta.prior.partitions[[c]]$Init <- mean(c(beta.prior.partitions[[c]]$UniformA, beta.prior.partitions[[c]]$UniformB))
+        } else {
+          if (beta.prior.partitions[[c]]$Init<beta.prior.partitions[[c]]$UniformA | beta.prior.partitions[[c]]$Init>beta.prior.partitions[[c]]$UniformB) {
+            stop(paste("Initial SD for covariate prior partition",c,"is outside the Uniform range."))
+          }
+        }
+      }
+      if ("GammaA"%in%names(beta.prior.partitions[[c]]) &"GammaB"%in%names(beta.prior.partitions[[c]])) {
+        no.hyperprior.parameters <- FALSE
+        beta.prior.partitions[[c]]$Family <- "Gamma"
+        if (!"Init" %in% names(beta.prior.partitions[[c]])) {
+          beta.prior.partitions[[c]]$Init <- 0.1
+        }
+      }
+      if (no.hyperprior.parameters) stop(paste("Hyper-parameters UniformA/UniformB or GammaA/GammaB not found for covariate prior partition",c))
+      # Check Variables
+      if (!"Variables"%in%names(beta.prior.partitions[[c]])) {
+        stop(paste("Each covariate prior partition must contain an element named Variables defining the covariates in the partition.
+             Not supplied for partition",c) )
+      }
+      if (sum(beta.prior.partitions[[c]]$Variables%in%colnames(data))!=length(beta.prior.partitions[[c]]$Variables)) {
+        stop(paste("Not all variables in covariate prior partition",c,"are present in the data"))
+      }
+      if (sum(beta.prior.partitions[[c]]$Variables%in%rownames(beta.priors))>0) {
+        stop(paste("Informative priors have also been specified for some of the variables in
+                   covariate prior partition",c))
+      }
+    }
+    # Check partitions are dichotomous
+    if (length(unique(unlist(lapply(beta.prior.partitions, function(x) x$Variables))))
+        != sum(unlist(lapply(beta.prior.partitions, function(x) length(x$Variables))))) {
+      stop("There is overlap in the covariates between some of the prior partitions")
+    }
+    # Check confounders do not appear
+    if ( sum(unique(unlist(lapply(beta.prior.partitions, function(x) x$Variables))) %in% confounders) > 0) {
+      stop("Some of the confounders also appear in the covariate prior partitions. These should not be treated
+           as exchangeable with covariates under model selection.")
+    }
+  } else {
+    if (!likelihood %in% c("GaussianConj", "JAM", "RocAUC")) {
+      all.covariates <- unique(c(unlist(lapply(model.space.priors,function(x) x$Variables)),rownames(beta.priors),confounders))
+      # Create default single beta.prior.partitions with Uniform(0.01, 2) - SMMR
+      if (is.null(beta.priors)) {
+        beta.prior.partitions=list(list("UniformA"=0.01, "UniformB"=2, "Variables"=all.covariates, "Family"="Uniform", "Init"=1))
+      } else if (nrow(beta.priors)!=length(all.covariates)) {
+        beta.prior.partitions=list(list("UniformA"=0.01, "UniformB"=2,"Variables"=all.covariates[!all.covariates%in%rownames(beta.priors)], "Family"="Uniform", "Init"=1))
+      }
+    }
+  }
   
   ### --- X.ref error message for JAM
   if (!is.null(X.ref)) {
@@ -381,7 +473,7 @@ R2BGLiMS <- function(
       # Fixed priors have been provided for everything turn beta.sd.prior off
       beta.priors <- beta.priors[predictors,] # Ensure order is correct
     } else {
-      stop("beta.priors matrix must contain either all confounders or all predictors (including any confounders)")
+      stop("Currently informative priors can only be supplied (using beta.priors) for either all confounders or everything.")
     }
   } else if (!is.null(confounders)) {
     # If confoudners have been specified but no beta.priors, create - 
@@ -446,6 +538,7 @@ R2BGLiMS <- function(
     predictors=predictors,
     model.space.priors=model.space.priors,
     beta.priors=beta.priors,
+    beta.prior.partitions=beta.prior.partitions,
     dirichlet.alphas.for.roc.model=dirichlet.alphas.for.roc.model,
     g.prior=g.prior,
     model.tau=model.tau,
@@ -630,9 +723,9 @@ R2BGLiMS <- function(
   ################################
   ################################
 
-  if (is.null(confounders)) {
-    confounders <- c("None")
-  }
+  # Create dummies for any missing slots in order to create S4 object
+  if (is.null(confounders)) {confounders <- c("None")}
+  if (is.null(beta.prior.partitions)) {beta.prior.partitions <- list("NA")}
   if (is.null(n)) {n <- nrow(data)}
   results <- methods::new(
     "R2BGLiMS_Results",
@@ -644,6 +737,7 @@ R2BGLiMS <- function(
     n.iterations = n.iter,
     thin = bglims.arguments$thin,
     model.space.priors = model.space.priors,
+    beta.prior.partitions = beta.prior.partitions,
     confounders = confounders,
     run.times=run.times,
     n.covariate.blocks.for.jam = 1,
