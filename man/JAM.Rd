@@ -5,10 +5,11 @@
 \title{JAM (Joint Analysis of Marginal statistics)}
 \usage{
 JAM(marginal.betas = NULL, n = NULL, X.ref = NULL,
-  model.space.priors = NULL, g.prior = TRUE, tau = NULL,
-  enumerate.up.to.dim = 0, full.mcmc.sampling = FALSE, n.iter = 1e+06,
-  n.mil.iter = NULL, seed = 1, n.cases = NULL, extra.arguments = NULL,
-  save.path = NULL, max.model.dim = -1)
+  model.space.priors = NULL, beta.priors = NULL, beta.prior.blocks = NULL,
+  g.prior = TRUE, tau = NULL, enumerate.up.to.dim = 0,
+  full.mcmc.sampling = FALSE, n.iter = 1e+06, n.mil.iter = NULL,
+  seed = 1, n.cases = NULL, extra.arguments = NULL, save.path = NULL,
+  max.model.dim = -1)
 }
 \arguments{
 \item{marginal.betas}{Vector of marginal effect estimates to re-analyse with JAM under multivariate models.}
@@ -32,6 +33,16 @@ than "Rate". Higher values of "b" relative to "a" will encourage sparsity.
 NOTE: It is easy to specify different model space priors for different collections of
 covariates by providing a list of lists, each element of which is itself a model.space.prior
 list asm described above for a particular subset of the covariates.}
+
+\item{beta.priors}{There are three options:
+1) Leave as null, in which case N(0, 1e6) priors are placed on the effects
+of confounders and any predictors included in model selection are assigned a
+common normal prior with unknown variance.
+2) Provide fixed priors for the confounders only.
+3) Provide fixed priors for all covariates.
+beta.priors (a matrix/data.frame) can be used to provide fixed priors; rows must be named with the corresponding
+variable names in the data, and include Guassian prior means and sds in the first and
+second columns respectively.}
 
 \item{g.prior}{Whether to use a g-prior for the beta's, i.e. a multivariate normal
 with correlation structure proportional to sigma^2*X'X^-1, which is thought to aid
