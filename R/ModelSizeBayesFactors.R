@@ -30,16 +30,18 @@ ModelSizeBayesFactors <- function(
 	    
 	    # Figure out prior probs
 	    prior.probs.dims <- sapply(1:P, function(i) prior.proportion ^ i * (1 - prior.proportion) ^ (P - i) * choose(P, i) )
+	    max.dim.calculable <- max(which(prior.probs.dims>0)) # Stop when prior prob becomes so small to calculate
+	    prior.probs.dims <- prior.probs.dims[1:max.dim.calculable]
 	    prior.probs.ge.dims <- rev(cumsum(rev(prior.probs.dims)))
 
 	    # Figure out posterior probs
 	    dim.each.iteration <- rowSums(results@mcmc.output[,results@model.space.priors[[partition]]$Variables] != 0)
 	    n.saved.its <- length(dim.each.iteration)
-	    posterior.probs.ge.dims <- sapply(1:P, function(i) sum(dim.each.iteration>=i)/n.saved.its)
+	    posterior.probs.ge.dims <- sapply(1:max.dim.calculable, function(i) sum(dim.each.iteration>=i)/n.saved.its)
 
 	    # Calculate the Bayes Factors
 	    bfs.dims <-
-	      sapply(1:P, function(i){
+	      sapply(1:max.dim.calculable, function(i){
 	        post.prob <- posterior.probs.ge.dims[i]
 	        post.odds <- post.prob/(1-post.prob)
 	        
@@ -50,7 +52,7 @@ ModelSizeBayesFactors <- function(
 	      })
 	    
 	    dim.res.table <- rbind("PriorProb"=prior.probs.ge.dims,"PostProb"=posterior.probs.ge.dims,"BF"=bfs.dims)
-	    colnames(dim.res.table) <- paste("BF >=", 1:P, " Covariates",sep="")
+	    colnames(dim.res.table) <- paste("BF >=", 1:max.dim.calculable, " Covariates",sep="")
 	    
 	    dim.bf.table.partitions[[partition]] <- dim.res.table
 	  }
