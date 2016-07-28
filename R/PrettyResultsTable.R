@@ -102,7 +102,7 @@ PrettyResultsTable <- function(
   measure <- "Effect"
   if (results@likelihood %in% c("Logistic", "JAM", "JAM_MCMC")) {
     measure <- "OR"
-  } else if (results@likelihood %in% c("Cox", "Weibull")) {
+  } else if (results@likelihood %in% c("Cox", "CLogLog", "Weibull")) {
     measure <- "HR"
   }
   colnames(pretty.tab)[colnames(pretty.tab) %in% beta.col.names] <- paste(measure, beta.col.names)    

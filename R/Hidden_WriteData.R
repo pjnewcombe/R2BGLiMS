@@ -195,7 +195,7 @@
   }
   
   # Vector of outcomes
-  if (likelihood %in% c("Logistic", "Weibull", "Cox", "CaseCohort_Prentice", "CaseCohort_Barlow", "RocAUC", "RocAUC_Anchoring")) {
+  if (likelihood %in% c("Logistic", "CLogLog", "Weibull", "Cox", "CaseCohort_Prentice", "CaseCohort_Barlow", "RocAUC", "RocAUC_Anchoring")) {
     write(t(as.integer(outcome)), file = data.file , ncolumns = N, append = T)    
   } else if (likelihood %in% c("Gaussian","GaussianConj")) {
     if (likelihood == "GaussianConj") { outcome <- outcome - mean(outcome) }

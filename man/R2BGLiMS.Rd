@@ -18,6 +18,7 @@ R2BGLiMS(likelihood = NULL, data = NULL, outcome.var = NULL,
 \arguments{
 \item{likelihood}{Type of model to fit. Current options are
 "Logistic" (for binary data),
+"CLogLog" complementary log-log link for binary data,
 "Weibull" (for survival data),
 "Cox" (for survival data),
 "CaseCohort_Prentice" (for case-cohort survival data with Prentice weighting),
