@@ -30,13 +30,13 @@ JAM_RankCheck <- function(
   full.rank.vector <- rep(FALSE, length(X.ref))
   
   for (ld.block in 1:length(X.ref)) {
-    cat ("Taking the QR decomposition of block...\n",ld.block)
+    cat (paste("Taking the QR decomposition of block ",ld.block,"...\n",sep="") )
     qr.decomp <- qr(X.ref[[ld.block]])
     if (qr.decomp$rank == ncol(X.ref[[ld.block]])) {
-      full.rank[ld.block] <- TRUE
-      cat ("...Done. Block",ld.block,"is full rank.\n")
+      full.rank.vector[ld.block] <- TRUE
+      cat ("...Done.\nBlock",ld.block,"is full rank.\n")
     } else {
-      cat ("...Done. Block",ld.block,"is NOT full rank. Try further pruning?\n")
+      cat ("...Done.\nBlock",ld.block,"is NOT full rank. Try further pruning?\n")
     }
   }
   
