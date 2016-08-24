@@ -18,7 +18,7 @@ JAM_RankCheck <- function(
   
   # If data.frame make matrix to assess length
   if (is.data.frame(X.ref)) {
-    X.ref <- matrix(X.ref) # convert to matrix
+    X.ref <- as.matrix(X.ref) # convert to matrix
   }
   
   # If is not a list after above, make it a list of length 1
