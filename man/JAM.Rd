@@ -185,7 +185,7 @@ va.results.weibull <- R2BGLiMS(
   outcome.var="status",
   times.var="stime",
   model.space.priors=list(list("a"=1,"b"=1,"Variables"=predictors)),
-  beta.prior=beta.priors
+  beta.priors=beta.priors
 )
 PrettyResultsTable(va.results.weibull)
 TopModels(va.results.weibull)
@@ -196,7 +196,7 @@ va.results.cox <- R2BGLiMS(
   outcome.var="status",
   times.var="stime",
   model.space.priors=list(list("a"=1,"b"=1,"Variables"=predictors)),
-  beta.prior=beta.priors
+  beta.priors=beta.priors
 )
 PrettyResultsTable(va.results.cox)
 TopModels(va.results.cox)
