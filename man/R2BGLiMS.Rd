@@ -9,9 +9,10 @@ R2BGLiMS(likelihood = NULL, data = NULL, outcome.var = NULL,
   model.selection = TRUE, model.space.priors = NULL, beta.priors = NULL,
   beta.prior.partitions = NULL, dirichlet.alphas.for.roc.model = 0.01,
   g.prior = TRUE, tau = NULL, enumerate.up.to.dim = 0, X.ref = NULL,
-  marginal.betas = NULL, subcohort.sampling.fraction = NULL,
-  casecohort.pseudo.weight = 1, n = NULL, max.fpr = 1, min.tpr = 0,
-  n.iter = 1e+06, n.mil.iter = NULL, seed = 1, extra.arguments = NULL,
+  yTy.ref = NULL, n.for.jam = NULL, marginal.betas = NULL,
+  subcohort.sampling.fraction = NULL, casecohort.pseudo.weight = 1,
+  n = NULL, max.fpr = 1, min.tpr = 0, n.iter = 1e+06,
+  n.mil.iter = NULL, seed = 1, extra.arguments = NULL,
   initial.model = NULL, max.model.dim = -1, results.label = NULL,
   save.path = NULL)
 }
@@ -104,6 +105,10 @@ analysed this should be a list containing reference genotype matrices for each r
 must be coded as a numeric risk allele count 0/1/2. Non-integer values reflecting imputation may be given.
 NB: The risk allele coding MUST correspond to that used in marginal.betas. These matrices must each be positive definite and
 the column names must correspond to the names of the marginal.betas vector.}
+
+\item{yTy.ref}{Estimate of the trait variance * N; for use with JAMv2 (Daniel Ahfock's extension).}
+
+\item{n.for.jam}{For JAMv2 (Daniel Ahfock's extension), the N of the data must be provided.}
 
 \item{marginal.betas}{Vector of marginal effect estimates to re-analyse with JAM under multivariate models.}
 

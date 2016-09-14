@@ -83,6 +83,8 @@ NULL
 #' must be coded as a numeric risk allele count 0/1/2. Non-integer values reflecting imputation may be given.
 #' NB: The risk allele coding MUST correspond to that used in marginal.betas. These matrices must each be positive definite and
 #' the column names must correspond to the names of the marginal.betas vector.
+#' @param yTy.ref Estimate of the trait variance * N; for use with JAMv2 (Daniel Ahfock's extension).
+#' @param n.for.jam For JAMv2 (Daniel Ahfock's extension), the N of the data must be provided.
 #' @param marginal.betas Vector of marginal effect estimates to re-analyse with JAM under multivariate models.
 #' @param n: Sample size which marginal.betas were calculated in.
 #' @param subcohort.sampling.fraction: CaseCohort_Barlow ONLY: The sampling fraction of the sub-cohort from the full cohort, in order
@@ -135,6 +137,8 @@ R2BGLiMS <- function(
   tau=NULL,
   enumerate.up.to.dim=0,
   X.ref=NULL,
+  yTy.ref=NULL,
+  n.for.jam=NULL,
   marginal.betas=NULL,
   subcohort.sampling.fraction=NULL,
   casecohort.pseudo.weight=1,
@@ -178,7 +182,7 @@ R2BGLiMS <- function(
   if (is.null(likelihood)) stop("No likelihood, i.e. the model type, has been specified; please specify as Logistic, CLogLog,
                                 Weibull, Cox, CaseCohort_Prentice, CaseCohort_Barlow, Gaussian, GaussianConj, RocAUC, RocAUC_Anchoring, JAM_MCMC or JAM")
   if (!is.null(likelihood)) {
-    if (!likelihood %in% c("Logistic", "CLogLog", "Weibull", "Cox", "CaseCohort_Prentice", "CaseCohort_Barlow", "Gaussian", "GaussianConj", "JAM_MCMC", "JAM", "RocAUC", "RocAUC_Anchoring")) {
+    if (!likelihood %in% c("Logistic", "CLogLog", "Weibull", "Cox", "CaseCohort_Prentice", "CaseCohort_Barlow", "Gaussian", "GaussianConj", "JAM_MCMC", "JAM", "JAMv2", "RocAUC", "RocAUC_Anchoring")) {
       stop("Likelihood must be specified as Logistic, CLogLog, Weibull, Cox, CaseCohort_Prentice, CaseCohort_Barlow, Gaussian, GaussianConj, RocAUC, JAM_MCMC, or JAM")
     }
   }
@@ -203,12 +207,12 @@ R2BGLiMS <- function(
     }    
     if (length(table(data[,outcome.var]))!=2) stop("Outcome variable must be binary")    
   }
-  if (likelihood %in% c("GaussianConj", "JAM") & is.null(tau)) {
+  if (likelihood %in% c("GaussianConj", "JAM", "JAMv2") & is.null(tau)) {
     if (g.prior) {
       if (likelihood %in% c("GaussianConj")) {
         cat("tau was not provided. Since the g-prior is in use, setting to the recommended maximum of n and P^2\n")
         tau <- max(nrow(data), ncol(data)^2)        
-      } else if (likelihood %in% c("JAM")) {
+      } else if (likelihood %in% c("JAM", "JAMv2")) {
         cat("tau was not provided. Since the g-prior is in use, setting to the recommended maximum of n and P^2\n")
         tau <- max(n,length(marginal.betas)^2)
       }
@@ -254,7 +258,7 @@ R2BGLiMS <- function(
       if (!"Variables"%in%names(model.space.priors[[c]])) {
         stop("Each model.space.prior list(s) must contain an element named Variables, defining which covariates to search over")
       }
-      if (!likelihood %in% c("JAM_MCMC", "JAM")) {
+      if (!likelihood %in% c("JAM_MCMC", "JAM", "JAMv2")) {
         if (sum(model.space.priors[[c]]$Variables%in%colnames(data))!=length(model.space.priors[[c]]$Variables)) {
           stop(paste("Not all variables in model space component",c,"are present in the data"))
         }
@@ -293,7 +297,7 @@ R2BGLiMS <- function(
   
   ### -- Beta prior error messages
   if (!is.null(beta.priors)) {
-    if (likelihood %in% c("GaussianConj", "JAM")) {stop("Fixed priors for the coefficients can not be specified for the conjugate model; the prior
+    if (likelihood %in% c("GaussianConj", "JAM", "JAMv2")) {stop("Fixed priors for the coefficients can not be specified for the conjugate model; the prior
                                                  is take as a function of X'X")}
     beta.priors.not.mat <- TRUE
     if (is.data.frame(beta.priors)) {beta.priors.not.mat <- FALSE}
@@ -301,7 +305,7 @@ R2BGLiMS <- function(
     if (beta.priors.not.mat) stop("beta.priors must be a matrix or data frame")
     if (ncol(beta.priors)!=2) stop("beta.priors must have two columns - 1st for means, 2nd for SDs")
     if ( is.null(rownames(beta.priors)) ) stop("Rows of beta.priors must be named with corresponding variable names")
-    if (!likelihood %in% c("JAM_MCMC", "JAM")) {
+    if (!likelihood %in% c("JAM_MCMC", "JAM", "JAMv2")) {
       if (sum(rownames(beta.priors)%in%colnames(data))!=nrow(beta.priors)) stop("One or more variables in beta.priors are not present in the data")
     }
   } else if (length(confounders)>0) {
@@ -314,7 +318,7 @@ R2BGLiMS <- function(
   
   ### --- Beta prior partition error messages
   if (!is.null(beta.prior.partitions)) {
-    if (likelihood %in% c("GaussianConj", "JAM", "RocAUC")) {
+    if (likelihood %in% c("GaussianConj", "JAM", "JAMv2", "RocAUC")) {
       stop("the beta.prior.partitions option is not available for the conjugate models.")
     }
     if (!is.list(beta.prior.partitions)) stop("beta.prior.partitions must be a list of list(s).")
@@ -366,7 +370,7 @@ R2BGLiMS <- function(
            as exchangeable with covariates under model selection.")
     }
   } else {
-    if (!likelihood %in% c("GaussianConj", "JAM", "RocAUC")) {
+    if (!likelihood %in% c("GaussianConj", "JAM", "JAMv2", "RocAUC")) {
       all.covariates <- unique(c(unlist(lapply(model.space.priors,function(x) x$Variables)),rownames(beta.priors),confounders))
       # Create default single beta.prior.partitions with Uniform(0.01, 2) - SMMR
       if (is.null(beta.priors)) {
@@ -509,7 +513,7 @@ R2BGLiMS <- function(
   #########################
   #########################
   
-  if (likelihood %in% c("JAM", "JAM_MCMC")) {
+  if (likelihood %in% c("JAM", "JAMv2", "JAM_MCMC")) {
     ### --- Generate X'X, after normalising X
     xTx <- list()
     for (ld.block in 1:length(X.ref)) {
@@ -523,7 +527,10 @@ R2BGLiMS <- function(
     z <- NULL
     for (ld.block in 1:length(X.ref)) {
       snps.in.block <- colnames(X.ref[[ld.block]])
-      z <- c(z, JAM_PointEstimates(marginal.betas = marginal.betas[snps.in.block], X.ref=X.ref[[ld.block]], n=n, just.get.z=TRUE) )
+      z <- c(z, JAM_PointEstimates(
+        marginal.betas = marginal.betas[snps.in.block],
+        X.ref=X.ref[[ld.block]],
+        n=n, just.get.z=TRUE) )
     }
   }
 
@@ -547,6 +554,8 @@ R2BGLiMS <- function(
     enumerate.up.to.dim=enumerate.up.to.dim,
     xTx=xTx,
     z=z,
+    yTy.ref=yTy.ref,
+    n.for.jam=n.for.jam,
     subcohort.sampling.fraction=subcohort.sampling.fraction,
     casecohort.pseudo.weight=casecohort.pseudo.weight,
     max.fpr=max.fpr,

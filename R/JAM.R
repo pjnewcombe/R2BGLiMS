@@ -11,9 +11,12 @@ NULL
 #' If you would like to force JAM to perform full Reversible Jump MCMC of models and parameters (effects and residual), then
 #' set this to TRUE. The posterior summaries can be seen using \code{\link{PrettyResultsTable}}. Note that this option is
 #' forced to false if inference via model enumeration is requested by setting enumerate.up.to.dim>0.
+#' @param n The size of the dataset inwhich the summary statistics were calculated. This must be specified is use.da.v2=TRUE.
 #' @param n.cases If the marginal.betas contain log-Odds Ratios, please specify the number of cases
 #' with this option, so that JAM can calculate the case proportion in order to invoke an approximate 
 #' transformation between the linear and logistic scales.
+#' @param use.da.v2 Whether to use Daniel Ahfock's new formulation of the marginal JAM model likelihood. NB: Requires specification of trait.variance.ref and n.
+#' @param trait.variance.ref Reference estimate of the trait variance. Must specify if use.da.v2=TRUE.
 #' 
 #' @return A Reversible Jump results object is returned. This is a list of two elements: "args" which records various modelling
 #' arguments used in the analysis, and "results" - a matrix containing all saved posterior samples from the analysis. Columns
@@ -48,7 +51,9 @@ JAM <- function(
   n.cases=NULL,
   extra.arguments=NULL,
   save.path=NULL,
-  max.model.dim=-1
+  max.model.dim=-1,
+  use.da.v2=FALSE,
+  trait.variance.ref=NULL
 ) {
   
   ##################################################################
@@ -81,14 +86,26 @@ JAM <- function(
   for (ld.block in 1:length(X.ref)) {
     if (is.null(colnames(X.ref[[ld.block]]))) stop ("All columns of the X reference matrice(s) must be named, corresponding to SNP effects in marginal.betas")
   }
-  
+  if (use.da.v2 & is.null(trait.variance.ref)) {stop("If using Daniel Ahfock's reformulation, must specify an estimate of the trait variance.")}
+  if (full.mcmc.sampling & use.da.v2){stop("Full MCMC sampling of models and parameters not yet implemented for Daniel Ahfock's formulation.")}
+
   # --- Marginal betas
   if (is.null(marginal.betas)) { stop("For analysis with JAM you must provide a vector of marginal summary statistics") }
   if (is.null(names(marginal.betas))) stop ("All effects in marginal.betas must be named, corresponding to columns in X.ref")
   if (sum(names(marginal.betas) %in% unlist(lapply(X.ref, colnames))) < length(marginal.betas)) {stop("Reference genotype matrices do not include all SNPs in the marginal.betas vector")}
   
   # -- N
-  if (is.null(n)) { stop("You must specificy the number of individuals the marginal effect estimates were calculated in.") }
+  if (is.null(n)) { stop("You must specificy the number of individuals the summary statistics were calculated in.") }
+
+  ######################################################
+  ### --- Set yTy.ref for Daniel Ahfock's method --- ###
+  ######################################################
+  
+  if (use.da.v2) {
+    yTy.ref <- trait.variance.ref*n
+  } else {
+    yTy.ref <- NULL
+  }
   
   #######################################################################
   ### --- Take subset of X.refs correpsonding to elements of beta --- ###
@@ -119,7 +136,11 @@ JAM <- function(
   if (full.mcmc.sampling) {
     which.blgims.jam.method <- "JAM_MCMC"
   } else {
-    which.blgims.jam.method <- "JAM"    
+    if (use.da.v2) {
+      which.blgims.jam.method <- "JAMv2"
+    } else {
+      which.blgims.jam.method <- "JAM"
+    }
   }
   
   #######################################
@@ -147,7 +168,11 @@ JAM <- function(
   ############################
   
   if (enumerate.up.to.dim > 0) {
-    which.blgims.jam.method <- "JAM" # Full MCMC sampling is disabled for model enumeration
+    if (use.da.v2) { # Force not using JAM_MCMC
+      which.blgims.jam.method <- "JAMv2"
+    } else {
+      which.blgims.jam.method <- "JAM"
+    }
     ### --- Enumeration
     n.iter <- 1 # Set to minimum number of iterations
     if (!is.list(X.ref)|length(X.ref)==1) {
@@ -159,6 +184,8 @@ JAM <- function(
         marginal.betas=marginal.betas,
         n=n,
         X.ref=X.ref,
+        yTy.ref=yTy.ref,
+        n.for.jam=n,
         model.space.priors=model.space.priors,
         g.prior=g.prior,
         tau=tau,
@@ -188,6 +215,8 @@ JAM <- function(
           marginal.betas=marginal.betas[vars.ld.block],
           n=n,
           X.ref=X.ref[[ld.block]],
+          yTy.ref=yTy.ref,
+          n.for.jam=n,
           model.space.priors=model.space.priors.ld.block,
           g.prior=g.prior,
           tau=tau,
@@ -221,6 +250,8 @@ JAM <- function(
       marginal.betas=marginal.betas,
       n=n,
       X.ref=X.ref,
+      yTy.ref=yTy.ref,
+      n.for.jam=n,
       model.space.priors=model.space.priors,
       beta.priors=beta.priors,
       beta.prior.partitions=beta.prior.partitions,

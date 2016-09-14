@@ -100,7 +100,7 @@ PrettyResultsTable <- function(
   
   # Measure to include in column titles
   measure <- "Effect"
-  if (results@likelihood %in% c("Logistic", "JAM", "JAM_MCMC")) {
+  if (results@likelihood %in% c("Logistic", "JAM", "JAMv2", "JAM_MCMC")) {
     measure <- "OR"
   } else if (results@likelihood %in% c("Cox", "CLogLog", "Weibull")) {
     measure <- "HR"
@@ -115,7 +115,7 @@ PrettyResultsTable <- function(
   rownames(pretty.tab) <- rownames(res.tab)
   
   # Only keep posterior probablities and Bayes Factors for conjugate models
-  if (results@likelihood %in% c("JAM", "GaussianConj")) {
+  if (results@likelihood %in% c("JAM", "JAMv2", "GaussianConj")) {
     pretty.tab <- pretty.tab[predictors, c("Posterior Probability", "Bayes Factor")]
   }
 

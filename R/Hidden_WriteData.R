@@ -23,8 +23,10 @@
   model.tau=FALSE,
   tau=NULL,
   enumerate.up.to.dim=0,
-  xTx=NULL,
-  z=NULL,
+  xTx=NULL, # X.ref * X.ref
+  z=NULL, # X'y
+  yTy.ref=NULL, # Trait variance * N
+  n.for.jam=NULL,
   subcohort.sampling.fraction=NULL,
   casecohort.pseudo.weight=NULL,
   max.fpr=1,
@@ -37,7 +39,7 @@
     # Must be done BEFORE extracting individual variables
     data <- data[order(data[,times.var], decreasing=T),]
   }  
-  if (!likelihood%in%c("JAM_MCMC", "JAM")) {
+  if (!likelihood%in%c("JAM_MCMC", "JAM", "JAMv2")) {
     n.start <- nrow(data)
     if (!is.null(predictors)) {
       data <- data[, c(outcome.var, times.var, subcohort.var, predictors)]
@@ -65,7 +67,11 @@
     cat(paste((n.start-N),"observations deleted due to missingness"))
   } else {
     V <- length(z)
-    N <- 1
+    if (likelihood == "JAMv2") {
+      N <- n.for.jam
+    } else {
+      N <- 1
+    }
     var.names <- unlist(lapply(xTx,colnames))
     block.sizes <- unlist(lapply(xTx,ncol))
     block.indices <- rep(1,length(xTx)+1)
@@ -155,11 +161,14 @@
 	}
 	
 	# Conjugate-only modelling options
-	if (likelihood %in% c("GaussianConj", "JAM")) {
+	if (likelihood %in% c("GaussianConj", "JAM", "JAMv2")) {
 	  write(paste("useGPrior", as.integer(g.prior)), file = data.file , ncolumns = 1, append = T)
 	  write(paste("tau",format(tau,sci=F)), file = data.file, ncolumns = 1, append = T)      
 	  write(paste("modelTau",as.integer(model.tau)), file = data.file , ncolumns = 1, append = T)      
 	  write(paste("enumerateUpToDim",format(enumerate.up.to.dim,sci=F)), file = data.file , ncolumns = 1, append = T)
+	}
+	if (likelihood %in% c("JAMv2")) {
+	  write(paste("yTy",format(yTy.ref,sci=F)), file = data.file , ncolumns = 1, append = T)
 	}
 	
 	############################
@@ -168,7 +177,7 @@
 	
 	cat("Writing data into an input file for BGLiMS...\n")
   # Covariate data - different if marginal setup
-  if (likelihood %in% c("JAM", "JAM_MCMC")) { # Write summary data
+  if (likelihood %in% c("JAM", "JAMv2", "JAM_MCMC")) { # Write summary data
     write(paste("nBlocks",format(length(xTx),sci=F)), file = data.file , ncolumns = 1, append = T)
     write("blockIndices", file = data.file , ncolumns = 1, append = T)
     write(block.indices, file = data.file , ncolumns = length(block.indices), append = T)
@@ -184,6 +193,10 @@
         cat("Taking Cholesky decomposition of block",b,"...\n")
         Lt_Inv[[b]] <- solve(t(L)) # Take TRANSPOSE inverse for below
       }      
+    } else if (likelihood == "JAMv2") {
+      for (b in 1:length(xTx)) {
+        write.table(xTx[[b]], row.names=F, col.names=F, file = data.file, append = T)
+      }
     }
   } else { 
     # Write IPD Covariate data
@@ -210,6 +223,8 @@
       z_L[block.vars] <- Lt_Inv[[b]] %*% z[block.vars]
     }
     write(t(z_L), file = data.file , ncolumns = V, append = T)        
+  } else if (likelihood %in% c("JAMv2")) {
+    write(t(z), file = data.file , ncolumns = V, append = T)        
   }
   if (likelihood=="Weibull") {
     write(t(times), file = data.file , ncolumns = N, append = T)    

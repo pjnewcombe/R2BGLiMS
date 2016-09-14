@@ -9,10 +9,13 @@ JAM(marginal.betas = NULL, n = NULL, X.ref = NULL,
   beta.prior.partitions = NULL, g.prior = TRUE, tau = NULL,
   enumerate.up.to.dim = 0, full.mcmc.sampling = FALSE, n.iter = 1e+06,
   n.mil.iter = NULL, seed = 1, n.cases = NULL, extra.arguments = NULL,
-  save.path = NULL, max.model.dim = -1)
+  save.path = NULL, max.model.dim = -1, use.da.v2 = FALSE,
+  trait.variance.ref = NULL)
 }
 \arguments{
 \item{marginal.betas}{Vector of marginal effect estimates to re-analyse with JAM under multivariate models.}
+
+\item{n}{The size of the dataset inwhich the summary statistics were calculated. This must be specified is use.da.v2=TRUE.}
 
 \item{X.ref}{Reference genotype matrix used by JAM to impute the SNP-SNP correlations. If multiple regions are to be
 analysed this should be a list containing reference genotype matrices for each region. Individual's genotype
@@ -91,6 +94,10 @@ are not documented - please contact the package author, Paul Newcombe for detail
 after running R2BGLiMS. However, this option might help for debugging.}
 
 \item{max.model.dim}{Optional specification of maximum model dimension (default -1 means no maximum is set).}
+
+\item{use.da.v2}{Whether to use Daniel Ahfock's new formulation of the marginal JAM model likelihood. NB: Requires specification of trait.variance.ref and n.}
+
+\item{trait.variance.ref}{Reference estimate of the trait variance. Must specify if use.da.v2=TRUE.}
 }
 \value{
 A Reversible Jump results object is returned. This is a list of two elements: "args" which records various modelling
