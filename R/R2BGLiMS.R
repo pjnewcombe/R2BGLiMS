@@ -309,11 +309,13 @@ R2BGLiMS <- function(
       if (sum(rownames(beta.priors)%in%colnames(data))!=nrow(beta.priors)) stop("One or more variables in beta.priors are not present in the data")
     }
   } else if (length(confounders)>0) {
-    warning("beta.priors were not provided for the confounders (which should not be
+    if (!likelihood %in% c("GaussianConj")) { # Confounders are not modelled for GaussianConj
+      warning("beta.priors were not provided for the confounders (which should not be
             treated as exchangeable with covariates under model selection). Setting to N(0,1e6).")
-    beta.priors <- data.frame(
-      cbind(rep(0,length(confounders)),rep(1000,length(confounders))),
-      row.names=confounders)
+      beta.priors <- data.frame(
+        cbind(rep(0,length(confounders)),rep(1000,length(confounders))),
+        row.names=confounders)
+    }
   }
   
   ### --- Beta prior partition error messages
