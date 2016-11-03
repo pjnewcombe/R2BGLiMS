@@ -105,6 +105,8 @@ NULL
 #' @param max.model.dim Optional specification of maximum model dimension (default -1 means no maximum is set).
 #' @param save.path Optional path to save BGLiMS's data and results files. These are usually written as temporary files, and deleted
 #' after running R2BGLiMS. However, this option might help for debugging.
+#' @param extra.java.arguments A character string to be passed through to the java command line. E.g. to specify a
+#' different temporary directory by passing "-Djava.io.tmpdir=/Temp".
 #' 
 #' @return A R2BGLiMS_Results class object is returned. See the slot 'posterior.summary.table' for a posterior
 #' summary of all parameters.
@@ -152,7 +154,8 @@ R2BGLiMS <- function(
   initial.model=NULL,
   max.model.dim=-1,
   results.label=NULL,
-  save.path=NULL
+  save.path=NULL,
+  extra.java.arguments=NULL
 ) {
   
   ###########################
@@ -574,8 +577,9 @@ R2BGLiMS <- function(
   ### --- Generate commands
   n.thin <- max(n.iter/1e4, 1) # If 1 million iterations, save every 100th
   n.iter.report.output <- round(n.iter/10) # How often to report progress to console
+  if (!is.null(extra.java.arguments)) {extra.java.arguments <- paste(extra.java.arguments," ",sep="")}
   comm <- paste(
-    "java -jar \"", bayesglm.jar, "\" \"",
+    "java ",extra.java.arguments,"-jar \"", bayesglm.jar, "\" \"",
     arguments.file, "\" \"", data.file, "\" \"",
     results.file, "\" ",
     format(n.iter,sci=F)," ",0," ",

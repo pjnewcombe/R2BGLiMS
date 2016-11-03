@@ -14,7 +14,7 @@ R2BGLiMS(likelihood = NULL, data = NULL, outcome.var = NULL,
   n = NULL, max.fpr = 1, min.tpr = 0, n.iter = 1e+06,
   n.mil.iter = NULL, seed = 1, extra.arguments = NULL,
   initial.model = NULL, max.model.dim = -1, results.label = NULL,
-  save.path = NULL)
+  save.path = NULL, extra.java.arguments = NULL)
 }
 \arguments{
 \item{likelihood}{Type of model to fit. Current options are
@@ -135,6 +135,9 @@ and the null model is used. If set to 1, the saturated model is used.}
 
 \item{save.path}{Optional path to save BGLiMS's data and results files. These are usually written as temporary files, and deleted
 after running R2BGLiMS. However, this option might help for debugging.}
+
+\item{extra.java.arguments}{A character string to be passed through to the java command line. E.g. to specify a
+different temporary directory by passing "-Djava.io.tmpdir=/Temp".}
 
 \item{n:}{Sample size which marginal.betas were calculated in.}
 

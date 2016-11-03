@@ -10,7 +10,7 @@ JAM(marginal.betas = NULL, n = NULL, X.ref = NULL,
   enumerate.up.to.dim = 0, full.mcmc.sampling = FALSE, n.iter = 1e+06,
   n.mil.iter = NULL, seed = 1, n.cases = NULL, extra.arguments = NULL,
   save.path = NULL, max.model.dim = -1, use.da.v2 = FALSE,
-  trait.variance.ref = NULL)
+  trait.variance.ref = NULL, extra.java.arguments = NULL)
 }
 \arguments{
 \item{marginal.betas}{Vector of marginal effect estimates to re-analyse with JAM under multivariate models.}
@@ -98,6 +98,9 @@ after running R2BGLiMS. However, this option might help for debugging.}
 \item{use.da.v2}{Whether to use Daniel Ahfock's new formulation of the marginal JAM model likelihood. NB: Requires specification of trait.variance.ref and n.}
 
 \item{trait.variance.ref}{Reference estimate of the trait variance. Must specify if use.da.v2=TRUE.}
+
+\item{extra.java.arguments}{A character string to be passed through to the java command line. E.g. to specify a
+different temporary directory by passing "-Djava.io.tmpdir=/Temp".}
 }
 \value{
 A Reversible Jump results object is returned. This is a list of two elements: "args" which records various modelling

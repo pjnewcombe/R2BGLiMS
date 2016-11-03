@@ -53,7 +53,8 @@ JAM <- function(
   save.path=NULL,
   max.model.dim=-1,
   use.da.v2=FALSE,
-  trait.variance.ref=NULL
+  trait.variance.ref=NULL,
+  extra.java.arguments=NULL
 ) {
   
   ##################################################################
@@ -195,7 +196,8 @@ JAM <- function(
         seed=seed,
         extra.arguments=extra.arguments,
         save.path=save.path,
-        max.model.dim=max.model.dim
+        max.model.dim=max.model.dim,
+        extra.java.arguments=extra.java.arguments
       )
     } else {
       ##############################################
@@ -226,7 +228,8 @@ JAM <- function(
           seed=seed,
           extra.arguments=extra.arguments,
           save.path=save.path,
-          max.model.dim=max.model.dim          
+          max.model.dim=max.model.dim,
+          extra.java.arguments=extra.java.arguments
         )
         if (ld.block==1) {
           results <- results.r2bglims.g
@@ -263,7 +266,8 @@ JAM <- function(
       seed=seed,
       extra.arguments=extra.arguments,
       save.path=save.path,
-      max.model.dim=max.model.dim      
+      max.model.dim=max.model.dim,
+      extra.java.arguments=extra.java.arguments
     )
   }
 
