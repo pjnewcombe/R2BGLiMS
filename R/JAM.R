@@ -50,6 +50,7 @@ JAM <- function(
   seed=1,
   n.cases=NULL,
   extra.arguments=NULL,
+  initial.model=NULL,
   save.path=NULL,
   max.model.dim=-1,
   use.da.v2=FALSE,
@@ -195,6 +196,7 @@ JAM <- function(
         n.mil.iter=n.mil.iter,
         seed=seed,
         extra.arguments=extra.arguments,
+        initial.model=initial.model,
         save.path=save.path,
         max.model.dim=max.model.dim,
         extra.java.arguments=extra.java.arguments
@@ -227,6 +229,7 @@ JAM <- function(
           n.mil.iter=n.mil.iter,
           seed=seed,
           extra.arguments=extra.arguments,
+          initial.model=initial.model,
           save.path=save.path,
           max.model.dim=max.model.dim,
           extra.java.arguments=extra.java.arguments
@@ -265,6 +268,7 @@ JAM <- function(
       n.mil.iter=n.mil.iter,
       seed=seed,
       extra.arguments=extra.arguments,
+      initial.model=initial.model,
       save.path=save.path,
       max.model.dim=max.model.dim,
       extra.java.arguments=extra.java.arguments

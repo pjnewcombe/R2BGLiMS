@@ -326,8 +326,8 @@ R2BGLiMS <- function(
     if (likelihood %in% c("GaussianConj", "JAM", "JAMv2", "RocAUC")) {
       stop("the beta.prior.partitions option is not available for the conjugate models.")
     }
-    if (!is.list(beta.prior.partitions)) stop("beta.prior.partitions must be a list of list(s).")
-    if (!is.list(beta.prior.partitions[[1]])) stop("beta.prior.partitions must be a list of list(s).")
+    if (!is.list(beta.prior.partitions)) {beta.prior.partitions <- list(beta.prior.partitions)}
+    if (!is.list(beta.prior.partitions[[1]])) stop("beta.prior.partitions must be a list or list of list(s).")
     # Check structure
     for (c in 1:length(beta.prior.partitions)) {
       # Check Hyper-prior structure
@@ -356,8 +356,10 @@ R2BGLiMS <- function(
         stop(paste("Each covariate prior partition must contain an element named Variables defining the covariates in the partition.
              Not supplied for partition",c) )
       }
-      if (sum(beta.prior.partitions[[c]]$Variables%in%colnames(data))!=length(beta.prior.partitions[[c]]$Variables)) {
-        stop(paste("Not all variables in covariate prior partition",c,"are present in the data"))
+      if (!likelihood %in% c("JAM_MCMC", "JAM", "JAMv2")) {
+        if (sum(beta.prior.partitions[[c]]$Variables%in%colnames(data))!=length(beta.prior.partitions[[c]]$Variables)) {
+          stop(paste("Not all variables in covariate prior partition",c,"are present in the data"))
+        }
       }
       if (sum(beta.prior.partitions[[c]]$Variables%in%rownames(beta.priors))>0) {
         stop(paste("Informative priors have also been specified for some of the variables in
