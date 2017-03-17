@@ -8,9 +8,9 @@ JAM(marginal.betas = NULL, n = NULL, X.ref = NULL,
   model.space.priors = NULL, beta.priors = NULL,
   beta.prior.partitions = NULL, g.prior = TRUE, tau = NULL,
   enumerate.up.to.dim = 0, full.mcmc.sampling = FALSE, n.iter = 1e+06,
-  n.mil.iter = NULL, seed = 1, n.cases = NULL, extra.arguments = NULL,
-  initial.model = NULL, save.path = NULL, max.model.dim = -1,
-  use.da.v2 = FALSE, trait.variance.ref = NULL,
+  n.mil.iter = NULL, thinning.interval = NULL, seed = 1, n.cases = NULL,
+  extra.arguments = NULL, initial.model = NULL, save.path = NULL,
+  max.model.dim = -1, use.da.v2 = FALSE, trait.variance.ref = NULL,
   extra.java.arguments = NULL)
 }
 \arguments{
@@ -80,6 +80,10 @@ forced to false if inference via model enumeration is requested by setting enume
 \item{n.iter}{Number of iterations to run (default is 1e6)}
 
 \item{n.mil.iter}{Number of million iterations to run. Can optionally be used instead of n.iter for convenience, which it will overide if specified.}
+
+\item{thinning.interval}{Every nth iteration to store (i.e. for the Java algorithm to write to a file and then read into R). By default this is the
+number of iterations divided by 1e4 (so for 1 million iterations every 100th is stored.) Higher values (so smaller posterior sample) can lead to 
+faster runtimes for large numbers of covariates.}
 
 \item{seed}{Which random number seed to use in the RJMCMC sampler.}
 

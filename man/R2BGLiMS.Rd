@@ -12,9 +12,9 @@ R2BGLiMS(likelihood = NULL, data = NULL, outcome.var = NULL,
   yTy.ref = NULL, n.for.jam = NULL, marginal.betas = NULL,
   subcohort.sampling.fraction = NULL, casecohort.pseudo.weight = 1,
   n = NULL, max.fpr = 1, min.tpr = 0, n.iter = 1e+06,
-  n.mil.iter = NULL, seed = 1, extra.arguments = NULL,
-  initial.model = NULL, max.model.dim = -1, results.label = NULL,
-  save.path = NULL, extra.java.arguments = NULL)
+  n.mil.iter = NULL, thinning.interval = NULL, seed = 1,
+  extra.arguments = NULL, initial.model = NULL, max.model.dim = -1,
+  results.label = NULL, save.path = NULL, extra.java.arguments = NULL)
 }
 \arguments{
 \item{likelihood}{Type of model to fit. Current options are 
@@ -119,6 +119,10 @@ the column names must correspond to the names of the marginal.betas vector.}
 \item{n.iter}{Number of iterations to run (default is 1e6)}
 
 \item{n.mil.iter}{Number of million iterations to run. Can optionally be used instead of n.iter for convenience, which it will overide if specified.}
+
+\item{thinning.interval}{Every nth iteration to store (i.e. for the Java algorithm to write to a file and then read into R). By default this is the
+number of iterations divided by 1e4 (so for 1 million iterations every 100th is stored.) Higher values (so smaller posterior sample) can lead to 
+faster runtimes for large numbers of covariates.}
 
 \item{seed}{Which random number seed to use in the RJMCMC sampler.}
 

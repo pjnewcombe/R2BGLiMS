@@ -95,6 +95,9 @@ NULL
 #' @param min.tpr ROC AUC ONLY: Minimum acceptable true positive rate, i.e. sensitivity (or y-axis value) to optimise a truncated ROC AUC.
 #' @param n.iter Number of iterations to run (default is 1e6)
 #' @param n.mil.iter Number of million iterations to run. Can optionally be used instead of n.iter for convenience, which it will overide if specified.
+#' @param thinning.interval Every nth iteration to store (i.e. for the Java algorithm to write to a file and then read into R). By default this is the
+#' number of iterations divided by 1e4 (so for 1 million iterations every 100th is stored.) Higher values (so smaller posterior sample) can lead to 
+#' faster runtimes for large numbers of covariates.
 #' @param seed Which random number seed to use in the RJMCMC sampler.
 #' @param results.label Optional label for algorithm output files (if you have specified save.path).
 #' @param extra.arguments A named list of any additional arguments for BGLiMS. Type "data(DefaultArguments)" and look in the 
@@ -149,6 +152,7 @@ R2BGLiMS <- function(
   min.tpr=0,
   n.iter=1e6,
   n.mil.iter=NULL,
+  thinning.interval=NULL,
   seed=1,
   extra.arguments=NULL,
   initial.model=NULL,
@@ -577,7 +581,9 @@ R2BGLiMS <- function(
   cat(paste("Data written in",hrs,"hrs",mins,"mins and",secs,"seconds.\n"))
     
   ### --- Generate commands
-  n.thin <- max(n.iter/1e4, 1) # If 1 million iterations, save every 100th
+  if (is.null(thinning.interval)) {
+    thinning.interval <- max(n.iter/1e4, 1) # If 1 million iterations, save every 100th
+  }
   n.iter.report.output <- round(n.iter/10) # How often to report progress to console
   if (!is.null(extra.java.arguments)) {extra.java.arguments <- paste(extra.java.arguments," ",sep="")}
   comm <- paste(
@@ -585,7 +591,7 @@ R2BGLiMS <- function(
     arguments.file, "\" \"", data.file, "\" \"",
     results.file, "\" ",
     format(n.iter,sci=F)," ",0," ",
-    format(n.thin,sci=F)," ",
+    format(thinning.interval,sci=F)," ",
     format(n.iter.report.output, sci=F)," ",
     seed," ",
     as.integer(model.selection)," ",
