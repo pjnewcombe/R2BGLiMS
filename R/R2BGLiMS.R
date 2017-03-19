@@ -212,7 +212,12 @@ R2BGLiMS <- function(
     } else if (is.character(data[,outcome.var])) {
       data[,outcome.var] <- as.integer(as.factor(data[,outcome.var]))-1    
     }    
-    if (length(table(data[,outcome.var]))!=2) stop("Outcome variable must be binary")    
+    if (length(table(data[,outcome.var]))>2) {
+      stop("Outcome variable must be binary")
+    } else if ((likelihood != "Weibull") & (length(table(data[,outcome.var]))==1)) {
+      # Single class allowed for survival models (may all be survivors)
+      stop("Outcome variable only has one class")
+    }
   }
   if (likelihood %in% c("GaussianConj", "JAM", "JAMv2") & is.null(tau)) {
     if (g.prior) {
