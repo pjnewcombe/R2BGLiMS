@@ -1,8 +1,8 @@
 default.arguments <- list(
   "AlphaPriorMu" = 0,
   "AlphaPriorSd" = 1000,
-  "WeibullScalePrior_GammaArg1" = 1,
-  "WeibullScalePrior_GammaArg2" = 0.001,
+  "logWeibullScaleNormalPriorMean" = 0,
+  "logWeibullScaleNormalPriorSd" = 1000,
   "DirichletConcentration_GammaArg1" = 100,
   "DirichletConcentration_GammaArg2" = 1,
   "DirichletConcentration_Minimum" = 1,
