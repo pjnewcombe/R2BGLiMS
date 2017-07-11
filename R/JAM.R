@@ -11,24 +11,20 @@ NULL
 #' If you would like to force JAM to perform full Reversible Jump MCMC of models and parameters (effects and residual), then
 #' set this to TRUE. The posterior summaries can be seen using \code{\link{PrettyResultsTable}}. Note that this option is
 #' forced to false if inference via model enumeration is requested by setting enumerate.up.to.dim>0.
-#' @param n The size of the dataset inwhich the summary statistics were calculated. This must be specified is use.da.v2=TRUE.
+#' @param n The size of the dataset in which the summary statistics were calculated. This must be specified if use.da.v2=TRUE.
 #' @param n.cases If the marginal.betas contain log-Odds Ratios, please specify the number of cases
 #' with this option, so that JAM can calculate the case proportion in order to invoke an approximate 
 #' transformation between the linear and logistic scales.
 #' @param use.da.v2 Whether to use Daniel Ahfock's new formulation of the marginal JAM model likelihood. NB: Requires specification of trait.variance.ref and n.
 #' @param trait.variance.ref Reference estimate of the trait variance. Must specify if use.da.v2=TRUE.
 #' 
-#' @return A Reversible Jump results object is returned. This is a list of two elements: "args" which records various modelling
-#' arguments used in the analysis, and "results" - a matrix containing all saved posterior samples from the analysis. Columns
-#' correspond to parameters and each row contains values from a particular itertation, with 0 indicating exclusion from the model.
+#' @return An R2BGLiMS_Results class object is returned. See the slot 'posterior.summary.table' for a posterior summary of all parameters. 
+#' See slot 'mcmc.output' for a matrix containing the raw MCMC output from the saved posterior samples (0 indicates a covariate is excluded 
+#' from the model in a particular sample. Some functions for summarising results are listed under "see also".
 #' 
-#' The function \code{\link{PrettyResultsTable}} can be used to print summary posterior results for all parameters. Other functions
-#' for summarising results are listed under "see also".
-#' 
-#' @seealso Summary results are stored in the slot posterior.summary.table. See also
-#' \code{\link{PrettyResultsTable}} and \code{\link{ManhattanPlot}}. For posterior model space
-#' summaries see \code{\link{TopModels}}. For convergence checks
-#' plots see \code{\link{ChainPlots}} and \code{\link{AutocorrelationPlot}}.
+#' @seealso Summary results are stored in the slot posterior.summary.table. See \code{\link{ManhattanPlot}} for a visual 
+#' summary of covariate selection probabilities. For posterior model space summaries see \code{\link{TopModels}}. For 
+#' convergence checks see \code{\link{ChainPlots}} and \code{\link{AutocorrelationPlot}}.
 #' 
 #' @author Paul Newcombe
 #' 
@@ -48,7 +44,7 @@ JAM <- function(
   n.iter=1e6,
   n.mil.iter=NULL,
   thinning.interval=NULL,
-  seed=1,
+  seed=NULL,
   n.cases=NULL,
   extra.arguments=NULL,
   initial.model=NULL,

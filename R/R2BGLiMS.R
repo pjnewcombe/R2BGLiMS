@@ -98,7 +98,7 @@ NULL
 #' @param thinning.interval Every nth iteration to store (i.e. for the Java algorithm to write to a file and then read into R). By default this is the
 #' number of iterations divided by 1e4 (so for 1 million iterations every 100th is stored.) Higher values (so smaller posterior sample) can lead to 
 #' faster runtimes for large numbers of covariates.
-#' @param seed Which random number seed to use in the RJMCMC sampler.
+#' @param seed Which random number seed to use in the RJMCMC sampler. If none is provided, a random seed is picked between 1 and 2^16.
 #' @param results.label Optional label for algorithm output files (if you have specified save.path).
 #' @param extra.arguments A named list of any additional arguments for BGLiMS. Type "data(DefaultArguments)" and look in the 
 #' "default.arguments" list to see the names (which must match) and default values of available extra arguments. Currently these 
@@ -111,16 +111,13 @@ NULL
 #' @param extra.java.arguments A character string to be passed through to the java command line. E.g. to specify a
 #' different temporary directory by passing "-Djava.io.tmpdir=/Temp".
 #' 
-#' @return A R2BGLiMS_Results class object is returned. See the slot 'posterior.summary.table' for a posterior
-#' summary of all parameters.
+#' @return An R2BGLiMS_Results class object is returned. See the slot 'posterior.summary.table' for a posterior summary of all parameters. 
+#' See slot 'mcmc.output' for a matrix containing the raw MCMC output from the saved posterior samples (0 indicates a covariate is excluded 
+#' from the model in a particular sample. Some functions for summarising results are listed under "see also".
 #' 
-#' The function \code{\link{PrettyResultsTable}} can be used to print summary posterior results for all parameters. Other functions
-#' for summarising results are listed under "see also".
-#' 
-#' @seealso For a nicer summary of all covariates see 
-#' \code{\link{PrettyResultsTable}} and \code{\link{ManhattanPlot}}. For posterior model space
-#' summaries see \code{\link{TopModels}}. For convergence checks
-#' plots see \code{\link{ChainPlots}} and \code{\link{AutocorrelationPlot}}.
+#' @seealso Summary results are stored in the slot posterior.summary.table. See \code{\link{ManhattanPlot}} for a visual 
+#' summary of covariate selection probabilities. For posterior model space summaries see \code{\link{TopModels}}. For 
+#' convergence checks see \code{\link{ChainPlots}} and \code{\link{AutocorrelationPlot}}.
 #' 
 #' @author Paul Newcombe
 #' 
@@ -153,7 +150,7 @@ R2BGLiMS <- function(
   n.iter=1e6,
   n.mil.iter=NULL,
   thinning.interval=NULL,
-  seed=1,
+  seed=NULL,
   extra.arguments=NULL,
   initial.model=NULL,
   max.model.dim=-1,
@@ -433,6 +430,7 @@ R2BGLiMS <- function(
   ##########################
   ##########################
   
+  if (is.null(seed)) {seed <- sample.int(2^16, size = 1)}
   now <-format(Sys.time(), "%b%d%H%M%S") # Used to ensure unique names in the temp directory
   if (is.null(save.path)) {
     clean.up.bglims.files <- TRUE

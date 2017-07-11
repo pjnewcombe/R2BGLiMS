@@ -12,7 +12,7 @@ R2BGLiMS(likelihood = NULL, data = NULL, outcome.var = NULL,
   yTy.ref = NULL, n.for.jam = NULL, marginal.betas = NULL,
   subcohort.sampling.fraction = NULL, casecohort.pseudo.weight = 1,
   n = NULL, max.fpr = 1, min.tpr = 0, n.iter = 1e+06,
-  n.mil.iter = NULL, thinning.interval = NULL, seed = 1,
+  n.mil.iter = NULL, thinning.interval = NULL, seed = NULL,
   extra.arguments = NULL, initial.model = NULL, max.model.dim = -1,
   results.label = NULL, save.path = NULL, extra.java.arguments = NULL)
 }
@@ -124,7 +124,7 @@ the column names must correspond to the names of the marginal.betas vector.}
 number of iterations divided by 1e4 (so for 1 million iterations every 100th is stored.) Higher values (so smaller posterior sample) can lead to 
 faster runtimes for large numbers of covariates.}
 
-\item{seed}{Which random number seed to use in the RJMCMC sampler.}
+\item{seed}{Which random number seed to use in the RJMCMC sampler. If none is provided, a random seed is picked between 1 and 2^16.}
 
 \item{extra.arguments}{A named list of any additional arguments for BGLiMS. Type "data(DefaultArguments)" and look in the 
 "default.arguments" list to see the names (which must match) and default values of available extra arguments. Currently these 
@@ -152,11 +152,9 @@ to calculate weights for use with the Barlow Case-Cohort pseudo-likelihood (Barl
 the prior.}
 }
 \value{
-A R2BGLiMS_Results class object is returned. See the slot 'posterior.summary.table' for a posterior
-summary of all parameters.
-
-The function \code{\link{PrettyResultsTable}} can be used to print summary posterior results for all parameters. Other functions
-for summarising results are listed under "see also".
+An R2BGLiMS_Results class object is returned. See the slot 'posterior.summary.table' for a posterior summary of all parameters. 
+See slot 'mcmc.output' for a matrix containing the raw MCMC output from the saved posterior samples (0 indicates a covariate is excluded 
+from the model in a particular sample. Some functions for summarising results are listed under "see also".
 }
 \description{
 Calls BGLiMS - a Java package for fitting GLMs under Bayesian model selection. NOTE: The predictors to explore with model
@@ -340,10 +338,9 @@ ManhattanPlot(lm.results.two.model.space.partitions)
 lm.results.two.model.space.partitions@posterior.summary.table
 }
 \seealso{
-For a nicer summary of all covariates see 
-\code{\link{PrettyResultsTable}} and \code{\link{ManhattanPlot}}. For posterior model space
-summaries see \code{\link{TopModels}}. For convergence checks
-plots see \code{\link{ChainPlots}} and \code{\link{AutocorrelationPlot}}.
+Summary results are stored in the slot posterior.summary.table. See \code{\link{ManhattanPlot}} for a visual 
+summary of covariate selection probabilities. For posterior model space summaries see \code{\link{TopModels}}. For 
+convergence checks see \code{\link{ChainPlots}} and \code{\link{AutocorrelationPlot}}.
 }
 \author{
 Paul Newcombe

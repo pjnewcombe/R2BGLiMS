@@ -42,7 +42,7 @@ ManhattanPlot <- function(
   X.mat=NULL,
   point.cols=NULL,
   point.labs=NULL,
-  include.var.names.on.x.axis=FALSE
+  include.var.names.on.x.axis=TRUE
   ) {
   
   ### --- Errors
@@ -91,7 +91,7 @@ ManhattanPlot <- function(
   }
   
   ### --- Setup x tick labels
-  if (include.var.names.on.x.axis) {
+  if (!include.var.names.on.x.axis) {
     x.ticks <- FALSE
     x.tick.labels <- FALSE    
   } else {

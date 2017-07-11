@@ -8,15 +8,15 @@ JAM(marginal.betas = NULL, n = NULL, X.ref = NULL,
   model.space.priors = NULL, beta.priors = NULL,
   beta.prior.partitions = NULL, g.prior = TRUE, tau = NULL,
   enumerate.up.to.dim = 0, full.mcmc.sampling = FALSE, n.iter = 1e+06,
-  n.mil.iter = NULL, thinning.interval = NULL, seed = 1, n.cases = NULL,
-  extra.arguments = NULL, initial.model = NULL, save.path = NULL,
-  max.model.dim = -1, use.da.v2 = FALSE, trait.variance.ref = NULL,
-  extra.java.arguments = NULL)
+  n.mil.iter = NULL, thinning.interval = NULL, seed = NULL,
+  n.cases = NULL, extra.arguments = NULL, initial.model = NULL,
+  save.path = NULL, max.model.dim = -1, use.da.v2 = FALSE,
+  trait.variance.ref = NULL, extra.java.arguments = NULL)
 }
 \arguments{
 \item{marginal.betas}{Vector of marginal effect estimates to re-analyse with JAM under multivariate models.}
 
-\item{n}{The size of the dataset inwhich the summary statistics were calculated. This must be specified is use.da.v2=TRUE.}
+\item{n}{The size of the dataset in which the summary statistics were calculated. This must be specified if use.da.v2=TRUE.}
 
 \item{X.ref}{Reference genotype matrix used by JAM to impute the SNP-SNP correlations. If multiple regions are to be 
 analysed this should be a list containing reference genotype matrices for each region. Individual's genotype
@@ -85,7 +85,7 @@ forced to false if inference via model enumeration is requested by setting enume
 number of iterations divided by 1e4 (so for 1 million iterations every 100th is stored.) Higher values (so smaller posterior sample) can lead to 
 faster runtimes for large numbers of covariates.}
 
-\item{seed}{Which random number seed to use in the RJMCMC sampler.}
+\item{seed}{Which random number seed to use in the RJMCMC sampler. If none is provided, a random seed is picked between 1 and 2^16.}
 
 \item{n.cases}{If the marginal.betas contain log-Odds Ratios, please specify the number of cases
 with this option, so that JAM can calculate the case proportion in order to invoke an approximate 
@@ -111,12 +111,9 @@ after running R2BGLiMS. However, this option might help for debugging.}
 different temporary directory by passing "-Djava.io.tmpdir=/Temp".}
 }
 \value{
-A Reversible Jump results object is returned. This is a list of two elements: "args" which records various modelling
-arguments used in the analysis, and "results" - a matrix containing all saved posterior samples from the analysis. Columns
-correspond to parameters and each row contains values from a particular itertation, with 0 indicating exclusion from the model.
-
-The function \code{\link{PrettyResultsTable}} can be used to print summary posterior results for all parameters. Other functions
-for summarising results are listed under "see also".
+An R2BGLiMS_Results class object is returned. See the slot 'posterior.summary.table' for a posterior summary of all parameters. 
+See slot 'mcmc.output' for a matrix containing the raw MCMC output from the saved posterior samples (0 indicates a covariate is excluded 
+from the model in a particular sample. Some functions for summarising results are listed under "see also".
 }
 \description{
 Wrapper for JAM (Joint Analysis of Marginal statistics). See the Vignette.
@@ -297,10 +294,9 @@ ManhattanPlot(lm.results.two.model.space.partitions)
 lm.results.two.model.space.partitions@posterior.summary.table
 }
 \seealso{
-Summary results are stored in the slot posterior.summary.table. See also
-\code{\link{PrettyResultsTable}} and \code{\link{ManhattanPlot}}. For posterior model space
-summaries see \code{\link{TopModels}}. For convergence checks
-plots see \code{\link{ChainPlots}} and \code{\link{AutocorrelationPlot}}.
+Summary results are stored in the slot posterior.summary.table. See \code{\link{ManhattanPlot}} for a visual 
+summary of covariate selection probabilities. For posterior model space summaries see \code{\link{TopModels}}. For 
+convergence checks see \code{\link{ChainPlots}} and \code{\link{AutocorrelationPlot}}.
 }
 \author{
 Paul Newcombe

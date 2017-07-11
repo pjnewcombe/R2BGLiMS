@@ -110,6 +110,9 @@ TopModels <- function(
 	  }
 	}
   
+  # --- If no SNPs in the models, ensure a matrix is returned
+  if (length(models.tab) == 1) {models.tab <- as.matrix(t(models.tab))}
+  
   # --- Return
 	return(models.tab)		
 }	
