@@ -178,6 +178,11 @@ R2BGLiMS <- function(
   }
   cat(n.iter,"iterations will be run...\n")
   
+  ### --- N - sometimes n is taken as a function from another package.
+  if (!is.null(n)) {
+    if (!is.numeric(n)) stop("n is not numeric. Have you correctly specified n?")  
+  }
+  
   ### --- Java installation error messages
   try.java <- try(system("java -version"), silent=TRUE)
   if (try.java!=0) stop("Java is not installed and is required to run BGLiMS.\nPlease install a Java JDK from java.com/download.")  
