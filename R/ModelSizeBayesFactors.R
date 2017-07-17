@@ -23,13 +23,15 @@ ModelSizeBayesFactors <- function(
 	    if (results@bglims.arguments$ModelSpacePriorFamily=="Poisson") {
 	      prior.proportion <- results@model.space.priors[[partition]]$Rate
 	      P <- length(results@model.space.priors[[partition]]$Variables)
+	      prior.probs.dims <- sapply(1:P, function(i) prior.proportion ^ i * (1 - prior.proportion) ^ (P - i) * choose(P, i) )
 	    } else if (results@bglims.arguments$ModelSpacePriorFamily=="BetaBinomial") {
-	      prior.proportion <- results@model.space.priors[[partition]]$a/(results@model.space.priors[[partition]]$a+results@model.space.priors[[partition]]$b)
 	      P <- length(results@model.space.priors[[partition]]$Variables)
+	      a <- results@model.space.priors[[partition]]$a
+	      b <- results@model.space.priors[[partition]]$b
+	      prior.probs.dims <- sapply(1:P, 
+	                                 function(i) choose(P,i)*beta(i + a, P-i+b)/beta(a,b))
 	    }
 	    
-	    # Figure out prior probs
-	    prior.probs.dims <- sapply(1:P, function(i) prior.proportion ^ i * (1 - prior.proportion) ^ (P - i) * choose(P, i) )
 	    max.dim.calculable <- max(which(prior.probs.dims>0)) # Stop when prior prob becomes so small to calculate
 	    prior.probs.dims <- prior.probs.dims[1:max.dim.calculable]
 	    prior.probs.ge.dims <- rev(cumsum(rev(prior.probs.dims)))
@@ -64,17 +66,19 @@ ModelSizeBayesFactors <- function(
 	  if (results@n.covariate.blocks.for.jam > 1) stop("So far only implemented for enumeration in one block")
 	  if (length(results@model.space.priors) > 1) stop("So far only implemented for enumeration with one model space partition")
 	  
+	  max.dim <- results@enumerate.up.to.dim
 	  if (results@bglims.arguments$ModelSpacePriorFamily=="Poisson") {
 	    prior.proportion <- results@model.space.priors[[1]]$Rate
 	    P <- length(results@model.space.priors[[1]]$Variables)
+	    prior.probs.dims <- sapply(0:max.dim, function(i) prior.proportion ^ i * (1 - prior.proportion) ^ (P - i) * choose(P, i) )
 	  } else if (results@bglims.arguments$ModelSpacePriorFamily=="BetaBinomial") {
-	    prior.proportion <- results@model.space.priors[[1]]$a/(results@model.space.priors[[1]]$a+results@model.space.priors[[1]]$b)
 	    P <- length(results@model.space.priors[[1]]$Variables)
+	    a <- results@model.space.priors[[partition]]$a
+	    b <- results@model.space.priors[[partition]]$b
+	    prior.probs.dims <- sapply(0:max.dim, function(i) choose(P,i)*beta(i + a, P-i+b)/beta(a,b))
 	  }
-	  max.dim <- results@enumerate.up.to.dim
 	  
 	  # Figure out prior probs
-	  prior.probs.dims <- sapply(0:max.dim, function(i) prior.proportion ^ i * (1 - prior.proportion) ^ (P - i) * choose(P, i) )
 	  prior.probs.dims <- prior.probs.dims/sum(prior.probs.dims) # Normalise due to truncation
 	  prior.probs.dims <- prior.probs.dims[-1] # Remove 0 dimension
 	  prior.probs.ge.dims <- rev(cumsum(rev(prior.probs.dims)))
