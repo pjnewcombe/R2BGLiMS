@@ -231,6 +231,16 @@
     approx.probs[model.dims==4,"Prob"] <- approx.probs[model.dims==4,"PosteriorScore"] + log(prior.prob.4)
   }
   
+  # Quintuple SNP models
+  if (enumerate.up.to.dim>=5) {
+    if (model.space.prior=="beta.binom") {
+      prior.prob.5 <- .BetaBinomialProbabilitySpecificModel(k=5,n=P,a=a,b=b)
+    } else if (model.space.prior=="poisson") {
+      prior.prob.5 <- dpois(5, poisson.lambda)
+    }
+    approx.probs[model.dims==5,"Prob"] <- approx.probs[model.dims==5,"PosteriorScore"] + log(prior.prob.5)
+  }
+  
   # Normalise model probs
   probs.norm <- approx.probs$Prob - mean(approx.probs$Prob)
   model.probs <- exp(probs.norm) /sum(exp(probs.norm))
