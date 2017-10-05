@@ -12,9 +12,6 @@ NULL
 #' set this to TRUE. The posterior summaries can be seen using \code{\link{PrettyResultsTable}}. Note that this option is
 #' forced to false if inference via model enumeration is requested by setting enumerate.up.to.dim>0.
 #' @param n The size of the dataset in which the summary statistics were calculated. This must be specified if use.da.v2=TRUE.
-#' @param n.cases If the marginal.betas contain log-Odds Ratios, please specify the number of cases
-#' with this option, so that JAM can calculate the case proportion in order to invoke an approximate 
-#' transformation between the linear and logistic scales.
 #' @param use.da.v2 Whether to use Daniel Ahfock's new formulation of the marginal JAM model likelihood. NB: Requires specification of trait.variance.ref and n.
 #' @param trait.variance.ref Reference estimate of the trait variance. Must specify if use.da.v2=TRUE.
 #' 
@@ -28,11 +25,12 @@ NULL
 #' 
 #' @author Paul Newcombe
 #' 
-#' @example Examples/R2BGLiMS_Examples.R
+#' @example Examples/JAM_Examples.R
 
 JAM <- function(
   marginal.betas=NULL,
   n=NULL,
+  ns.each.ethnicity=NULL,
   X.ref=NULL,
   model.space.priors=NULL,
   beta.priors=NULL,
@@ -45,7 +43,6 @@ JAM <- function(
   n.mil.iter=NULL,
   thinning.interval=NULL,
   seed=NULL,
-  n.cases=NULL,
   extra.arguments=NULL,
   initial.model=NULL,
   save.path=NULL,
@@ -63,7 +60,7 @@ JAM <- function(
   
   # Force to list
   if (is.data.frame(X.ref)) {
-    X.ref <- matrix(X.ref) # convert to matrix
+    X.ref <- data.matrix(X.ref) # convert to matrix
   }
   if (!is.list(X.ref)) {
     X.ref <- list(X.ref) # convert to list if there is a single block
@@ -90,11 +87,14 @@ JAM <- function(
 
   # --- Marginal betas
   if (is.null(marginal.betas)) { stop("For analysis with JAM you must provide a vector of marginal summary statistics") }
-  if (is.null(names(marginal.betas))) stop ("All effects in marginal.betas must be named, corresponding to columns in X.ref")
-  if (sum(names(marginal.betas) %in% unlist(lapply(X.ref, colnames))) < length(marginal.betas)) {stop("Reference genotype matrices do not include all SNPs in the marginal.betas vector")}
-  
+
   # -- N
-  if (is.null(n)) { stop("You must specificy the number of individuals the summary statistics were calculated in.") }
+  if (!is.null(ns.each.ethnicity)) {
+    if (!is.vector(ns.each.ethnicity)) stop("ns.each.ethnicity must be a vector")
+    n = sum(ns.each.ethnicity)
+  } else {
+    if (is.null(n)) { stop("You must specificy the number of individuals the summary statistics were calculated in.") }
+  }
 
   ######################################################
   ### --- Set yTy.ref for Daniel Ahfock's method --- ###
@@ -110,23 +110,18 @@ JAM <- function(
   ### --- Take subset of X.refs correpsonding to elements of beta --- ###
   #######################################################################
   
-  for (ld.block in 1:length(X.ref)) {
-    original.n.snps <- ncol(X.ref[[ld.block]])
-    X.ref[[ld.block]] <- X.ref[[ld.block]][,colnames(X.ref[[ld.block]]) %in% names(marginal.betas)]
-    final.n.snps <- ncol(X.ref[[ld.block]])
-    if (final.n.snps!=original.n.snps) {
-      cat((original.n.snps-final.n.snps),"extra SNPs removed from the reference matrix for LD block",ld.block,"\n")
-    }
-  }
+  # ATTEMPTS TO REMOVE MISTAKENLY EXTRA SNPS
+  #   Will not work for mJAM due to X.ref being ethnicities not blocks
+  #   This is not necessary anyway; error check better
   
-  #######################################
-  ### --- Set tau if not provided --- ###
-  #######################################
-  
-  if (is.null(tau)) {
-    cat("\nSetting tau to max(n,P^2)\n")
-    tau <- max(n, length(marginal.betas)^2)
-  }
+#  for (ld.block in 1:length(X.ref)) {
+#    X.ref[[ld.block]] <- X.ref[[ld.block]][,colnames(X.ref[[ld.block]]) %in% names(marginal.betas)]
+#    original.n.snps <- ncol(X.ref[[ld.block]])
+#    final.n.snps <- ncol(X.ref[[ld.block]])
+#    if (final.n.snps!=original.n.snps) {
+#      cat((original.n.snps-final.n.snps),"extra SNPs removed from the reference matrix for LD block",ld.block,"\n")
+#    }
+#  }
   
   #####################################################
   ### --- Whether to perform full MCMC sampling --- ###
@@ -139,26 +134,6 @@ JAM <- function(
       which.blgims.jam.method <- "JAMv2"
     } else {
       which.blgims.jam.method <- "JAM"
-    }
-  }
-  
-  #######################################
-  ### --- Logistic transformation --- ###
-  #######################################
-  
-  if (!is.null(n.cases)) {
-    cat("\nLog-Odds Ratios were provided.\n")
-    cat("\nInvoking the logistic -> linear transformation.")
-    phi <- n.cases/n
-    marginal.betas <- marginal.betas*phi*(1-phi)
-    if (is.null(extra.arguments)) {
-      extra.arguments=list(
-        "GaussianResidualVarianceInvGammaPrior_a" = n,
-        "GaussianResidualVarianceInvGammaPrior_b" = (n-1)*phi*(1-phi)
-      )      
-    } else {
-      extra.arguments[["GaussianResidualVarianceInvGammaPrior_a"]] = n
-      extra.arguments[["GaussianResidualVarianceInvGammaPrior_b"]] = (n-1)*phi*(1-phi)
     }
   }
   
@@ -185,6 +160,7 @@ JAM <- function(
         X.ref=X.ref,
         yTy.ref=yTy.ref,
         n.for.jam=n,
+        ns.each.ethnicity=ns.each.ethnicity,
         model.space.priors=model.space.priors,
         g.prior=g.prior,
         tau=tau,
@@ -219,6 +195,7 @@ JAM <- function(
           X.ref=X.ref[[ld.block]],
           yTy.ref=yTy.ref,
           n.for.jam=n,
+          ns.each.ethnicity=ns.each.ethnicity,
           model.space.priors=model.space.priors.ld.block,
           g.prior=g.prior,
           tau=tau,
@@ -257,6 +234,7 @@ JAM <- function(
       X.ref=X.ref,
       yTy.ref=yTy.ref,
       n.for.jam=n,
+      ns.each.ethnicity=ns.each.ethnicity,
       model.space.priors=model.space.priors,
       beta.priors=beta.priors,
       beta.prior.partitions=beta.prior.partitions,

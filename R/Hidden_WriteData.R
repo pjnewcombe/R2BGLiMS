@@ -27,6 +27,7 @@
   z=NULL, # X'y
   yTy.ref=NULL, # Trait variance * N
   n.for.jam=NULL,
+  ns.each.ethnicity=NULL,
   subcohort.sampling.fraction=NULL,
   casecohort.pseudo.weight=NULL,
   max.fpr=1,
@@ -39,7 +40,31 @@
     # Must be done BEFORE extracting individual variables
     data <- data[order(data[,times.var], decreasing=T),]
   }  
-  if (!likelihood%in%c("JAM_MCMC", "JAM", "JAMv2")) {
+  if (likelihood%in%c("JAM_MCMC", "JAM", "JAMv2")) {
+    if (likelihood == "JAMv2") {
+      N <- n.for.jam
+    } else {
+      N <- 1
+    }
+    n.ethnicities <- 1
+    if (!is.null(ns.each.ethnicity)) {
+      V <- length(z[[1]])
+      var.names <- colnames(xTx[[1]])
+      n.blocks <- 1
+      n.ethnicities <- length(ns.each.ethnicity)
+      block.sizes <- V
+      block.indices <- c(1,(V+1))
+    } else {
+      V <- length(z)
+      var.names <- unlist(lapply(xTx,colnames))
+      n.blocks <- length(xTx)
+      block.sizes <- unlist(lapply(xTx,ncol))
+      block.indices <- rep(1,length(xTx)+1)
+      for (b in 1:length(xTx)) {
+        block.indices[b+1] <- block.indices[b] + block.sizes[b]
+      }
+    }
+  } else {
     n.start <- nrow(data)
     if (!is.null(predictors)) {
       data <- data[, c(outcome.var, times.var, subcohort.var, predictors)]
@@ -60,24 +85,11 @@
       subcohort.indicators <- data[,subcohort.var] # NB This is done after the ordering step above
       data <- data[, colnames(data)[!colnames(data)%in%subcohort.var] ]
     }
-
+    
     V <- ncol(data)
     N <- nrow(data)
     var.names <- colnames(data)
     cat(paste((n.start-N),"observations deleted due to missingness"))
-  } else {
-    V <- length(z)
-    if (likelihood == "JAMv2") {
-      N <- n.for.jam
-    } else {
-      N <- 1
-    }
-    var.names <- unlist(lapply(xTx,colnames))
-    block.sizes <- unlist(lapply(xTx,ncol))
-    block.indices <- rep(1,length(xTx)+1)
-    for (b in 1:length(xTx)) {
-      block.indices[b+1] <- block.indices[b] + block.sizes[b]
-    }
   }
   
 	### Writing
@@ -178,7 +190,8 @@
 	cat("Writing data into an input file for BGLiMS...\n")
   # Covariate data - different if marginal setup
   if (likelihood %in% c("JAM", "JAMv2", "JAM_MCMC")) { # Write summary data
-    write(paste("nBlocks",format(length(xTx),sci=F)), file = data.file , ncolumns = 1, append = T)
+    write(paste("nEthnicities",format(n.ethnicities,sci=F)), file = data.file , ncolumns = 1, append = T)
+    write(paste("nBlocks",format(n.blocks,sci=F)), file = data.file , ncolumns = 1, append = T)
     write("blockIndices", file = data.file , ncolumns = 1, append = T)
     write(block.indices, file = data.file , ncolumns = length(block.indices), append = T)
     if (likelihood == "JAM_MCMC") {
@@ -187,7 +200,7 @@
       }
     } else if (likelihood == "JAM") {
       Lt_Inv <- list()
-      for (b in 1:length(xTx)) {
+      for (b in 1:length(xTx)) { # Could be blocks or ethnicities
         L <- chol(xTx[[b]]) # NB: UPPER triangle. So L'L = X'X (LIKE IN PAPER)
         write.table(L, row.names=F, col.names=F, file = data.file, append = T) # Multiply by L' (like in JAVA_test)
         cat("Taking Cholesky decomposition of block",b,"...\n")
@@ -217,10 +230,17 @@
     write(t(z), file = data.file , ncolumns = V, append = T)        
   } else if (likelihood %in% c("JAM")) {
     # Multiply z by inverse cholesky decomposition
-    z_L <- z
-    for (b in 1:length(xTx)) {
-      block.vars <- c(block.indices[b]:(block.indices[b+1]-1))
-      z_L[block.vars] <- Lt_Inv[[b]] %*% z[block.vars]
+    if (length(ns.each.ethnicity)>1) {
+      z_L <- NULL
+      for (e in 1:length(xTx)) {
+        z_L <- c(z_L, Lt_Inv[[e]] %*% z[[e]])
+      }
+    } else {
+      z_L <- z
+      for (b in 1:length(xTx)) {
+        block.vars <- c(block.indices[b]:(block.indices[b+1]-1))
+        z_L[block.vars] <- Lt_Inv[[b]] %*% z[block.vars]
+      }
     }
     write(t(z_L), file = data.file , ncolumns = V, append = T)        
   } else if (likelihood %in% c("JAMv2")) {

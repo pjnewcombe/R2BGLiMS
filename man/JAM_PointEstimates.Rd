@@ -12,7 +12,9 @@ JAM_PointEstimates(marginal.betas = NULL, X.ref = NULL, n = NULL,
 JAM_PosteriorSampler(marginal.betas = NULL, X.ref = NULL)
 }
 \arguments{
-\item{marginal.betas}{Vector of marginal effect estimates to re-analyse with JAM under multivariate models.}
+\item{marginal.betas}{Vector of (named) marginal effect estimates to re-analyse with JAM under multivariate models. 
+For multi-ethnic "mJAM" please provide a list of vectors, each element of which is a vector of marginal effects
+for a specific ethnicity over the same variants.}
 
 \item{X.ref}{Reference genotype matrix used by JAM to impute the SNP-SNP correlations. If multiple regions are to be 
 analysed this should be a list containing reference genotype matrices for each region. Individual's genotype

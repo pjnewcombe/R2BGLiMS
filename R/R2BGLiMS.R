@@ -85,7 +85,10 @@ NULL
 #' the column names must correspond to the names of the marginal.betas vector.
 #' @param yTy.ref Estimate of the trait variance * N; for use with JAMv2 (Daniel Ahfock's extension).
 #' @param n.for.jam For JAMv2 (Daniel Ahfock's extension), the N of the data must be provided.
-#' @param marginal.betas Vector of marginal effect estimates to re-analyse with JAM under multivariate models.
+#' @param ns.each.ethnicity For mJAM: A vector of the sizes of each ethnicity dataset in which the summary statistics were calculated.
+#' @param marginal.betas Vector of (named) marginal effect estimates to re-analyse with JAM under multivariate models. 
+#' For multi-ethnic "mJAM" please provide a list of vectors, each element of which is a vector of marginal effects
+#' for a specific ethnicity over the same variants.
 #' @param n: Sample size which marginal.betas were calculated in.
 #' @param subcohort.sampling.fraction: CaseCohort_Barlow ONLY: The sampling fraction of the sub-cohort from the full cohort, in order
 #' to calculate weights for use with the Barlow Case-Cohort pseudo-likelihood (Barlow 1994) REF
@@ -141,6 +144,7 @@ R2BGLiMS <- function(
   X.ref=NULL,
   yTy.ref=NULL,
   n.for.jam=NULL,
+  ns.each.ethnicity=NULL,
   marginal.betas=NULL,
   subcohort.sampling.fraction=NULL,
   casecohort.pseudo.weight=1,
@@ -228,7 +232,12 @@ R2BGLiMS <- function(
         tau <- max(nrow(data), ncol(data)^2)        
       } else if (likelihood %in% c("JAM", "JAMv2")) {
         cat("tau was not provided. Since the g-prior is in use, setting to the recommended maximum of n and P^2\n")
-        tau <- max(n,length(marginal.betas)^2)
+        if (is.null(ns.each.ethnicity)) {
+          tau <- max(n,length(marginal.betas)^2)
+        } else {
+          if (!is.list(marginal.betas)) stop("marginal.betas must be a list for multi-ethnic mJAM")
+          tau <- max(sum(ns.each.ethnicity),length(marginal.betas[[1]])^2)
+        }
       }
     } else {
       stop("Please choose a value for tau. Note that you have selected to use independent priors.
@@ -426,7 +435,11 @@ R2BGLiMS <- function(
     if (is.null(n)) { stop("You must specificy the number of individuals the marginal effect estimates were calculated in.") }
     if (sum(unlist(lapply(X.ref, function(x) !is.numeric(x) )))>0) {stop("Reference genotype matrices must be numeric, coded as risk allele countsin the 0 to 2 range")}
     if (max(unlist(X.ref))>2 | min(unlist(X.ref)) < 0) {stop("Reference genotype matrices must be coded coded as risk allele counts in the 0 to 2 range")}
-    if (sum(names(marginal.betas) %in% unlist(lapply(X.ref, colnames))) < length(marginal.betas)) {stop("Reference genotype matrices do not include all SNPs in the marginal.betas vector")}
+    if (!is.null(ns.each.ethnicity)) {
+      # mJAM error catches
+    } else {
+      if (sum(names(marginal.betas) %in% unlist(lapply(X.ref, colnames))) < length(marginal.betas)) {stop("Reference genotype matrices do not include all SNPs in the marginal.betas vector")}
+    }
   }
   
   ##########################
@@ -533,23 +546,48 @@ R2BGLiMS <- function(
   #########################
   
   if (likelihood %in% c("JAM", "JAMv2", "JAM_MCMC")) {
-    ### --- Generate X'X, after normalising X
-    xTx <- list()
-    for (ld.block in 1:length(X.ref)) {
-      # Normalise X
-      X.normalised <- apply(X.ref[[ld.block]], MAR=2, function(x) x-mean(x))
-      # Calculate X'X
-      xTx[[ld.block]] <- t(X.normalised) %*% X.normalised
-    }
-    
-    ### --- Generate z = X'y for JAM
-    z <- NULL
-    for (ld.block in 1:length(X.ref)) {
-      snps.in.block <- colnames(X.ref[[ld.block]])
-      z <- c(z, JAM_PointEstimates(
-        marginal.betas = marginal.betas[snps.in.block],
-        X.ref=X.ref[[ld.block]],
-        n=n, just.get.z=TRUE) )
+    if (is.null(ns.each.ethnicity)) {
+      ### --- Generate X'X, after normalising X
+      xTx <- list()
+      for (ld.block in 1:length(X.ref)) {
+        # Normalise X
+        X.normalised <- apply(X.ref[[ld.block]], MAR=2, function(x) x-mean(x))
+        # Calculate X'X
+        xTx[[ld.block]] <- t(X.normalised) %*% X.normalised
+        # Scale up by n/n.ref
+        xTx[[ld.block]] <- xTx[[ld.block]]*n/nrow(X.ref[[ld.block]])
+      }
+      
+      ### --- Generate z = X'y for JAM
+      z <- NULL
+      for (ld.block in 1:length(X.ref)) {
+        snps.in.block <- colnames(X.ref[[ld.block]])
+        # Use a common n
+        z <- c(z, JAM_PointEstimates(
+          marginal.betas = marginal.betas[snps.in.block],
+          X.ref=X.ref[[ld.block]],
+          n=n, just.get.z=TRUE) )
+      }
+    } else {
+      ### --- Generate X'X, after normalising X
+      xTx <- list()
+      for (e in 1:length(X.ref)) {
+        # Normalise X
+        X.normalised <- apply(X.ref[[e]], MAR=2, function(x) x-mean(x))
+        # Calculate X'X
+        xTx[[e]] <- t(X.normalised) %*% X.normalised
+        # Scale up by n/n.ref
+        xTx[[e]] <- xTx[[e]]*ns.each.ethnicity[e]/nrow(X.ref[[e]])
+      }
+      
+      ### --- Generate z = X'y for JAM
+      z <- list()
+      for (e in 1:length(X.ref)) {
+        z[[e]] <- JAM_PointEstimates(
+          marginal.betas = marginal.betas[[e]],
+          X.ref=X.ref[[e]],
+          n=ns.each.ethnicity[e], just.get.z=TRUE)
+      }
     }
   }
 
@@ -575,6 +613,7 @@ R2BGLiMS <- function(
     z=z,
     yTy.ref=yTy.ref,
     n.for.jam=n.for.jam,
+    ns.each.ethnicity=ns.each.ethnicity,
     subcohort.sampling.fraction=subcohort.sampling.fraction,
     casecohort.pseudo.weight=casecohort.pseudo.weight,
     max.fpr=max.fpr,

@@ -9,12 +9,13 @@ R2BGLiMS(likelihood = NULL, data = NULL, outcome.var = NULL,
   model.selection = TRUE, model.space.priors = NULL, beta.priors = NULL,
   beta.prior.partitions = NULL, dirichlet.alphas.for.roc.model = 0.01,
   g.prior = TRUE, tau = NULL, enumerate.up.to.dim = 0, X.ref = NULL,
-  yTy.ref = NULL, n.for.jam = NULL, marginal.betas = NULL,
-  subcohort.sampling.fraction = NULL, casecohort.pseudo.weight = 1,
-  n = NULL, max.fpr = 1, min.tpr = 0, n.iter = 1e+06,
-  n.mil.iter = NULL, thinning.interval = NULL, seed = NULL,
-  extra.arguments = NULL, initial.model = NULL, max.model.dim = -1,
-  results.label = NULL, save.path = NULL, extra.java.arguments = NULL)
+  yTy.ref = NULL, n.for.jam = NULL, ns.each.ethnicity = NULL,
+  marginal.betas = NULL, subcohort.sampling.fraction = NULL,
+  casecohort.pseudo.weight = 1, n = NULL, max.fpr = 1, min.tpr = 0,
+  n.iter = 1e+06, n.mil.iter = NULL, thinning.interval = NULL,
+  seed = NULL, extra.arguments = NULL, initial.model = NULL,
+  max.model.dim = -1, results.label = NULL, save.path = NULL,
+  extra.java.arguments = NULL)
 }
 \arguments{
 \item{likelihood}{Type of model to fit. Current options are 
@@ -110,7 +111,11 @@ the column names must correspond to the names of the marginal.betas vector.}
 
 \item{n.for.jam}{For JAMv2 (Daniel Ahfock's extension), the N of the data must be provided.}
 
-\item{marginal.betas}{Vector of marginal effect estimates to re-analyse with JAM under multivariate models.}
+\item{ns.each.ethnicity}{For mJAM: A vector of the sizes of each ethnicity dataset in which the summary statistics were calculated.}
+
+\item{marginal.betas}{Vector of (named) marginal effect estimates to re-analyse with JAM under multivariate models. 
+For multi-ethnic "mJAM" please provide a list of vectors, each element of which is a vector of marginal effects
+for a specific ethnicity over the same variants.}
 
 \item{max.fpr}{ROC AUC ONLY: Maximum acceptable false positive rate (or x-axis value) to optimise a truncated ROC AUC.}
 
