@@ -2,7 +2,7 @@
 #' 
 #' @export
 #' @title Autocorrelation plot for model selection. Model inclusion of each predictor is
-#' represented across all iterations as a black and white "heatmap".
+#' represented across all iterations as a black and white heatmap.
 #' @name AutocorrelationPlot
 #' @inheritParams ManhattanPlot
 #' @param plot.title Optionally specify a title for the plot.
