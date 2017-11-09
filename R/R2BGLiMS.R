@@ -160,7 +160,8 @@ R2BGLiMS <- function(
   max.model.dim=-1,
   results.label=NULL,
   save.path=NULL,
-  extra.java.arguments=NULL
+  extra.java.arguments=NULL,
+  burnin=0
 ) {
   
   ###########################
@@ -637,7 +638,8 @@ R2BGLiMS <- function(
     "java ",extra.java.arguments,"-jar \"", bayesglm.jar, "\" \"",
     arguments.file, "\" \"", data.file, "\" \"",
     results.file, "\" ",
-    format(n.iter,sci=F)," ",0," ",
+    format(n.iter,sci=F)," ",
+    format(burnin,sci=F)," ", #no longer forced to 0.
     format(thinning.interval,sci=F)," ",
     format(n.iter.report.output, sci=F)," ",
     seed," ",
@@ -717,8 +719,11 @@ R2BGLiMS <- function(
     skip = n.lines.until.rjmcmc.output,
     header=TRUE,
     nrows=n.rows.written)
-  Lhalf <- round(nrow(mcmc.output)/2)     	 # Burnin is a half	
-  mcmc.output <- mcmc.output[(Lhalf+1):nrow(mcmc.output),]   # Remove burnin
+  #As a wrapper, r2bglims should process all of b2glims' output. 
+  #For fewer samples, an appropriate should be supplied to b2glims via r2bglims.
+  #Previously, b2glims would be passed burnin=0 by r2bglims (hardcoded), then r2bglims would throw half away (burnin=n.iter/2).
+  #Lhalf <- round(nrow(mcmc.output)/2)     	 # Burnin is a half	
+  #mcmc.output <- mcmc.output[(Lhalf+1):nrow(mcmc.output),]   # Remove burnin
 
   ### --- Summary table
   posterior.summary.table <- matrix(NA,ncol(mcmc.output)+length(model.space.priors),8)
