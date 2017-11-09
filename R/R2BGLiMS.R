@@ -111,6 +111,8 @@ NULL
 #' @param max.model.dim Optional specification of maximum model dimension (default -1 means no maximum is set).
 #' @param save.path Optional path to save BGLiMS's data and results files. These are usually written as temporary files, and deleted
 #' after running R2BGLiMS. However, this option might help for debugging.
+#' @param burnin.fraction Initial fraction of the iterations to throw away, e.g. setting to 0 would mean no burn-in. The 
+#' default of 0.5 corresponds to the first half of iterations being discarded.
 #' @param extra.java.arguments A character string to be passed through to the java command line. E.g. to specify a
 #' different temporary directory by passing "-Djava.io.tmpdir=/Temp".
 #' 
@@ -160,6 +162,7 @@ R2BGLiMS <- function(
   max.model.dim=-1,
   results.label=NULL,
   save.path=NULL,
+  burnin.fraction=0.5,
   extra.java.arguments=NULL
 ) {
   
@@ -637,7 +640,8 @@ R2BGLiMS <- function(
     "java ",extra.java.arguments,"-jar \"", bayesglm.jar, "\" \"",
     arguments.file, "\" \"", data.file, "\" \"",
     results.file, "\" ",
-    format(n.iter,sci=F)," ",0," ",
+    format(n.iter,sci=F)," ",
+    format(ceiling(n.iter*burnin.fraction),sci=F)," ", # Round number of iterations to discard as burn-in
     format(thinning.interval,sci=F)," ",
     format(n.iter.report.output, sci=F)," ",
     seed," ",
@@ -711,14 +715,14 @@ R2BGLiMS <- function(
   }
   
   ### --- Read MCMC output
-  n.rows.written <- bglims.arguments$iterations/bglims.arguments$thin
+  n.rows.written <- floor((1-burnin.fraction)*bglims.arguments$iterations)/bglims.arguments$thin
   mcmc.output <- read.table(
     results.file,
     skip = n.lines.until.rjmcmc.output,
     header=TRUE,
     nrows=n.rows.written)
-  Lhalf <- round(nrow(mcmc.output)/2)     	 # Burnin is a half	
-  mcmc.output <- mcmc.output[(Lhalf+1):nrow(mcmc.output),]   # Remove burnin
+#  Lhalf <- round(nrow(mcmc.output)/2)     	 # Burnin is a half	
+#  mcmc.output <- mcmc.output[(Lhalf+1):nrow(mcmc.output),]   # Remove burnin
 
   ### --- Summary table
   posterior.summary.table <- matrix(NA,ncol(mcmc.output)+length(model.space.priors),8)
@@ -807,6 +811,7 @@ R2BGLiMS <- function(
     enumerated.posterior.inference = enumerated.posterior.inference,
     n.iterations = n.iter,
     thin = bglims.arguments$thin,
+    burnin.fraction = burnin.fraction,
     model.space.priors = model.space.priors,
     beta.prior.partitions = beta.prior.partitions,
     confounders = confounders,

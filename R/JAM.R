@@ -49,6 +49,7 @@ JAM <- function(
   max.model.dim=-1,
   use.da.v2=FALSE,
   trait.variance.ref=NULL,
+  burnin.fraction = 0.5,
   extra.java.arguments=NULL
 ) {
   
@@ -173,6 +174,7 @@ JAM <- function(
         initial.model=initial.model,
         save.path=save.path,
         max.model.dim=max.model.dim,
+        burnin.fraction = burnin.fraction,
         extra.java.arguments=extra.java.arguments
       )
     } else {
@@ -208,6 +210,7 @@ JAM <- function(
           initial.model=initial.model,
           save.path=save.path,
           max.model.dim=max.model.dim,
+          burnin.fraction = burnin.fraction,
           extra.java.arguments=extra.java.arguments
         )
         if (ld.block==1) {
@@ -249,6 +252,7 @@ JAM <- function(
       initial.model=initial.model,
       save.path=save.path,
       max.model.dim=max.model.dim,
+      burnin.fraction = burnin.fraction,
       extra.java.arguments=extra.java.arguments
     )
   }

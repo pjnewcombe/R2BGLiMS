@@ -11,7 +11,7 @@ JAM(marginal.betas = NULL, n = NULL, ns.each.ethnicity = NULL,
   n.mil.iter = NULL, thinning.interval = NULL, seed = NULL,
   extra.arguments = NULL, initial.model = NULL, save.path = NULL,
   max.model.dim = -1, use.da.v2 = FALSE, trait.variance.ref = NULL,
-  extra.java.arguments = NULL)
+  burnin.fraction = 0.5, extra.java.arguments = NULL)
 }
 \arguments{
 \item{marginal.betas}{Vector of (named) marginal effect estimates to re-analyse with JAM under multivariate models. 
@@ -106,6 +106,9 @@ after running R2BGLiMS. However, this option might help for debugging.}
 \item{use.da.v2}{Whether to use Daniel Ahfock's new formulation of the marginal JAM model likelihood. NB: Requires specification of trait.variance.ref and n.}
 
 \item{trait.variance.ref}{Reference estimate of the trait variance. Must specify if use.da.v2=TRUE.}
+
+\item{burnin.fraction}{Initial fraction of the iterations to throw away, e.g. setting to 0 would mean no burn-in. The 
+default of 0.5 corresponds to the first half of iterations being discarded.}
 
 \item{extra.java.arguments}{A character string to be passed through to the java command line. E.g. to specify a
 different temporary directory by passing "-Djava.io.tmpdir=/Temp".}

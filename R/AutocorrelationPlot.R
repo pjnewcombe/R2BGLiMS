@@ -41,7 +41,10 @@ AutocorrelationPlot <- function(
   results@mcmc.output <- results@mcmc.output[,covariates.to.include]
   n.var <- ncol(results@mcmc.output)
   x <- c(1:n.var)
-  y <- seq(from=(results@bglims.arguments$iterations/2+results@bglims.arguments$thin),to=results@bglims.arguments$iterations, by=results@bglims.arguments$thin)
+  y <- seq(
+    from=(ceiling(results@burnin.fraction*results@bglims.arguments$iterations)+results@bglims.arguments$thin),
+    to=results@bglims.arguments$iterations,
+    by=results@bglims.arguments$thin)
   z <- results@mcmc.output!=0
   z <- t(z)+0 # Makes numeric
   
@@ -92,7 +95,10 @@ AutocorrelationPlot <- function(
     image(x,y,z, axes=F, xlab="Predictors", ylab="Iteration", col=c("white", "black"), cex.lab=cex.y.axis.labels)
     axis(side=1,at=c(0.5, (length(x)+0.5)),labels=rep("",2), cex.axis=cex.x.axis.ticks)
   }
-  y.ticks <- seq(from=(results@bglims.arguments$iterations/2),to=results@bglims.arguments$iterations, by=0.5e6)
+  y.ticks <- seq(
+    from=ceiling(results@burnin.fraction*results@bglims.arguments$iterations),
+    to=results@bglims.arguments$iterations,
+    by=0.5e6)
   y.tick.labs <- paste(y.ticks/1e6,"m",sep="")
   y.tick.labs[grep(".5m",y.tick.labs)] <- ""
   axis(side=2, at=y.ticks, labels=y.tick.labs, col.axis="black", cex.axis=cex.y.axis.ticks)
