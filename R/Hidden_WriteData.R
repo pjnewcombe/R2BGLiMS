@@ -32,7 +32,11 @@
   casecohort.pseudo.weight=NULL,
   max.fpr=1,
   min.tpr=0,
-  initial.model=NULL
+  initial.model=NULL,
+  mrloss.w = 0,
+  mrloss.function = "variance",
+  mrloss.marginal.causal.effects = NULL,
+  mrloss.marginal.causal.effect.ses = NULL
 ) {
 	### Pre-processing
   if (likelihood%in%c("Cox", "CaseCohort_Prentice", "CaseCohort_Barlow")) {
@@ -210,6 +214,13 @@
       for (b in 1:length(xTx)) {
         write.table(xTx[[b]], row.names=F, col.names=F, file = data.file, append = T)
       }
+    }
+    # MR Pleiotropic loss function stuff
+    write(mrloss.w, file = data.file , ncolumns = 1, append = T)
+    if (mrloss.w != 0) {
+      write(mrloss.function, file = data.file , ncolumns = 1, append = T)
+      write(t(mrloss.marginal.causal.effects), file = data.file , ncolumns = length(mrloss.marginal.causal.effects), append = T)    
+      write(t(mrloss.marginal.causal.effect.ses), file = data.file , ncolumns = length(mrloss.marginal.causal.effect.ses), append = T)    
     }
   } else { 
     # Write IPD Covariate data

@@ -50,6 +50,10 @@ JAM <- function(
   use.da.v2=FALSE,
   trait.variance.ref=NULL,
   burnin.fraction = 0.5,
+  mrloss.w=0,
+  mrloss.function="variance",
+  mrloss.marginal.by=NULL,
+  mrloss.marginal.sy=NULL,
   extra.java.arguments=NULL
 ) {
   
@@ -175,6 +179,10 @@ JAM <- function(
         save.path=save.path,
         max.model.dim=max.model.dim,
         burnin.fraction = burnin.fraction,
+        mrloss.w = mrloss.w,
+        mrloss.function = mrloss.function,
+        mrloss.marginal.by = mrloss.marginal.by,
+        mrloss.marginal.sy = mrloss.marginal.sy,
         extra.java.arguments=extra.java.arguments
       )
     } else {
@@ -211,6 +219,10 @@ JAM <- function(
           save.path=save.path,
           max.model.dim=max.model.dim,
           burnin.fraction = burnin.fraction,
+          mrloss.w = mrloss.w,
+          mrloss.function = mrloss.function,
+          mrloss.marginal.by = mrloss.marginal.by,
+          mrloss.marginal.sy = mrloss.marginal.sy,
           extra.java.arguments=extra.java.arguments
         )
         if (ld.block==1) {
@@ -253,6 +265,10 @@ JAM <- function(
       save.path=save.path,
       max.model.dim=max.model.dim,
       burnin.fraction = burnin.fraction,
+      mrloss.w = mrloss.w,
+      mrloss.function = mrloss.function,
+      mrloss.marginal.by = mrloss.marginal.by,
+      mrloss.marginal.sy = mrloss.marginal.sy,
       extra.java.arguments=extra.java.arguments
     )
   }

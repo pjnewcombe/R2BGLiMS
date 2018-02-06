@@ -113,6 +113,11 @@ NULL
 #' after running R2BGLiMS. However, this option might help for debugging.
 #' @param burnin.fraction Initial fraction of the iterations to throw away, e.g. setting to 0 would mean no burn-in. The 
 #' default of 0.5 corresponds to the first half of iterations being discarded.
+#' @param mrloss.w The relative weight of the MR log loss function for pleiotropy vs the log likelihood. Default 0.
+#' @param mrloss.function Choice of pleiotropic loss function from "steve", "variance" (default variance)
+#' @param mrloss.marginal.by Marginal associations between SNPs and outcome for the MR loss function model.
+#' @param mrloss.marginal.sy Standard errors of marginal associations between SNPs and outcome for the MR loss function model 
+#' (not required for mrloss.function "variance")
 #' @param extra.java.arguments A character string to be passed through to the java command line. E.g. to specify a
 #' different temporary directory by passing "-Djava.io.tmpdir=/Temp".
 #' 
@@ -163,6 +168,10 @@ R2BGLiMS <- function(
   results.label=NULL,
   save.path=NULL,
   burnin.fraction=0.5,
+  mrloss.w=0,
+  mrloss.function="variance",
+  mrloss.marginal.by=NULL,
+  mrloss.marginal.sy=NULL,
   extra.java.arguments=NULL
 ) {
   
@@ -592,6 +601,10 @@ R2BGLiMS <- function(
           n=ns.each.ethnicity[e], just.get.z=TRUE)
       }
     }
+    
+    ### --- MR loss function setup
+    mrloss.marginal.causal.effects <- mrloss.marginal.by/marginal.betas
+    mrloss.marginal.causal.effect.ses <- mrloss.marginal.sy/marginal.betas
   }
 
   ### --- Write data
@@ -621,7 +634,11 @@ R2BGLiMS <- function(
     casecohort.pseudo.weight=casecohort.pseudo.weight,
     max.fpr=max.fpr,
     min.tpr=min.tpr,
-    initial.model=initial.model
+    initial.model=initial.model,
+    mrloss.w = mrloss.w,
+    mrloss.function = mrloss.function,
+    mrloss.marginal.causal.effects = mrloss.marginal.causal.effects,
+    mrloss.marginal.causal.effect.ses = mrloss.marginal.causal.effect.ses
   )  
   t2 <- proc.time()["elapsed"]
   write.time <- t2-t1
