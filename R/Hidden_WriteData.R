@@ -93,7 +93,8 @@
     V <- ncol(data)
     N <- nrow(data)
     var.names <- colnames(data)
-    cat(paste((n.start-N),"observations deleted due to missingness"))
+    cat(paste((n.start-N),"observations deleted due to missingness\n"))
+    if (N==0) stop("All observations have been deleted due to missingness!\n")  
   }
   
 	### Writing
