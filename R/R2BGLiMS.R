@@ -567,7 +567,7 @@ R2BGLiMS <- function(
         # Calculate X'X
         xTx[[ld.block]] <- t(X.normalised) %*% X.normalised
         # Scale up by n/n.ref
-        xTx[[ld.block]] <- xTx[[ld.block]]*n/nrow(X.ref[[ld.block]])
+        # xTx[[ld.block]] <- xTx[[ld.block]]*n/nrow(X.ref[[ld.block]]) # INTRODUCED ISSUE FOR JAM PREDICTION
       }
       
       ### --- Generate z = X'y for JAM
