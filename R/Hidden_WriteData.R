@@ -22,6 +22,7 @@
   g.prior=FALSE,
   model.tau=FALSE,
   tau=NULL,
+  xtx.ridge.term=0,
   enumerate.up.to.dim=0,
   xTx=NULL, # X.ref * X.ref
   z=NULL, # X'y
@@ -206,6 +207,9 @@
     } else if (likelihood == "JAM") {
       Lt_Inv <- list()
       for (b in 1:length(xTx)) { # Could be blocks or ethnicities
+        if (xtx.ridge.term!=0) {
+          diag(xTx[[b]]) <- diag(xTx[[b]]) + xtx.ridge.term # Add a constrant to diagonal first
+        }
         L <- chol(xTx[[b]]) # NB: UPPER triangle. So L'L = X'X (LIKE IN PAPER)
         write.table(L, row.names=F, col.names=F, file = data.file, append = T) # Multiply by L' (like in JAVA_test)
         cat("Taking Cholesky decomposition of block",b,"...\n")

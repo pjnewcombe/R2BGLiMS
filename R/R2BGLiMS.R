@@ -75,6 +75,7 @@ NULL
 #' variable selection in the presence of strong correlation. By default this is enabled.
 #' @param tau Value to use for sparsity parameter tau (under the tau*sigma^2 parameterisation).
 #' When using the g-prior, a recommended default is max(n, P^2) where n is the number of individuals, and P is the number of predictors. 
+#' @param xtx.ridge.term Value to add to the constant of the diagonal of X'X before JAM takes the Cholesky decomposition.
 #' @param enumerate.up.to.dim Whether to make posterior inference by exhaustively calculating
 #' the posterior support for every possible model up to this dimension. Leaving at 0 to disable
 #' and use RJMCMC instead. The current maximum allowed value is 5.
@@ -147,6 +148,7 @@ R2BGLiMS <- function(
   dirichlet.alphas.for.roc.model=0.01,
   g.prior=TRUE,
   tau=NULL,
+  xtx.ridge.term=0,
   enumerate.up.to.dim=0,
   X.ref=NULL,
   yTy.ref=NULL,
@@ -567,7 +569,7 @@ R2BGLiMS <- function(
         # Calculate X'X
         xTx[[ld.block]] <- t(X.normalised) %*% X.normalised
         # Scale up by n/n.ref
-        # xTx[[ld.block]] <- xTx[[ld.block]]*n/nrow(X.ref[[ld.block]]) # INTRODUCED ISSUE FOR JAM PREDICTION
+        # xTx[[ld.block]] <- xTx[[ld.block]]*n/nrow(X.ref[[ld.block]]) # INTRODUCED ISSUE FOR JAM PREDICTION (REMOVED 2018 March)
       }
       
       ### --- Generate z = X'y for JAM
@@ -580,6 +582,10 @@ R2BGLiMS <- function(
           X.ref=X.ref[[ld.block]],
           n=n, just.get.z=TRUE) )
       }
+
+      ### --- MR loss function setup
+      mrloss.marginal.causal.effects <- mrloss.marginal.by/marginal.betas
+      mrloss.marginal.causal.effect.ses <- mrloss.marginal.sy/marginal.betas
     } else {
       ### --- Generate X'X, after normalising X
       xTx <- list()
@@ -601,10 +607,6 @@ R2BGLiMS <- function(
           n=ns.each.ethnicity[e], just.get.z=TRUE)
       }
     }
-    
-    ### --- MR loss function setup
-    mrloss.marginal.causal.effects <- mrloss.marginal.by/marginal.betas
-    mrloss.marginal.causal.effect.ses <- mrloss.marginal.sy/marginal.betas
   }
 
   ### --- Write data
@@ -624,6 +626,7 @@ R2BGLiMS <- function(
     g.prior=g.prior,
     model.tau=model.tau,
     tau=tau,
+    xtx.ridge.term=xtx.ridge.term,
     enumerate.up.to.dim=enumerate.up.to.dim,
     xTx=xTx,
     z=z,

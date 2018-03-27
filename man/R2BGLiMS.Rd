@@ -8,16 +8,16 @@ R2BGLiMS(likelihood = NULL, data = NULL, outcome.var = NULL,
   times.var = NULL, subcohort.var = NULL, confounders = NULL,
   model.selection = TRUE, model.space.priors = NULL, beta.priors = NULL,
   beta.prior.partitions = NULL, dirichlet.alphas.for.roc.model = 0.01,
-  g.prior = TRUE, tau = NULL, enumerate.up.to.dim = 0, X.ref = NULL,
-  yTy.ref = NULL, n.for.jam = NULL, ns.each.ethnicity = NULL,
-  marginal.betas = NULL, subcohort.sampling.fraction = NULL,
-  casecohort.pseudo.weight = 1, n = NULL, max.fpr = 1, min.tpr = 0,
-  n.iter = 1e+06, n.mil.iter = NULL, thinning.interval = NULL,
-  seed = NULL, extra.arguments = NULL, initial.model = NULL,
-  max.model.dim = -1, results.label = NULL, save.path = NULL,
-  burnin.fraction = 0.5, mrloss.w = 0, mrloss.function = "variance",
-  mrloss.marginal.by = NULL, mrloss.marginal.sy = NULL,
-  extra.java.arguments = NULL)
+  g.prior = TRUE, tau = NULL, xtx.ridge.term = 0,
+  enumerate.up.to.dim = 0, X.ref = NULL, yTy.ref = NULL,
+  n.for.jam = NULL, ns.each.ethnicity = NULL, marginal.betas = NULL,
+  subcohort.sampling.fraction = NULL, casecohort.pseudo.weight = 1,
+  n = NULL, max.fpr = 1, min.tpr = 0, n.iter = 1e+06,
+  n.mil.iter = NULL, thinning.interval = NULL, seed = NULL,
+  extra.arguments = NULL, initial.model = NULL, max.model.dim = -1,
+  results.label = NULL, save.path = NULL, burnin.fraction = 0.5,
+  mrloss.w = 0, mrloss.function = "variance", mrloss.marginal.by = NULL,
+  mrloss.marginal.sy = NULL, extra.java.arguments = NULL)
 }
 \arguments{
 \item{likelihood}{Type of model to fit. Current options are 
@@ -98,6 +98,8 @@ variable selection in the presence of strong correlation. By default this is ena
 
 \item{tau}{Value to use for sparsity parameter tau (under the tau*sigma^2 parameterisation).
 When using the g-prior, a recommended default is max(n, P^2) where n is the number of individuals, and P is the number of predictors.}
+
+\item{xtx.ridge.term}{Value to add to the constant of the diagonal of X'X before JAM takes the Cholesky decomposition.}
 
 \item{enumerate.up.to.dim}{Whether to make posterior inference by exhaustively calculating
 the posterior support for every possible model up to this dimension. Leaving at 0 to disable
