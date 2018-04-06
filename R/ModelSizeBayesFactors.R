@@ -19,7 +19,7 @@ ModelSizeBayesFactors <- function(
 	  # --- MCMC was done --- #
 	  #########################
 	  dim.bf.table.partitions <- list()
-	  for (partition in length(results@model.space.priors)) {
+	  for (partition in 1:length(results@model.space.priors)) {
 	    if (results@bglims.arguments$ModelSpacePriorFamily=="Poisson") {
 	      prior.proportion <- results@model.space.priors[[partition]]$Rate
 	      P <- length(results@model.space.priors[[partition]]$Variables)
@@ -32,7 +32,11 @@ ModelSizeBayesFactors <- function(
 	                                 function(i) choose(P,i)*beta(i + a, P-i+b)/beta(a,b))
 	    }
 	    
-	    max.dim.calculable <- max(which(prior.probs.dims>0)) # Stop when prior prob becomes so small to calculate
+	    if (sum(is.nan(prior.probs.dims))>0) {
+	      max.dim.calculable <- min(which(is.nan(prior.probs.dims))) - 1 # Stop just before prior prob becomes so small to calculate
+	    } else {
+	      max.dim.calculable <- P
+	    }
 	    prior.probs.dims <- prior.probs.dims[1:max.dim.calculable]
 	    prior.probs.ge.dims <- rev(cumsum(rev(prior.probs.dims)))
 
