@@ -13,11 +13,6 @@ NULL
 #' "Logistic" (for binary data), 
 #' "CLogLog" complementary log-log link for binary data, 
 #' "Weibull" (for survival data), 
-#' "Cox" (for survival data), 
-#' "CaseCohort_Prentice" (for case-cohort survival data with Prentice weighting), 
-#' "CaseCohort_Barlow" (for case-cohort survival data with Barlow weighting), 
-#' "RocAUC" (to optimise ROC AUC),
-#' "RocAUC_Anchoring" (to optimise ROC AUC using the anchoring formulation),
 #' "Gaussian" (for linear regression), 
 #' "GaussianConj" (linear regression exploiting conjugate results), 
 #' "JAM" (for conjugate linear regression using summary statistics, integrating out parameters) 
@@ -28,8 +23,6 @@ NULL
 #' @param outcome.var Name of outcome variable in data. For survival data see times.var below.
 #' If modelling summary statistics with JAM this can be left null but you must specify X.ref, marginal.beats and n instead (see below).
 #' @param times.var SURVIVAL DATA ONLY Name of column in data which contains the event times.
-#' @param subcohort.var CASE-COHORT DATA ONLY Name of column in data which contains a binary indicator of membership in the
-#' propsectviely sampled (and population representative) sub-cohort.
 #' @param confounders Optional vector of confounders to fix in the model at all times, i.e. exclude from model selection.
 #' @param model.selection Whether to use model selection (default is TRUE). NB: Even if set to FALSE, please provide a 
 #' dummy model.space.priors argument (see below). This will not be used mathematically, but the package requires taking the list of variable
@@ -68,8 +61,6 @@ NULL
 #' partition, for v in "Variables", 
 #' beta[v] | sigma_beta ~ N(0, sigma_beta^2) and 
 #' sigma_beta ~ Unif("UniformA", "UniformB").
-#' @param dirichlet.alphas.for.roc.model This can either be a single number, if you wish the same concentration parameter 
-#' to be used for every covariate. Alternatively a vector can be supplied, with an element corresponding to every variable.
 #' @param g.prior Whether to use a g-prior for the beta's, i.e. a multivariate normal 
 #' with correlation structure proportional to sigma^2*X'X^-1, which is thought to aid
 #' variable selection in the presence of strong correlation. By default this is enabled.
@@ -84,19 +75,11 @@ NULL
 #' must be coded as a numeric risk allele count 0/1/2. Non-integer values reflecting imputation may be given.
 #' NB: The risk allele coding MUST correspond to that used in marginal.betas. These matrices must each be positive definite and
 #' the column names must correspond to the names of the marginal.betas vector.
-#' @param yTy.ref Estimate of the trait variance * N; for use with JAMv2 (Daniel Ahfock's extension).
-#' @param n.for.jam For JAMv2 (Daniel Ahfock's extension), the N of the data must be provided.
 #' @param ns.each.ethnicity For mJAM: A vector of the sizes of each ethnicity dataset in which the summary statistics were calculated.
 #' @param marginal.betas Vector of (named) marginal effect estimates to re-analyse with JAM under multivariate models. 
 #' For multi-ethnic "mJAM" please provide a list of vectors, each element of which is a vector of marginal effects
 #' for a specific ethnicity over the same variants.
-#' @param n: Sample size which marginal.betas were calculated in.
-#' @param subcohort.sampling.fraction: CaseCohort_Barlow ONLY: The sampling fraction of the sub-cohort from the full cohort, in order
-#' to calculate weights for use with the Barlow Case-Cohort pseudo-likelihood (Barlow 1994) REF
-#' @param casecohort.pseudo.weight: CaseCohort ONLY: Multiplier for the pseudo log-likelihood relative to
-#' the prior.
-#' @param max.fpr ROC AUC ONLY: Maximum acceptable false positive rate (or x-axis value) to optimise a truncated ROC AUC.
-#' @param min.tpr ROC AUC ONLY: Minimum acceptable true positive rate, i.e. sensitivity (or y-axis value) to optimise a truncated ROC AUC.
+#' @param n The size of the dataset in which the summary statistics (marginal.betas) were calculated
 #' @param n.iter Number of iterations to run (default is 1e6)
 #' @param n.mil.iter Number of million iterations to run. Can optionally be used instead of n.iter for convenience, which it will overide if specified.
 #' @param thinning.interval Every nth iteration to store (i.e. for the Java algorithm to write to a file and then read into R). By default this is the
@@ -139,27 +122,19 @@ R2BGLiMS <- function(
   data=NULL,
   outcome.var=NULL,
   times.var=NULL,
-  subcohort.var=NULL,
   confounders=NULL,
   model.selection=TRUE,
   model.space.priors=NULL,
   beta.priors=NULL,
   beta.prior.partitions=NULL,
-  dirichlet.alphas.for.roc.model=0.01,
   g.prior=TRUE,
   tau=NULL,
   xtx.ridge.term=0,
   enumerate.up.to.dim=0,
   X.ref=NULL,
-  yTy.ref=NULL,
-  n.for.jam=NULL,
   ns.each.ethnicity=NULL,
   marginal.betas=NULL,
-  subcohort.sampling.fraction=NULL,
-  casecohort.pseudo.weight=1,
   n=NULL,
-  max.fpr=1,
-  min.tpr=0,
   n.iter=1e6,
   n.mil.iter=NULL,
   thinning.interval=NULL,
@@ -207,25 +182,17 @@ R2BGLiMS <- function(
   
   ### --- Basic input checks
   if (is.null(likelihood)) stop("No likelihood, i.e. the model type, has been specified; please specify as Logistic, CLogLog,
-                                Weibull, Cox, CaseCohort_Prentice, CaseCohort_Barlow, Gaussian, GaussianConj, RocAUC, RocAUC_Anchoring, JAM_MCMC or JAM")
+                                Weibull, Gaussian, GaussianConj, JAM_MCMC or JAM")
   if (!is.null(likelihood)) {
-    if (!likelihood %in% c("Logistic", "CLogLog", "Weibull", "Cox", "CaseCohort_Prentice", "CaseCohort_Barlow", "Gaussian", "GaussianConj", "JAM_MCMC", "JAM", "JAMv2", "RocAUC", "RocAUC_Anchoring")) {
-      stop("Likelihood must be specified as Logistic, CLogLog, Weibull, Cox, CaseCohort_Prentice, CaseCohort_Barlow, Gaussian, GaussianConj, RocAUC, JAM_MCMC, or JAM")
+    if (!likelihood %in% c("Logistic", "CLogLog", "Weibull", "Gaussian", "GaussianConj", "JAM_MCMC", "JAM")) {
+      stop("Likelihood must be specified as Logistic, CLogLog, Weibull, Gaussian, GaussianConj, JAM_MCMC, or JAM")
     }
   }
   if (is.null(data)&is.null(X.ref)) stop("The data to analyse has not been specified")
   if (is.null(outcome.var)&is.null(marginal.betas)) stop("An outcome variable has not been specified")
   
   ### --- Likelihood specific checks
-  if (likelihood %in% c("CaseCohort_Prentice","CaseCohort_Barlow")) {
-    # Check sub-cohort covariate given
-    if (is.null(subcohort.var)) stop("For the Case-Cohort model must specify which column of data contains the sub-cohort indicator")
-    if (length(table(data[,subcohort.var]))!=2) stop("Subcohort membership indicator must be binary")    
-  }
-  if (likelihood %in% c("CaseCohort_Barlow")) {
-    if (is.null(subcohort.sampling.fraction)) stop("For the Barlow Case-Cohort model must specify the subcohort sampling fraction")
-  }
-  if (likelihood %in% c("Logistic", "CLogLog", "Weibull", "RocAUC", "RocAUC_Anchoring")) {
+  if (likelihood %in% c("Logistic", "CLogLog", "Weibull")) {
     # This check is not done for Weibull, Cox or CaseCohort - since with uncensored data the outcome is not binary
     if (is.factor(data[,outcome.var])) {
       data[,outcome.var] <- as.integer(data[,outcome.var])-1
@@ -239,12 +206,12 @@ R2BGLiMS <- function(
       stop("Outcome variable only has one class")
     }
   }
-  if (likelihood %in% c("GaussianConj", "JAM", "JAMv2") & is.null(tau)) {
+  if (likelihood %in% c("GaussianConj", "JAM") & is.null(tau)) {
     if (g.prior) {
       if (likelihood %in% c("GaussianConj")) {
         cat("tau was not provided. Since the g-prior is in use, setting to the recommended maximum of n and P^2\n")
         tau <- max(nrow(data), ncol(data)^2)        
-      } else if (likelihood %in% c("JAM", "JAMv2")) {
+      } else if (likelihood %in% c("JAM")) {
         cat("tau was not provided. Since the g-prior is in use, setting to the recommended maximum of n and P^2\n")
         if (is.null(ns.each.ethnicity)) {
           tau <- max(n,length(marginal.betas)^2)
@@ -257,10 +224,6 @@ R2BGLiMS <- function(
       stop("Please choose a value for tau. Note that you have selected to use independent priors.
            Did you mean to use the g-prior?")
     }
-  }
-  if (likelihood %in% c("RocAUC")) {
-    if (model.selection) {if(is.null(initial.model)){stop("Must specify an inital model for ROC AUC model 
-                                                     selection")}}
   }
   ### --- Enumeration error messages
   if (enumerate.up.to.dim>0) {
@@ -295,7 +258,7 @@ R2BGLiMS <- function(
       if (!"Variables"%in%names(model.space.priors[[c]])) {
         stop("Each model.space.prior list(s) must contain an element named Variables, defining which covariates to search over")
       }
-      if (!likelihood %in% c("JAM_MCMC", "JAM", "JAMv2")) {
+      if (!likelihood %in% c("JAM_MCMC", "JAM")) {
         if (sum(model.space.priors[[c]]$Variables%in%colnames(data))!=length(model.space.priors[[c]]$Variables)) {
           stop(paste("Not all variables in model space component",c,"are present in the data"))
         }
@@ -334,7 +297,7 @@ R2BGLiMS <- function(
   
   ### -- Beta prior error messages
   if (!is.null(beta.priors)) {
-    if (likelihood %in% c("GaussianConj", "JAM", "JAMv2")) {stop("Fixed priors for the coefficients can not be specified for the conjugate model; the prior
+    if (likelihood %in% c("GaussianConj", "JAM")) {stop("Fixed priors for the coefficients can not be specified for the conjugate model; the prior
                                                  is take as a function of X'X")}
     beta.priors.not.mat <- TRUE
     if (is.data.frame(beta.priors)) {beta.priors.not.mat <- FALSE}
@@ -342,7 +305,7 @@ R2BGLiMS <- function(
     if (beta.priors.not.mat) stop("beta.priors must be a matrix or data frame")
     if (ncol(beta.priors)!=2) stop("beta.priors must have two columns - 1st for means, 2nd for SDs")
     if ( is.null(rownames(beta.priors)) ) stop("Rows of beta.priors must be named with corresponding variable names")
-    if (!likelihood %in% c("JAM_MCMC", "JAM", "JAMv2")) {
+    if (!likelihood %in% c("JAM_MCMC", "JAM")) {
       if (sum(rownames(beta.priors)%in%colnames(data))!=nrow(beta.priors)) stop("One or more variables in beta.priors are not present in the data")
     }
   } else if (length(confounders)>0) {
@@ -357,7 +320,7 @@ R2BGLiMS <- function(
   
   ### --- Beta prior partition error messages
   if (!is.null(beta.prior.partitions)) {
-    if (likelihood %in% c("GaussianConj", "JAM", "JAMv2", "RocAUC")) {
+    if (likelihood %in% c("GaussianConj", "JAM")) {
       stop("the beta.prior.partitions option is not available for the conjugate models.")
     }
     if (!is.list(beta.prior.partitions)) {beta.prior.partitions <- list(beta.prior.partitions)}
@@ -390,7 +353,7 @@ R2BGLiMS <- function(
         stop(paste("Each covariate prior partition must contain an element named Variables defining the covariates in the partition.
              Not supplied for partition",c) )
       }
-      if (!likelihood %in% c("JAM_MCMC", "JAM", "JAMv2")) {
+      if (!likelihood %in% c("JAM_MCMC", "JAM")) {
         if (sum(beta.prior.partitions[[c]]$Variables%in%colnames(data))!=length(beta.prior.partitions[[c]]$Variables)) {
           stop(paste("Not all variables in covariate prior partition",c,"are present in the data"))
         }
@@ -411,7 +374,7 @@ R2BGLiMS <- function(
            as exchangeable with covariates under model selection.")
     }
   } else {
-    if (!likelihood %in% c("GaussianConj", "JAM", "JAMv2", "RocAUC")) {
+    if (!likelihood %in% c("GaussianConj", "JAM")) {
       all.covariates <- unique(c(unlist(lapply(model.space.priors,function(x) x$Variables)),rownames(beta.priors),confounders))
       # Create default single beta.prior.partitions with Uniform(0.01, 2) - SMMR
       if (is.null(beta.priors)) {
@@ -559,7 +522,7 @@ R2BGLiMS <- function(
   #########################
   #########################
   
-  if (likelihood %in% c("JAM", "JAMv2", "JAM_MCMC")) {
+  if (likelihood %in% c("JAM", "JAM_MCMC")) {
     if (is.null(ns.each.ethnicity)) {
       ### --- Generate X'X, after normalising X
       xTx <- list()
@@ -569,7 +532,7 @@ R2BGLiMS <- function(
         # Calculate X'X
         xTx[[ld.block]] <- t(X.normalised) %*% X.normalised
         # Scale up by n/n.ref
-        # xTx[[ld.block]] <- xTx[[ld.block]]*n/nrow(X.ref[[ld.block]]) # INTRODUCED ISSUE FOR JAM PREDICTION (REMOVED 2018 March)
+        xTx[[ld.block]] <- xTx[[ld.block]]*n/nrow(X.ref[[ld.block]]) # INTRODUCED ISSUE FOR JAM PREDICTION
       }
       
       ### --- Generate z = X'y for JAM
@@ -616,13 +579,11 @@ R2BGLiMS <- function(
     data=data,
     outcome.var=outcome.var,
     times.var=times.var,
-    subcohort.var=subcohort.var,
     confounders=confounders, 
     predictors=predictors,
     model.space.priors=model.space.priors,
     beta.priors=beta.priors,
     beta.prior.partitions=beta.prior.partitions,
-    dirichlet.alphas.for.roc.model=dirichlet.alphas.for.roc.model,
     g.prior=g.prior,
     model.tau=model.tau,
     tau=tau,
@@ -630,13 +591,7 @@ R2BGLiMS <- function(
     enumerate.up.to.dim=enumerate.up.to.dim,
     xTx=xTx,
     z=z,
-    yTy.ref=yTy.ref,
-    n.for.jam=n.for.jam,
     ns.each.ethnicity=ns.each.ethnicity,
-    subcohort.sampling.fraction=subcohort.sampling.fraction,
-    casecohort.pseudo.weight=casecohort.pseudo.weight,
-    max.fpr=max.fpr,
-    min.tpr=min.tpr,
     initial.model=initial.model,
     mrloss.w = mrloss.w,
     mrloss.function = mrloss.function,
@@ -741,8 +696,6 @@ R2BGLiMS <- function(
     skip = n.lines.until.rjmcmc.output,
     header=TRUE,
     nrows=n.rows.written)
-#  Lhalf <- round(nrow(mcmc.output)/2)     	 # Burnin is a half	
-#  mcmc.output <- mcmc.output[(Lhalf+1):nrow(mcmc.output),]   # Remove burnin
 
   ### --- Summary table
   posterior.summary.table <- matrix(NA,ncol(mcmc.output)+length(model.space.priors),8)

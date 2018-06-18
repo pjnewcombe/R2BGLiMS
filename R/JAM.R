@@ -11,9 +11,6 @@ NULL
 #' If you would like to force JAM to perform full Reversible Jump MCMC of models and parameters (effects and residual), then
 #' set this to TRUE. The posterior summaries can be seen using \code{\link{PrettyResultsTable}}. Note that this option is
 #' forced to false if inference via model enumeration is requested by setting enumerate.up.to.dim>0.
-#' @param n The size of the dataset in which the summary statistics were calculated. This must be specified if use.da.v2=TRUE.
-#' @param use.da.v2 Whether to use Daniel Ahfock's new formulation of the marginal JAM model likelihood. NB: Requires specification of trait.variance.ref and n.
-#' @param trait.variance.ref Reference estimate of the trait variance. Must specify if use.da.v2=TRUE.
 #' 
 #' @return An R2BGLiMS_Results class object is returned. See the slot 'posterior.summary.table' for a posterior summary of all parameters. 
 #' See slot 'mcmc.output' for a matrix containing the raw MCMC output from the saved posterior samples (0 indicates a covariate is excluded 
@@ -48,8 +45,6 @@ JAM <- function(
   initial.model=NULL,
   save.path=NULL,
   max.model.dim=-1,
-  use.da.v2=FALSE,
-  trait.variance.ref=NULL,
   burnin.fraction = 0.5,
   mrloss.w=0,
   mrloss.function="variance",
@@ -88,8 +83,6 @@ JAM <- function(
   for (ld.block in 1:length(X.ref)) {
     if (is.null(colnames(X.ref[[ld.block]]))) stop ("All columns of the X reference matrice(s) must be named, corresponding to SNP effects in marginal.betas")
   }
-  if (use.da.v2 & is.null(trait.variance.ref)) {stop("If using Daniel Ahfock's reformulation, must specify an estimate of the trait variance.")}
-  if (full.mcmc.sampling & use.da.v2){stop("Full MCMC sampling of models and parameters not yet implemented for Daniel Ahfock's formulation.")}
 
   # --- Marginal betas
   if (is.null(marginal.betas)) { stop("For analysis with JAM you must provide a vector of marginal summary statistics") }
@@ -102,16 +95,6 @@ JAM <- function(
     if (is.null(n)) { stop("You must specificy the number of individuals the summary statistics were calculated in.") }
   }
 
-  ######################################################
-  ### --- Set yTy.ref for Daniel Ahfock's method --- ###
-  ######################################################
-  
-  if (use.da.v2) {
-    yTy.ref <- trait.variance.ref*n
-  } else {
-    yTy.ref <- NULL
-  }
-  
   #######################################################################
   ### --- Take subset of X.refs correpsonding to elements of beta --- ###
   #######################################################################
@@ -136,11 +119,7 @@ JAM <- function(
   if (full.mcmc.sampling) {
     which.blgims.jam.method <- "JAM_MCMC"
   } else {
-    if (use.da.v2) {
-      which.blgims.jam.method <- "JAMv2"
-    } else {
-      which.blgims.jam.method <- "JAM"
-    }
+    which.blgims.jam.method <- "JAM"
   }
   
   ############################
@@ -148,11 +127,8 @@ JAM <- function(
   ############################
   
   if (enumerate.up.to.dim > 0) {
-    if (use.da.v2) { # Force not using JAM_MCMC
-      which.blgims.jam.method <- "JAMv2"
-    } else {
-      which.blgims.jam.method <- "JAM"
-    }
+    # Force not using JAM_MCMC
+    which.blgims.jam.method <- "JAM"
     ### --- Enumeration
     n.iter <- 1 # Set to minimum number of iterations
     if (!is.list(X.ref)|length(X.ref)==1) {
@@ -164,8 +140,6 @@ JAM <- function(
         marginal.betas=marginal.betas,
         n=n,
         X.ref=X.ref,
-        yTy.ref=yTy.ref,
-        n.for.jam=n,
         ns.each.ethnicity=ns.each.ethnicity,
         model.space.priors=model.space.priors,
         g.prior=g.prior,
@@ -205,8 +179,6 @@ JAM <- function(
           marginal.betas=marginal.betas[vars.ld.block],
           n=n,
           X.ref=X.ref[[ld.block]],
-          yTy.ref=yTy.ref,
-          n.for.jam=n,
           ns.each.ethnicity=ns.each.ethnicity,
           model.space.priors=model.space.priors.ld.block,
           g.prior=g.prior,
@@ -250,8 +222,6 @@ JAM <- function(
       marginal.betas=marginal.betas,
       n=n,
       X.ref=X.ref,
-      yTy.ref=yTy.ref,
-      n.for.jam=n,
       ns.each.ethnicity=ns.each.ethnicity,
       model.space.priors=model.space.priors,
       beta.priors=beta.priors,

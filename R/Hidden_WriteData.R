@@ -12,13 +12,11 @@
   data,
   outcome.var=NULL,
   times.var=NULL,
-  subcohort.var=NULL,
   confounders=NULL,
   predictors=NULL,
   model.space.priors,
   beta.priors=NULL,
   beta.prior.partitions=NULL,
-  dirichlet.alphas.for.roc.model=NULL,
   g.prior=FALSE,
   model.tau=FALSE,
   tau=NULL,
@@ -26,13 +24,7 @@
   enumerate.up.to.dim=0,
   xTx=NULL, # X.ref * X.ref
   z=NULL, # X'y
-  yTy.ref=NULL, # Trait variance * N
-  n.for.jam=NULL,
   ns.each.ethnicity=NULL,
-  subcohort.sampling.fraction=NULL,
-  casecohort.pseudo.weight=NULL,
-  max.fpr=1,
-  min.tpr=0,
   initial.model=NULL,
   mrloss.w = 0,
   mrloss.function = "variance",
@@ -40,17 +32,8 @@
   mrloss.marginal.causal.effect.ses = NULL
 ) {
 	### Pre-processing
-  if (likelihood%in%c("Cox", "CaseCohort_Prentice", "CaseCohort_Barlow")) {
-    # Re-order rows of data in ascending order of follow-up time
-    # Must be done BEFORE extracting individual variables
-    data <- data[order(data[,times.var], decreasing=T),]
-  }  
-  if (likelihood%in%c("JAM_MCMC", "JAM", "JAMv2")) {
-    if (likelihood == "JAMv2") {
-      N <- n.for.jam
-    } else {
-      N <- 1
-    }
+  if (likelihood%in%c("JAM_MCMC", "JAM")) {
+    N <- 1
     n.ethnicities <- 1
     if (!is.null(ns.each.ethnicity)) {
       V <- length(z[[1]])
@@ -72,7 +55,7 @@
   } else {
     n.start <- nrow(data)
     if (!is.null(predictors)) {
-      data <- data[, c(outcome.var, times.var, subcohort.var, predictors)]
+      data <- data[, c(outcome.var, times.var, predictors)]
     }
     for (v in colnames(data)) {
       data <- data[!is.na(data[,v]), ]
@@ -85,12 +68,7 @@
       times <- data[,times.var]
       data <- data[, colnames(data)[!colnames(data)%in%times.var] ]
     }
-    # Extract sub-cohort var from the main data
-    if (!is.null(subcohort.var) ) {
-      subcohort.indicators <- data[,subcohort.var] # NB This is done after the ordering step above
-      data <- data[, colnames(data)[!colnames(data)%in%subcohort.var] ]
-    }
-    
+
     V <- ncol(data)
     N <- nrow(data)
     var.names <- colnames(data)
@@ -115,28 +93,16 @@
 	# N: Number of individuals
 	write(paste("numberOfIndividuals",format(N,sci=F)), file = data.file , ncolumns = 1, append = T)
 	
-	### --- Dirichlet alphas (if ROC model)
-	if (likelihood %in% c("RocAUC")) {
-	  if (length(dirichlet.alphas.for.roc.model)==1) {
-	    dirichlet.alphas.for.roc.model <- c(rep(dirichlet.alphas.for.roc.model,V))
-	  }
-	  for (v in 1:length(dirichlet.alphas.for.roc.model)) {
-	    write( dirichlet.alphas.for.roc.model[v], file = data.file , ncolumns = 2, append = T)
-	  }
-	}
-	
 	### --- Fixed beta priors
-	if (!likelihood %in% c("RocAUC")) {
-	  if (is.null(beta.priors)) {
-	    write(paste("numberOfCovariatesWithInformativePriors",0), file = data.file , ncolumns = 1, append = T)    
-	  } else {
-	    write(paste("numberOfCovariatesWithInformativePriors",nrow(beta.priors)), file = data.file , ncolumns = 1, append = T)
-	    write("FixedPriors", file = data.file , ncolumns = 1, append = T)
-	    for (v in 1:nrow(beta.priors)) {
-	      write( c(beta.priors[v,1],beta.priors[v,2]), file = data.file , ncolumns = 2, append = T)
-	    }
-	  }    
-	}
+	if (is.null(beta.priors)) {
+	  write(paste("numberOfCovariatesWithInformativePriors",0), file = data.file , ncolumns = 1, append = T)    
+	} else {
+	  write(paste("numberOfCovariatesWithInformativePriors",nrow(beta.priors)), file = data.file , ncolumns = 1, append = T)
+	  write("FixedPriors", file = data.file , ncolumns = 1, append = T)
+	  for (v in 1:nrow(beta.priors)) {
+	    write( c(beta.priors[v,1],beta.priors[v,2]), file = data.file , ncolumns = 2, append = T)
+	  }
+	}    
 	
 	### --- Hierarchical beta priors
 	write(paste("numberOfHierarchicalCovariatePriorPartitions",format(length(beta.prior.partitions),sci=F) ), file = data.file , ncolumns = 1, append = T)
@@ -179,23 +145,20 @@
 	}
 	
 	# Conjugate-only modelling options
-	if (likelihood %in% c("GaussianConj", "JAM", "JAMv2")) {
+	if (likelihood %in% c("GaussianConj", "JAM")) {
 	  write(paste("useGPrior", as.integer(g.prior)), file = data.file , ncolumns = 1, append = T)
 	  write(paste("tau",format(tau,sci=F)), file = data.file, ncolumns = 1, append = T)      
 	  write(paste("modelTau",as.integer(model.tau)), file = data.file , ncolumns = 1, append = T)      
 	  write(paste("enumerateUpToDim",format(enumerate.up.to.dim,sci=F)), file = data.file , ncolumns = 1, append = T)
 	}
-	if (likelihood %in% c("JAMv2")) {
-	  write(paste("yTy",format(yTy.ref,sci=F)), file = data.file , ncolumns = 1, append = T)
-	}
-	
+
 	############################
   # --- Covariate matrix --- #
 	############################
 	
 	cat("Writing data into an input file for BGLiMS...\n")
   # Covariate data - different if marginal setup
-  if (likelihood %in% c("JAM", "JAMv2", "JAM_MCMC")) { # Write summary data
+  if (likelihood %in% c("JAM", "JAM_MCMC")) { # Write summary data
     write(paste("nEthnicities",format(n.ethnicities,sci=F)), file = data.file , ncolumns = 1, append = T)
     write(paste("nBlocks",format(n.blocks,sci=F)), file = data.file , ncolumns = 1, append = T)
     write("blockIndices", file = data.file , ncolumns = 1, append = T)
@@ -215,10 +178,6 @@
         cat("Taking Cholesky decomposition of block",b,"...\n")
         Lt_Inv[[b]] <- solve(t(L)) # Take TRANSPOSE inverse for below
       }      
-    } else if (likelihood == "JAMv2") {
-      for (b in 1:length(xTx)) {
-        write.table(xTx[[b]], row.names=F, col.names=F, file = data.file, append = T)
-      }
     }
     # MR Pleiotropic loss function stuff
     write(mrloss.w, file = data.file , ncolumns = 1, append = T)
@@ -237,7 +196,7 @@
   }
   
   # Vector of outcomes
-  if (likelihood %in% c("Logistic", "CLogLog", "Weibull", "Cox", "CaseCohort_Prentice", "CaseCohort_Barlow", "RocAUC", "RocAUC_Anchoring")) {
+  if (likelihood %in% c("Logistic", "CLogLog", "Weibull")) {
     write(t(as.integer(outcome)), file = data.file , ncolumns = N, append = T)    
   } else if (likelihood %in% c("Gaussian","GaussianConj")) {
     if (likelihood == "GaussianConj") { outcome <- outcome - mean(outcome) }
@@ -259,24 +218,11 @@
       }
     }
     write(t(z_L), file = data.file , ncolumns = V, append = T)        
-  } else if (likelihood %in% c("JAMv2")) {
-    write(t(z), file = data.file , ncolumns = V, append = T)        
   }
   if (likelihood=="Weibull") {
     write(t(times), file = data.file , ncolumns = N, append = T)    
   }
-  if (likelihood %in% c("CaseCohort_Prentice", "CaseCohort_Barlow") ) {
-    write(t(as.integer(subcohort.indicators)), file = data.file , ncolumns = N, append = T)    
-    write(casecohort.pseudo.weight, file = data.file , ncolumns = 1, append = T)
-  }
-  if (likelihood == "CaseCohort_Barlow") {
-    write(subcohort.sampling.fraction, file = data.file , ncolumns = 1, append = T)
-  }
-  if (likelihood %in% c("RocAUC","RocAUC_Anchoring") ) {
-    write(max.fpr, file = data.file , ncolumns = N, append = T)    
-    write(min.tpr, file = data.file , ncolumns = N, append = T)    
-  }
-  
+
   ########################
   ### --- Finished --- ###
   ########################  

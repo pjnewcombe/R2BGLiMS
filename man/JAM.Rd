@@ -10,9 +10,8 @@ JAM(marginal.betas = NULL, n = NULL, ns.each.ethnicity = NULL,
   xtx.ridge.term = 0, enumerate.up.to.dim = 0, full.mcmc.sampling = FALSE,
   n.iter = 1e+06, n.mil.iter = NULL, thinning.interval = NULL,
   seed = NULL, extra.arguments = NULL, initial.model = NULL,
-  save.path = NULL, max.model.dim = -1, use.da.v2 = FALSE,
-  trait.variance.ref = NULL, burnin.fraction = 0.5, mrloss.w = 0,
-  mrloss.function = "variance", mrloss.marginal.by = NULL,
+  save.path = NULL, max.model.dim = -1, burnin.fraction = 0.5,
+  mrloss.w = 0, mrloss.function = "variance", mrloss.marginal.by = NULL,
   mrloss.marginal.sy = NULL, extra.java.arguments = NULL)
 }
 \arguments{
@@ -20,7 +19,7 @@ JAM(marginal.betas = NULL, n = NULL, ns.each.ethnicity = NULL,
 For multi-ethnic "mJAM" please provide a list of vectors, each element of which is a vector of marginal effects
 for a specific ethnicity over the same variants.}
 
-\item{n}{The size of the dataset in which the summary statistics were calculated. This must be specified if use.da.v2=TRUE.}
+\item{n}{The size of the dataset in which the summary statistics (marginal.betas) were calculated}
 
 \item{ns.each.ethnicity}{For mJAM: A vector of the sizes of each ethnicity dataset in which the summary statistics were calculated.}
 
@@ -106,10 +105,6 @@ and the null model is used. If set to 1, the saturated model is used.}
 after running R2BGLiMS. However, this option might help for debugging.}
 
 \item{max.model.dim}{Optional specification of maximum model dimension (default -1 means no maximum is set).}
-
-\item{use.da.v2}{Whether to use Daniel Ahfock's new formulation of the marginal JAM model likelihood. NB: Requires specification of trait.variance.ref and n.}
-
-\item{trait.variance.ref}{Reference estimate of the trait variance. Must specify if use.da.v2=TRUE.}
 
 \item{burnin.fraction}{Initial fraction of the iterations to throw away, e.g. setting to 0 would mean no burn-in. The 
 default of 0.5 corresponds to the first half of iterations being discarded.}

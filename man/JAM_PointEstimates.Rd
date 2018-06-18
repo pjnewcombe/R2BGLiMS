@@ -22,6 +22,8 @@ must be coded as a numeric risk allele count 0/1/2. Non-integer values reflectin
 NB: The risk allele coding MUST correspond to that used in marginal.betas. These matrices must each be positive definite and
 the column names must correspond to the names of the marginal.betas vector.}
 
+\item{n}{The size of the dataset in which the summary statistics (marginal.betas) were calculated}
+
 \item{just.get.z}{Return the estimated X'y outcome used in JAM (without actually calculating the corresponding point estimates). This is mainly
 for internal use.}
 }

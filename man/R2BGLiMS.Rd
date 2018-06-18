@@ -5,30 +5,23 @@
 \title{Call BGLiMS from R}
 \usage{
 R2BGLiMS(likelihood = NULL, data = NULL, outcome.var = NULL,
-  times.var = NULL, subcohort.var = NULL, confounders = NULL,
-  model.selection = TRUE, model.space.priors = NULL, beta.priors = NULL,
-  beta.prior.partitions = NULL, dirichlet.alphas.for.roc.model = 0.01,
-  g.prior = TRUE, tau = NULL, xtx.ridge.term = 0,
-  enumerate.up.to.dim = 0, X.ref = NULL, yTy.ref = NULL,
-  n.for.jam = NULL, ns.each.ethnicity = NULL, marginal.betas = NULL,
-  subcohort.sampling.fraction = NULL, casecohort.pseudo.weight = 1,
-  n = NULL, max.fpr = 1, min.tpr = 0, n.iter = 1e+06,
-  n.mil.iter = NULL, thinning.interval = NULL, seed = NULL,
-  extra.arguments = NULL, initial.model = NULL, max.model.dim = -1,
-  results.label = NULL, save.path = NULL, burnin.fraction = 0.5,
-  mrloss.w = 0, mrloss.function = "variance", mrloss.marginal.by = NULL,
-  mrloss.marginal.sy = NULL, extra.java.arguments = NULL)
+  times.var = NULL, confounders = NULL, model.selection = TRUE,
+  model.space.priors = NULL, beta.priors = NULL,
+  beta.prior.partitions = NULL, g.prior = TRUE, tau = NULL,
+  xtx.ridge.term = 0, enumerate.up.to.dim = 0, X.ref = NULL,
+  ns.each.ethnicity = NULL, marginal.betas = NULL, n = NULL,
+  n.iter = 1e+06, n.mil.iter = NULL, thinning.interval = NULL,
+  seed = NULL, extra.arguments = NULL, initial.model = NULL,
+  max.model.dim = -1, results.label = NULL, save.path = NULL,
+  burnin.fraction = 0.5, mrloss.w = 0, mrloss.function = "variance",
+  mrloss.marginal.by = NULL, mrloss.marginal.sy = NULL,
+  extra.java.arguments = NULL)
 }
 \arguments{
 \item{likelihood}{Type of model to fit. Current options are 
 "Logistic" (for binary data), 
 "CLogLog" complementary log-log link for binary data, 
 "Weibull" (for survival data), 
-"Cox" (for survival data), 
-"CaseCohort_Prentice" (for case-cohort survival data with Prentice weighting), 
-"CaseCohort_Barlow" (for case-cohort survival data with Barlow weighting), 
-"RocAUC" (to optimise ROC AUC),
-"RocAUC_Anchoring" (to optimise ROC AUC using the anchoring formulation),
 "Gaussian" (for linear regression), 
 "GaussianConj" (linear regression exploiting conjugate results), 
 "JAM" (for conjugate linear regression using summary statistics, integrating out parameters) 
@@ -42,9 +35,6 @@ If modelling summary statistics specify X.ref, marginal.betas, and n instead (se
 If modelling summary statistics with JAM this can be left null but you must specify X.ref, marginal.beats and n instead (see below).}
 
 \item{times.var}{SURVIVAL DATA ONLY Name of column in data which contains the event times.}
-
-\item{subcohort.var}{CASE-COHORT DATA ONLY Name of column in data which contains a binary indicator of membership in the
-propsectviely sampled (and population representative) sub-cohort.}
 
 \item{confounders}{Optional vector of confounders to fix in the model at all times, i.e. exclude from model selection.}
 
@@ -89,9 +79,6 @@ partition, for v in "Variables",
 beta[v] | sigma_beta ~ N(0, sigma_beta^2) and 
 sigma_beta ~ Unif("UniformA", "UniformB").}
 
-\item{dirichlet.alphas.for.roc.model}{This can either be a single number, if you wish the same concentration parameter 
-to be used for every covariate. Alternatively a vector can be supplied, with an element corresponding to every variable.}
-
 \item{g.prior}{Whether to use a g-prior for the beta's, i.e. a multivariate normal 
 with correlation structure proportional to sigma^2*X'X^-1, which is thought to aid
 variable selection in the presence of strong correlation. By default this is enabled.}
@@ -111,19 +98,13 @@ must be coded as a numeric risk allele count 0/1/2. Non-integer values reflectin
 NB: The risk allele coding MUST correspond to that used in marginal.betas. These matrices must each be positive definite and
 the column names must correspond to the names of the marginal.betas vector.}
 
-\item{yTy.ref}{Estimate of the trait variance * N; for use with JAMv2 (Daniel Ahfock's extension).}
-
-\item{n.for.jam}{For JAMv2 (Daniel Ahfock's extension), the N of the data must be provided.}
-
 \item{ns.each.ethnicity}{For mJAM: A vector of the sizes of each ethnicity dataset in which the summary statistics were calculated.}
 
 \item{marginal.betas}{Vector of (named) marginal effect estimates to re-analyse with JAM under multivariate models. 
 For multi-ethnic "mJAM" please provide a list of vectors, each element of which is a vector of marginal effects
 for a specific ethnicity over the same variants.}
 
-\item{max.fpr}{ROC AUC ONLY: Maximum acceptable false positive rate (or x-axis value) to optimise a truncated ROC AUC.}
-
-\item{min.tpr}{ROC AUC ONLY: Minimum acceptable true positive rate, i.e. sensitivity (or y-axis value) to optimise a truncated ROC AUC.}
+\item{n}{The size of the dataset in which the summary statistics (marginal.betas) were calculated}
 
 \item{n.iter}{Number of iterations to run (default is 1e6)}
 
@@ -163,14 +144,6 @@ default of 0.5 corresponds to the first half of iterations being discarded.}
 
 \item{extra.java.arguments}{A character string to be passed through to the java command line. E.g. to specify a
 different temporary directory by passing "-Djava.io.tmpdir=/Temp".}
-
-\item{n:}{Sample size which marginal.betas were calculated in.}
-
-\item{subcohort.sampling.fraction:}{CaseCohort_Barlow ONLY: The sampling fraction of the sub-cohort from the full cohort, in order
-to calculate weights for use with the Barlow Case-Cohort pseudo-likelihood (Barlow 1994) REF}
-
-\item{casecohort.pseudo.weight:}{CaseCohort ONLY: Multiplier for the pseudo log-likelihood relative to
-the prior.}
 }
 \value{
 An R2BGLiMS_Results class object is returned. See the slot 'posterior.summary.table' for a posterior summary of all parameters. 
