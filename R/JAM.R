@@ -7,6 +7,8 @@ NULL
 #' @title JAM (Joint Analysis of Marginal statistics)
 #' @name JAM
 #' @inheritParams R2BGLiMS
+#' @param trait.variance NB EXPERIMENTAL: Invokes a slightly different summary statistic likelihood, which requires an estimate of
+#' the trait variance to be provided. (Not yet implemented to work with mJAM or enumeration)
 #' @param full.mcmc.sampling By default JAM only samples models, since the parameters can be analytically integrated out.
 #' If you would like to force JAM to perform full Reversible Jump MCMC of models and parameters (effects and residual), then
 #' set this to TRUE. The posterior summaries can be seen using \code{\link{PrettyResultsTable}}. Note that this option is
@@ -46,6 +48,7 @@ JAM <- function(
   save.path=NULL,
   max.model.dim=-1,
   burnin.fraction = 0.5,
+  trait.variance = NULL,
   mrloss.w=0,
   mrloss.function="variance",
   mrloss.marginal.by=NULL,
@@ -66,7 +69,7 @@ JAM <- function(
   if (!is.list(X.ref)) {
     X.ref <- list(X.ref) # convert to list if there is a single block
   }
-  
+
   # Check Rank
   # for (ld.block in 1:length(X.ref)) {
   #  qr.decomp <- qr(X.ref[[ld.block]])
@@ -155,6 +158,7 @@ JAM <- function(
         save.path=save.path,
         max.model.dim=max.model.dim,
         burnin.fraction = burnin.fraction,
+        trait.variance = trait.variance,
         mrloss.w = mrloss.w,
         mrloss.function = mrloss.function,
         mrloss.marginal.by = mrloss.marginal.by,
@@ -194,6 +198,7 @@ JAM <- function(
           save.path=save.path,
           max.model.dim=max.model.dim,
           burnin.fraction = burnin.fraction,
+          trait.variance = trait.variance,
           mrloss.w = mrloss.w,
           mrloss.function = mrloss.function,
           mrloss.marginal.by = mrloss.marginal.by,
@@ -239,6 +244,7 @@ JAM <- function(
       save.path=save.path,
       max.model.dim=max.model.dim,
       burnin.fraction = burnin.fraction,
+      trait.variance = trait.variance,
       mrloss.w = mrloss.w,
       mrloss.function = mrloss.function,
       mrloss.marginal.by = mrloss.marginal.by,

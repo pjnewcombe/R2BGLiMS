@@ -13,9 +13,9 @@ R2BGLiMS(likelihood = NULL, data = NULL, outcome.var = NULL,
   n.iter = 1e+06, n.mil.iter = NULL, thinning.interval = NULL,
   seed = NULL, extra.arguments = NULL, initial.model = NULL,
   max.model.dim = -1, results.label = NULL, save.path = NULL,
-  burnin.fraction = 0.5, mrloss.w = 0, mrloss.function = "variance",
-  mrloss.marginal.by = NULL, mrloss.marginal.sy = NULL,
-  extra.java.arguments = NULL)
+  burnin.fraction = 0.5, trait.variance = NULL, mrloss.w = 0,
+  mrloss.function = "variance", mrloss.marginal.by = NULL,
+  mrloss.marginal.sy = NULL, extra.java.arguments = NULL)
 }
 \arguments{
 \item{likelihood}{Type of model to fit. Current options are 

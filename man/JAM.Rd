@@ -11,8 +11,9 @@ JAM(marginal.betas = NULL, n = NULL, ns.each.ethnicity = NULL,
   n.iter = 1e+06, n.mil.iter = NULL, thinning.interval = NULL,
   seed = NULL, extra.arguments = NULL, initial.model = NULL,
   save.path = NULL, max.model.dim = -1, burnin.fraction = 0.5,
-  mrloss.w = 0, mrloss.function = "variance", mrloss.marginal.by = NULL,
-  mrloss.marginal.sy = NULL, extra.java.arguments = NULL)
+  trait.variance = NULL, mrloss.w = 0, mrloss.function = "variance",
+  mrloss.marginal.by = NULL, mrloss.marginal.sy = NULL,
+  extra.java.arguments = NULL)
 }
 \arguments{
 \item{marginal.betas}{Vector of (named) marginal effect estimates to re-analyse with JAM under multivariate models. 
@@ -108,6 +109,9 @@ after running R2BGLiMS. However, this option might help for debugging.}
 
 \item{burnin.fraction}{Initial fraction of the iterations to throw away, e.g. setting to 0 would mean no burn-in. The 
 default of 0.5 corresponds to the first half of iterations being discarded.}
+
+\item{trait.variance}{NB EXPERIMENTAL: Invokes a slightly different summary statistic likelihood, which requires an estimate of
+the trait variance to be provided. (Not yet implemented to work with mJAM or enumeration)}
 
 \item{mrloss.w}{The relative weight of the MR log loss function for pleiotropy vs the log likelihood. Default 0.}
 

@@ -145,6 +145,7 @@ R2BGLiMS <- function(
   results.label=NULL,
   save.path=NULL,
   burnin.fraction=0.5,
+  trait.variance = NULL,
   mrloss.w=0,
   mrloss.function="variance",
   mrloss.marginal.by=NULL,
@@ -545,6 +546,14 @@ R2BGLiMS <- function(
           X.ref=X.ref[[ld.block]],
           n=n, just.get.z=TRUE) )
       }
+      
+      ### --- Calcualte YtY if trait.variance provided
+      if (!is.null(trait.variance)) {
+        cat("Inferring estimate of YtY from the provided trait.variance estimate.\n")
+        YtY <- trait.variance*(n-1)
+      } else {
+        YtY <- NULL
+      }
 
       ### --- MR loss function setup
       mrloss.marginal.causal.effects <- mrloss.marginal.by/marginal.betas
@@ -589,10 +598,12 @@ R2BGLiMS <- function(
     tau=tau,
     xtx.ridge.term=xtx.ridge.term,
     enumerate.up.to.dim=enumerate.up.to.dim,
+    n=n,
     xTx=xTx,
     z=z,
     ns.each.ethnicity=ns.each.ethnicity,
     initial.model=initial.model,
+    YtY = YtY,
     mrloss.w = mrloss.w,
     mrloss.function = mrloss.function,
     mrloss.marginal.causal.effects = mrloss.marginal.causal.effects,

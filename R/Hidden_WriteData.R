@@ -22,10 +22,12 @@
   tau=NULL,
   xtx.ridge.term=0,
   enumerate.up.to.dim=0,
+  n=n,
   xTx=NULL, # X.ref * X.ref
   z=NULL, # X'y
   ns.each.ethnicity=NULL,
   initial.model=NULL,
+  YtY = NULL,
   mrloss.w = 0,
   mrloss.function = "variance",
   mrloss.marginal.causal.effects = NULL,
@@ -79,7 +81,11 @@
 	### Writing
   
 	# Model
-  write(likelihood, file = data.file , ncolumns = 1)
+  if (likelihood == "JAM" & !is.null(YtY)) {
+    write("JAMv2", file = data.file , ncolumns = 1)
+  } else {
+    write(likelihood, file = data.file , ncolumns = 1)
+  }
   
 	# V: Total number of variables
 	write(paste("totalNumberOfCovariates",format(V,sci=F)), file = data.file , ncolumns = 1, append = T)
@@ -150,6 +156,10 @@
 	  write(paste("tau",format(tau,sci=F)), file = data.file, ncolumns = 1, append = T)      
 	  write(paste("modelTau",as.integer(model.tau)), file = data.file , ncolumns = 1, append = T)      
 	  write(paste("enumerateUpToDim",format(enumerate.up.to.dim,sci=F)), file = data.file , ncolumns = 1, append = T)
+	  if (!is.null(YtY)) {
+	    write(paste("YtY",format(YtY,sci=F)), file = data.file , ncolumns = 1, append = T)
+	    write(paste("nForJamV2Likelihood",format(n,sci=F)), file = data.file , ncolumns = 1, append = T)
+	  }
 	}
 
 	############################
