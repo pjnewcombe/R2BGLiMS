@@ -27,7 +27,7 @@
   z=NULL, # X'y
   ns.each.ethnicity=NULL,
   initial.model=NULL,
-  YtY = NULL,
+  trait.variance = NULL,
   mrloss.w = 0,
   mrloss.function = "variance",
   mrloss.marginal.causal.effects = NULL,
@@ -81,7 +81,7 @@
 	### Writing
   
 	# Model
-  if (likelihood == "JAM" & !is.null(YtY)) {
+  if (likelihood == "JAM" & !is.null(trait.variance)) {
     write("JAMv2", file = data.file , ncolumns = 1)
   } else {
     write(likelihood, file = data.file , ncolumns = 1)
@@ -156,7 +156,8 @@
 	  write(paste("tau",format(tau,sci=F)), file = data.file, ncolumns = 1, append = T)      
 	  write(paste("modelTau",as.integer(model.tau)), file = data.file , ncolumns = 1, append = T)      
 	  write(paste("enumerateUpToDim",format(enumerate.up.to.dim,sci=F)), file = data.file , ncolumns = 1, append = T)
-	  if (!is.null(YtY)) {
+	  if (!is.null(trait.variance)) {
+	    YtY <- trait.variance*(n-1)
 	    write(paste("YtY",format(YtY,sci=F)), file = data.file , ncolumns = 1, append = T)
 	    write(paste("nForJamV2Likelihood",format(n,sci=F)), file = data.file , ncolumns = 1, append = T)
 	  }
