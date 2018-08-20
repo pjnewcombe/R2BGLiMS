@@ -53,6 +53,7 @@ JAM <- function(
   mrloss.function="variance",
   mrloss.marginal.by=NULL,
   mrloss.marginal.sy=NULL,
+  mafs.if.independent=NULL,
   extra.java.arguments=NULL
 ) {
   
@@ -60,31 +61,37 @@ JAM <- function(
   ### --- Error messages (moved from R2BGLiMS on 2016-01-29) --- ###
   ##################################################################
   
-  # --- X.ref
+  # --- X.ref checks (if mafs.if.independent not provided)
   
-  # Force to list
-  if (is.data.frame(X.ref)) {
-    X.ref <- data.matrix(X.ref) # convert to matrix
-  }
-  if (!is.list(X.ref)) {
-    X.ref <- list(X.ref) # convert to list if there is a single block
-  }
-
-  # Check Rank
-  # for (ld.block in 1:length(X.ref)) {
-  #  qr.decomp <- qr(X.ref[[ld.block]])
-  #  if (qr.decomp$rank < ncol(X.ref[[ld.block]])) stop (
-  #    paste("The reference matrix for block",ld.block,"/",length(X.ref),"is not full rank.
-  #            Ideally a larger reference sample should be used, 
-  #            or you could try pruning correlated SNPs.")
-  #  )
-  #}
+  if (is.null(mafs.if.independent)) {
     
-  # Check format
-  if (sum(unlist(lapply(X.ref, function(x) !is.numeric(x) )))>0) {stop("Reference genotype matrices must be numeric, coded as risk allele countsin the 0 to 2 range")}
-  if (max(unlist(X.ref))>2 | min(unlist(X.ref)) < 0) {stop("Reference genotype matrices must be coded coded as risk allele counts in the 0 to 2 range")}
-  for (ld.block in 1:length(X.ref)) {
-    if (is.null(colnames(X.ref[[ld.block]]))) stop ("All columns of the X reference matrice(s) must be named, corresponding to SNP effects in marginal.betas")
+    # Force to list
+    if (is.data.frame(X.ref)) {
+      X.ref <- data.matrix(X.ref) # convert to matrix
+    }
+    if (!is.list(X.ref)) {
+      X.ref <- list(X.ref) # convert to list if there is a single block
+    }
+    
+    # Check Rank
+    # for (ld.block in 1:length(X.ref)) {
+    #  qr.decomp <- qr(X.ref[[ld.block]])
+    #  if (qr.decomp$rank < ncol(X.ref[[ld.block]])) stop (
+    #    paste("The reference matrix for block",ld.block,"/",length(X.ref),"is not full rank.
+    #            Ideally a larger reference sample should be used, 
+    #            or you could try pruning correlated SNPs.")
+    #  )
+    #}
+    
+    # Check format
+    if (sum(unlist(lapply(X.ref, function(x) !is.numeric(x) )))>0) {stop("Reference genotype matrices must be numeric, coded as risk allele countsin the 0 to 2 range")}
+    if (max(unlist(X.ref))>2 | min(unlist(X.ref)) < 0) {stop("Reference genotype matrices must be coded coded as risk allele counts in the 0 to 2 range")}
+    for (ld.block in 1:length(X.ref)) {
+      if (is.null(colnames(X.ref[[ld.block]]))) stop ("All columns of the X reference matrice(s) must be named, corresponding to SNP effects in marginal.betas")
+    }
+    
+  } else if (!is.null(mafs.if.independent)) {
+    if (enumerate.up.to.dim > 0) { stop("When specifiying indepdent SNPs not yet possible to do enumeration.")}
   }
 
   # --- Marginal betas
@@ -163,6 +170,7 @@ JAM <- function(
         mrloss.function = mrloss.function,
         mrloss.marginal.by = mrloss.marginal.by,
         mrloss.marginal.sy = mrloss.marginal.sy,
+        mafs.if.independent = mafs.if.independent,
         extra.java.arguments=extra.java.arguments
       )
     } else {
@@ -203,6 +211,7 @@ JAM <- function(
           mrloss.function = mrloss.function,
           mrloss.marginal.by = mrloss.marginal.by,
           mrloss.marginal.sy = mrloss.marginal.sy,
+          mafs.if.independent = mafs.if.independent,
           extra.java.arguments=extra.java.arguments
         )
         if (ld.block==1) {
@@ -249,6 +258,7 @@ JAM <- function(
       mrloss.function = mrloss.function,
       mrloss.marginal.by = mrloss.marginal.by,
       mrloss.marginal.sy = mrloss.marginal.sy,
+      mafs.if.independent = mafs.if.independent,
       extra.java.arguments=extra.java.arguments
     )
   }

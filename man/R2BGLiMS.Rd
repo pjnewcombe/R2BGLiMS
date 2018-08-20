@@ -15,7 +15,8 @@ R2BGLiMS(likelihood = NULL, data = NULL, outcome.var = NULL,
   max.model.dim = -1, results.label = NULL, save.path = NULL,
   burnin.fraction = 0.5, trait.variance = NULL, mrloss.w = 0,
   mrloss.function = "variance", mrloss.marginal.by = NULL,
-  mrloss.marginal.sy = NULL, extra.java.arguments = NULL)
+  mrloss.marginal.sy = NULL, mafs.if.independent = NULL,
+  extra.java.arguments = NULL)
 }
 \arguments{
 \item{likelihood}{Type of model to fit. Current options are 
@@ -141,6 +142,11 @@ default of 0.5 corresponds to the first half of iterations being discarded.}
 
 \item{mrloss.marginal.sy}{Standard errors of marginal associations between SNPs and outcome for the MR loss function model 
 (not required for mrloss.function "variance")}
+
+\item{mafs.if.independent}{If the SNPs are independent then a reference genotype matrix is not required.
+However, it is still necessary to provide SNP MAFs here as a named vector. Doing so will lead to X.ref being 
+ignored and the SNPs to be modelled as if they are independent. Note that this option does not work with 
+enumeration.}
 
 \item{extra.java.arguments}{A character string to be passed through to the java command line. E.g. to specify a
 different temporary directory by passing "-Djava.io.tmpdir=/Temp".}

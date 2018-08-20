@@ -102,6 +102,10 @@ NULL
 #' @param mrloss.marginal.by Marginal associations between SNPs and outcome for the MR loss function model.
 #' @param mrloss.marginal.sy Standard errors of marginal associations between SNPs and outcome for the MR loss function model 
 #' (not required for mrloss.function "variance")
+#' @param mafs.if.independent If the SNPs are independent then a reference genotype matrix is not required.
+#' However, it is still necessary to provide SNP MAFs here as a named vector. Doing so will lead to X.ref being 
+#' ignored and the SNPs to be modelled as if they are independent. Note that this option does not work with 
+#' enumeration.
 #' @param extra.java.arguments A character string to be passed through to the java command line. E.g. to specify a
 #' different temporary directory by passing "-Djava.io.tmpdir=/Temp".
 #' 
@@ -150,6 +154,7 @@ R2BGLiMS <- function(
   mrloss.function="variance",
   mrloss.marginal.by=NULL,
   mrloss.marginal.sy=NULL,
+  mafs.if.independent=NULL,
   extra.java.arguments=NULL
 ) {
   
@@ -189,7 +194,7 @@ R2BGLiMS <- function(
       stop("Likelihood must be specified as Logistic, CLogLog, Weibull, Gaussian, GaussianConj, JAM_MCMC, or JAM")
     }
   }
-  if (is.null(data)&is.null(X.ref)) stop("The data to analyse has not been specified")
+  if (is.null(data)&is.null(X.ref)&is.null(mafs.if.independent)) stop("The data to analyse has not been specified")
   if (is.null(outcome.var)&is.null(marginal.betas)) stop("An outcome variable has not been specified")
   
   ### --- Likelihood specific checks
@@ -525,26 +530,35 @@ R2BGLiMS <- function(
   
   if (likelihood %in% c("JAM", "JAM_MCMC")) {
     if (is.null(ns.each.ethnicity)) {
-      ### --- Generate X'X, after normalising X
-      xTx <- list()
-      for (ld.block in 1:length(X.ref)) {
-        # Normalise X
-        X.normalised <- apply(X.ref[[ld.block]], MAR=2, function(x) x-mean(x))
-        # Calculate X'X
-        xTx[[ld.block]] <- t(X.normalised) %*% X.normalised
-        # Scale up by n/n.ref
-        xTx[[ld.block]] <- xTx[[ld.block]]*n/nrow(X.ref[[ld.block]]) # INTRODUCED ISSUE FOR JAM PREDICTION
+      if (!is.null(mafs.if.independent)) {
+        X.ref = list(NULL)
+      } else {
+        ### --- Generate X'X, after normalising X
+        xTx <- list()
+        for (ld.block in 1:length(X.ref)) {
+          # Normalise X
+          X.normalised <- apply(X.ref[[ld.block]], MAR=2, function(x) x-mean(x))
+          # Calculate X'X
+          xTx[[ld.block]] <- t(X.normalised) %*% X.normalised
+          # Scale up by n/n.ref
+          xTx[[ld.block]] <- xTx[[ld.block]]*n/nrow(X.ref[[ld.block]]) # INTRODUCED ISSUE FOR JAM PREDICTION
+        }
       }
       
       ### --- Generate z = X'y for JAM
       z <- NULL
       for (ld.block in 1:length(X.ref)) {
-        snps.in.block <- colnames(X.ref[[ld.block]])
+        if (!is.null(mafs.if.independent)) {
+          snps.in.block <- names(mafs.if.independent)
+        } else {
+          snps.in.block <- colnames(X.ref[[ld.block]])
+        }
         # Use a common n
         z <- c(z, JAM_PointEstimates(
           marginal.betas = marginal.betas[snps.in.block],
           X.ref=X.ref[[ld.block]],
-          n=n, just.get.z=TRUE) )
+          n=n, just.get.z=TRUE,
+          mafs.if.independent=mafs.if.independent) )
       }
       
       ### --- MR loss function setup
@@ -599,7 +613,8 @@ R2BGLiMS <- function(
     mrloss.w = mrloss.w,
     mrloss.function = mrloss.function,
     mrloss.marginal.causal.effects = mrloss.marginal.causal.effects,
-    mrloss.marginal.causal.effect.ses = mrloss.marginal.causal.effect.ses
+    mrloss.marginal.causal.effect.ses = mrloss.marginal.causal.effect.ses,
+    mafs.if.independent = mafs.if.independent
   )  
   t2 <- proc.time()["elapsed"]
   write.time <- t2-t1

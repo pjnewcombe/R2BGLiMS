@@ -7,7 +7,7 @@
 \title{JAM (Joint Analysis of Marginal statistics) multivariate point estimator.}
 \usage{
 JAM_PointEstimates(marginal.betas = NULL, X.ref = NULL, n = NULL,
-  just.get.z = FALSE)
+  just.get.z = FALSE, mafs.if.independent = NULL)
 
 JAM_PosteriorSampler(marginal.betas = NULL, X.ref = NULL)
 }
@@ -26,6 +26,11 @@ the column names must correspond to the names of the marginal.betas vector.}
 
 \item{just.get.z}{Return the estimated X'y outcome used in JAM (without actually calculating the corresponding point estimates). This is mainly
 for internal use.}
+
+\item{mafs.if.independent}{If the SNPs are independent then a reference genotype matrix is not required.
+However, it is still necessary to provide SNP MAFs here as a named vector. Doing so will lead to X.ref being 
+ignored and the SNPs to be modelled as if they are independent. Note that this option does not work with 
+enumeration.}
 }
 \value{
 A vector of multivariate point estimates.

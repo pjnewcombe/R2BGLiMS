@@ -31,7 +31,8 @@
   mrloss.w = 0,
   mrloss.function = "variance",
   mrloss.marginal.causal.effects = NULL,
-  mrloss.marginal.causal.effect.ses = NULL
+  mrloss.marginal.causal.effect.ses = NULL,
+  mafs.if.independent = mafs.if.independent
 ) {
 	### Pre-processing
   if (likelihood%in%c("JAM_MCMC", "JAM")) {
@@ -46,11 +47,17 @@
       block.indices <- c(1,(V+1))
     } else {
       V <- length(z)
-      var.names <- unlist(lapply(xTx,colnames))
-      n.blocks <- length(xTx)
-      block.sizes <- unlist(lapply(xTx,ncol))
-      block.indices <- rep(1,length(xTx)+1)
-      for (b in 1:length(xTx)) {
+      if (is.null(mafs.if.independent)) {
+        var.names <- unlist(lapply(xTx,colnames))
+        n.blocks <- length(xTx)
+        block.sizes <- unlist(lapply(xTx,ncol))
+      } else {
+        var.names <- names(mafs.if.independent)
+        n.blocks <- 1
+        block.sizes <- c(length(mafs.if.independent))
+      }
+      block.indices <- rep(1,n.blocks+1)
+      for (b in 1:n.blocks) {
         block.indices[b+1] <- block.indices[b] + block.sizes[b]
       }
     }
@@ -179,6 +186,12 @@
         write.table(xTx[[b]], row.names=F, col.names=F, file = data.file, append = T)
       }
     } else if (likelihood == "JAM") {
+      if (!is.null(mafs.if.independent)) {
+        cat("Generating faux reference matrix (for independent SNPs) from provided MAFs")
+        xTx <- list(matrix(0,length(mafs.if.independent), length(mafs.if.independent), 
+                           dimnames=list(names(mafs.if.independent), names(mafs.if.independent))))
+        diag(xTx[[1]]) <- n * 2 * mafs.if.independent * (1 - mafs.if.independent)
+      }
       Lt_Inv <- list()
       for (b in 1:length(xTx)) { # Could be blocks or ethnicities
         if (xtx.ridge.term!=0) {

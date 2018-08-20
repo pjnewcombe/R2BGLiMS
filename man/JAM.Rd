@@ -13,7 +13,7 @@ JAM(marginal.betas = NULL, n = NULL, ns.each.ethnicity = NULL,
   save.path = NULL, max.model.dim = -1, burnin.fraction = 0.5,
   trait.variance = NULL, mrloss.w = 0, mrloss.function = "variance",
   mrloss.marginal.by = NULL, mrloss.marginal.sy = NULL,
-  extra.java.arguments = NULL)
+  mafs.if.independent = NULL, extra.java.arguments = NULL)
 }
 \arguments{
 \item{marginal.betas}{Vector of (named) marginal effect estimates to re-analyse with JAM under multivariate models. 
@@ -121,6 +121,11 @@ the trait variance to be provided. (Not yet implemented to work with mJAM or enu
 
 \item{mrloss.marginal.sy}{Standard errors of marginal associations between SNPs and outcome for the MR loss function model 
 (not required for mrloss.function "variance")}
+
+\item{mafs.if.independent}{If the SNPs are independent then a reference genotype matrix is not required.
+However, it is still necessary to provide SNP MAFs here as a named vector. Doing so will lead to X.ref being 
+ignored and the SNPs to be modelled as if they are independent. Note that this option does not work with 
+enumeration.}
 
 \item{extra.java.arguments}{A character string to be passed through to the java command line. E.g. to specify a
 different temporary directory by passing "-Djava.io.tmpdir=/Temp".}
