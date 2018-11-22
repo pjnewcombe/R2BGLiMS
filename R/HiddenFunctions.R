@@ -14,7 +14,7 @@
 #' Calculates a Beta-Binomial prior probability for a SPECIFIC model. From Bottolo et al.
 #' This is not the prior on a particular dimension (that would required the binomial co-efficient).
 #' 
-#' @param k dimension to calculate probability for
+#' @param k dimension of specific model
 #' @param n total number of covariates
 #' @param a beta-binomial hyper parameter a
 #' @param b beta-binomial hyper parameter b

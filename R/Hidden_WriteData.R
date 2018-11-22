@@ -204,6 +204,7 @@
       }      
     }
     # MR Pleiotropic loss function stuff
+    write(as.integer(!is.null(mafs.if.independent)), file = data.file , ncolumns = 1, append = T)
     write(mrloss.w, file = data.file , ncolumns = 1, append = T)
     if (mrloss.w != 0) {
       write(mrloss.function, file = data.file , ncolumns = 1, append = T)

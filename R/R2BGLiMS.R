@@ -531,6 +531,7 @@ R2BGLiMS <- function(
   if (likelihood %in% c("JAM", "JAM_MCMC")) {
     if (is.null(ns.each.ethnicity)) {
       if (!is.null(mafs.if.independent)) {
+        if (is.null(names(mafs.if.independent))) stop("mafs.if.independent must be a named vector.")
         X.ref = list(NULL)
       } else {
         ### --- Generate X'X, after normalising X
@@ -615,7 +616,7 @@ R2BGLiMS <- function(
     mrloss.marginal.causal.effects = mrloss.marginal.causal.effects,
     mrloss.marginal.causal.effect.ses = mrloss.marginal.causal.effect.ses,
     mafs.if.independent = mafs.if.independent
-  )  
+  )
   t2 <- proc.time()["elapsed"]
   write.time <- t2-t1
   hrs <-floor( (t2-t1)/(60*60) )
