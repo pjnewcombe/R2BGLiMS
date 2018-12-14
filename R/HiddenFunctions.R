@@ -310,3 +310,33 @@
   # Return list
   return(dataRead)
 }
+
+#' This function is used by JAMPred_Step2AdjustmentAndPredictions 
+.ReweightSnpEffectsAccordingToBlockCorrelations <- function(iteration, snp.blocks, X.ref) {
+  
+  # --- 1) Determine which blocks have atleast 1 SNP selected
+  non.null.blocks <- unlist(lapply(snp.blocks, function(block) sum(iteration[block]!=0)>0 ))
+  
+  # --- 2) Calculate relative weightings of blocks by applying JAM
+  block.weights <- rep(0, length(snp.blocks)) # If all blocks are null, each is weighted 0
+  if (sum(non.null.blocks) == 1) {
+    # Only one non-null block it is given weight 1
+    block.weights[non.null.blocks] <- 1
+  } else if (sum(non.null.blocks) > 1) {
+    # If multiple non-null blocks apply JAM to get relative weights of the block scores
+    # --- Construct score for each block in reference data
+    Block.scores.ref <- Reduce(
+      "cbind",
+      lapply(snp.blocks[non.null.blocks], function(x) X.ref[,x] %*% iteration[x]))
+    # --- Re-apply JAM to block scores (all marginal effects are 1)
+    block.weights[non.null.blocks] <- as.vector(JAM_PointEstimates(marginal.betas = rep(1, sum(non.null.blocks)), X.ref = Block.scores.ref ))
+  }
+  
+  # --- 3) Re-weight SNP effects according to block weights
+  reweighted.snp.effects <- unlist(Reduce(
+    "c",
+    sapply(c(1:length(non.null.blocks)), function(b) {iteration[snp.blocks[[b]]]*block.weights[b] })))
+  
+  # --- 4) Return re-weighted SNP effects
+  return(reweighted.snp.effects)
+}

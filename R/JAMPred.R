@@ -1,7 +1,7 @@
-#' This function runs the first step of JAMPred - analyses of many SNP blocks independently in parallel.
+#' This function runs JAMPred by analysing many SNP blocks independently in parallel.
 #' @export
-#' @title JAMPred step 1 parallel analyses of SNP blocks
-#' @name JAMPred_Step1ParallelAnalyses
+#' @title JAMPred
+#' @name JAMPred
 #' @inheritParams JAMPred_SplitIntoPositiveDefiniteBlocks
 #' @param marginal.betas Vector of named one-at-a-time SNP effects. NB: This must be a named vector; it is where.
 #' the SNP names are derived from. These could be from linear regressions, or log-Odds Ratios. 
@@ -32,11 +32,13 @@
 #' @param thinning.factor Determines every ith iteration to use from the RJMCMC sample. The more thinning that is applied
 #' the quicker the analysis will be, for the same number of iterations. Leaving at the default should be fine.
 #' 
-#' @return A JAMPred step 1 results object (which is a list of the results and various meta-information).
+#' @return A JAMPred results object, which is a list including as elements step1.posterior.mean.snp.weights 
+#' (which do not adjust for long range LD) and step2.posterior.mean.snp.weights (which do adjust for long 
+#' range LD). These SNP weights can be used to generate predictions from individual level genotype data. 
 #' 
 #' @author Paul Newcombe
 
-JAMPred_Step1ParallelAnalyses <- function(
+JAMPred <- function(
   marginal.betas = NULL,
   n.training = NULL,
   marginal.logor.ses = NULL, # Default NULL - only necessary if passing log-ORs for a binary trait
@@ -110,11 +112,25 @@ JAMPred_Step1ParallelAnalyses <- function(
                             ), 
                           mc.cores=n.cores), recursive=F)
   
+  # --- Step 1
+  step1.posterior.mean.snp.weights <- unlist(
+    lapply(
+      step1.res,
+      function(i) i@posterior.summary.table[i@model.space.priors[[1]]$Variables,"Mean"]
+  ))
+  
+  # --- Step 2
+  step2.posterior.mean.snp.weights <- .ReweightSnpEffectsAccordingToBlockCorrelations(
+    step1.posterior.mean.snp.weights, snps.blocks, ref.geno
+  )
+
   # --- Combine results
   step1.res <- list(
     "rjmcmc.res"=step1.res,
     "snps.blocks"=snps.blocks,
     "parallel.block.indices"=parallel.block.indices,
+    "step1.posterior.mean.snp.weights"=step1.posterior.mean.snp.weights,
+    "step2.posterior.mean.snp.weights"=step2.posterior.mean.snp.weights,
     "snps"=snps
   )
   

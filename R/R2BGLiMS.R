@@ -717,9 +717,9 @@ R2BGLiMS <- function(
     nrows=n.rows.written)
 
   ### --- Summary table
-  posterior.summary.table <- matrix(NA,ncol(mcmc.output)+length(model.space.priors),8)
+  posterior.summary.table <- matrix(NA,ncol(mcmc.output)+length(model.space.priors),9)
   colnames(posterior.summary.table) = c("PostProb","Median","CrI_Lower","CrI_Upper",
-    "Median_Present","CrI_Lower_Present","CrI_Upper_Present","BF")
+    "Median_Present","CrI_Lower_Present","CrI_Upper_Present","Mean","BF")
   rownames(posterior.summary.table) <- c(colnames(mcmc.output),paste("ModelSizePartition",c(1:length(model.space.priors)),sep=""))
   # Prior probabilties - used for Bayes Factors below
   prior.probs <- rep(NA, nrow(posterior.summary.table))
@@ -738,6 +738,7 @@ R2BGLiMS <- function(
   # Fill in the summary table
   for (v in colnames(mcmc.output)) {
     posterior.summary.table[v,c("CrI_Lower", "Median", "CrI_Upper")] <- quantile(mcmc.output[,v],c(0.025, 0.5, 0.975))
+    posterior.summary.table[v,"Mean"] <- mean(mcmc.output[,v])
     if (v %in% unlist(lapply(model.space.priors, function(x) x$Variables))) {
       posterior.summary.table[v,c("CrI_Lower_Present", "Median_Present", "CrI_Upper_Present")] <- quantile(mcmc.output[,v][mcmc.output[,v]!=0],c(0.025, 0.5, 0.975) )
       posterior.summary.table[v,"PostProb"] <- length( mcmc.output[,v][mcmc.output[,v]!=0] ) / nrow(mcmc.output)      
