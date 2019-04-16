@@ -26,7 +26,7 @@ JAM_LogisticToLinearEffects <- function(
   p.cases <- n.cases/n
   
   # Standardised effects (z-scores)
-  standardised.beta.hats <- log.ors/(log.or.ses*sqrt(n.training))
+  standardised.beta.hats <- log.ors/(log.or.ses*sqrt(n))
   
   # Divide by SNP SDs to get allelic effects
   beta.hats.from.logistic.ps <- standardised.beta.hats/snp.sds # Divide standardised linear effects by SNP standard deviations

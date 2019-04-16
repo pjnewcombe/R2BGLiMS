@@ -37,6 +37,8 @@
 #' range LD). These SNP weights can be used to generate predictions from individual level genotype data. 
 #' 
 #' @author Paul Newcombe
+#' 
+#' @example Examples/JAMPred_Examples.R
 
 JAMPred <- function(
   marginal.betas = NULL,
