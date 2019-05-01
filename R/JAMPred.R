@@ -36,6 +36,11 @@
 #' (which do not adjust for long range LD) and step2.posterior.mean.snp.weights (which do adjust for long 
 #' range LD). These SNP weights can be used to generate predictions from individual level genotype data. 
 #' 
+#' @seealso See \code{\link{JAMPred_SplitIntoPositiveDefiniteBlocks}}; this is the function used to create an initial 
+#' partitioning of SNPs into blocksm which satisfy the property of all being positvie definite with respect to the 
+#' reference genotype matrix (also required by JAMPred). By default this function is used to generate the snps.blocks
+#' list input, if not provided by the user.
+#' 
 #' @author Paul Newcombe
 #' 
 #' @example Examples/JAMPred_Examples.R

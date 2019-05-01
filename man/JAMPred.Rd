@@ -116,6 +116,12 @@ out.of.sample.predictions <-
 # Predictive r2
 cor(out.of.sample.predictions, data.validation.cts[,"y"])^2
 }
+\seealso{
+See \code{\link{JAMPred_SplitIntoPositiveDefiniteBlocks}}; this is the function used to create an initial 
+partitioning of SNPs into blocksm which satisfy the property of all being positvie definite with respect to the 
+reference genotype matrix (also required by JAMPred). By default this function is used to generate the snps.blocks
+list input, if not provided by the user.
+}
 \author{
 Paul Newcombe
 }
