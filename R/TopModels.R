@@ -39,8 +39,12 @@ TopModels <- function(
 	    MAR=1,
 	    function(r) paste( as.integer(r!=0), collapse="_")
 	  )
+	  if (!is.null(covariates.to.include)) {
+	    # Remove null model, since it may have no meaning
+	    all.models <- all.models[all.models!=paste( rep(0, length(vars.to.include.in.table)), collapse="_")]
+	  }
 	  ### --- Make table
-	  models.table <- sort(table(all.models),d=T)/nrow(results@mcmc.output) # Tabulates to unique models
+	  models.table <- sort(table(all.models),d=T)/length(all.models) # Tabulates to unique models
 	  n.top.models <- min(n.top.models, length(models.table))
 	  models.table <- models.table[1:n.top.models]
 	  models.tab.str <- strsplit(names(models.table), split="_")
