@@ -8,7 +8,7 @@
 #' @param log.or.ses Vector of the standard errors of the SNP log-odds ratios
 #' @param mafs Vector of SNP minor allele frequencies
 #' @param n Size of dataset in which the log-odds ratios were calculated
-#' @param n.cases Number of cases in the dataset in which the log-odds ratios were calculated
+#' @param p.cases Proportion of cases in the dataset in which the log-odds ratios were calculated
 #' 
 #' @return A vector of effects on the linear scale
 #' 
@@ -19,20 +19,14 @@ JAM_LogisticToLinearEffects <- function(
   log.or.ses = NULL,
   mafs = NULL,
   n = NULL,
-  n.cases = NULL
+  p.cases = NULL
 ) {
   
-  snp.sds <- sqrt(mafs*(1-mafs))
-  p.cases <- n.cases/n
+  # Standardised least squares estimate is signed z-score/sqrt(n)
+  standardised.least.squares.effect <- (log.ors/log.or.ses)/sqrt(n)
   
-  # Standardised effects (z-scores)
-  standardised.beta.hats <- log.ors/(log.or.ses*sqrt(n))
+  # Multiply by trait SD for effect on trait scale and divide by SNP SD for per allele effect
+  linear.beta.hats <- standardised.least.squares.effect*sqrt(p.cases*(1-p.cases))/sqrt(mafs*(1-mafs)) 
   
-  # Divide by SNP SDs to get allelic effects
-  beta.hats.from.logistic.ps <- standardised.beta.hats/snp.sds # Divide standardised linear effects by SNP standard deviations
-  
-  # Adjust for fraction of cases
-  beta.hats.from.logistic.ps <- beta.hats.from.logistic.ps*sqrt(p.cases*(1-p.cases)) # Multiply by trait SD for effect on trait scale
-  
-  return(beta.hats.from.logistic.ps)
+  return(linear.beta.hats)
 }

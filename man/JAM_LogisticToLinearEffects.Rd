@@ -5,7 +5,7 @@
 \title{Logistic to linear effect conversion for JAM}
 \usage{
 JAM_LogisticToLinearEffects(log.ors = NULL, log.or.ses = NULL,
-  mafs = NULL, n = NULL, n.cases = NULL)
+  mafs = NULL, n = NULL, p.cases = NULL)
 }
 \arguments{
 \item{log.ors}{Vector of SNP summary log-odds ratios}
@@ -16,7 +16,7 @@ JAM_LogisticToLinearEffects(log.ors = NULL, log.or.ses = NULL,
 
 \item{n}{Size of dataset in which the log-odds ratios were calculated}
 
-\item{n.cases}{Number of cases in the dataset in which the log-odds ratios were calculated}
+\item{p.cases}{Proportion of cases in the dataset in which the log-odds ratios were calculated}
 }
 \value{
 A vector of effects on the linear scale
