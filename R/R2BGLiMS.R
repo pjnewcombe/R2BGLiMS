@@ -61,6 +61,14 @@ NULL
 #' partition, for v in "Variables", 
 #' beta[v] | sigma_beta ~ N(0, sigma_beta^2) and 
 #' sigma_beta ~ Unif("UniformA", "UniformB").
+#' @param standardise.covariates.for.rjmcmc Standardise covariates under variable 
+#' selection prior to RJMCMC such that they have a common (unit) standard deviation. 
+#' This is particularly recommended when covariates have substantially different variances, 
+#' in order to improve the likelihood of exchangeabile effect estimates, an asssumption that
+#' is required when using the (default) common effect prior with unknown variance. 
+#' Note that the standardisation is done invisibly to the user; parameter estimates 
+#' are re-scaled back to unit increases on the original scale of each covariate, before 
+#' producing posterior summaries. Default is TRUE.
 #' @param g.prior Whether to use a g-prior for the beta's, i.e. a multivariate normal 
 #' with correlation structure proportional to sigma^2*X'X^-1, which is thought to aid
 #' variable selection in the presence of strong correlation. By default this is enabled.
@@ -131,6 +139,7 @@ R2BGLiMS <- function(
   model.space.priors=NULL,
   beta.priors=NULL,
   beta.prior.partitions=NULL,
+  standardise.covariates.for.rjmcmc=TRUE,
   g.prior=TRUE,
   tau=NULL,
   xtx.ridge.term=0,
@@ -503,6 +512,36 @@ R2BGLiMS <- function(
       row.names=confounders)    
   }
   
+  ###################################
+  ###################################
+  ### --- Data Pre-Processing --- ###
+  ###################################
+  ###################################
+  
+  # --- Mean value imputation
+  for (v in predictors) {
+    if (sum(is.na(data[,v]))>0) { 
+      cat("Performing mean value imputation for",sum(is.na(data[,v])),"values of",v,"\n")
+      data[is.na(data[,v]),v] <- mean(data[,v], na.rm = T)
+      } # Mean value Imputation
+    data[,v] <- data[,v] - mean(data[,v]) # Centre covariates
+  }
+  
+  # --- Standardisation
+  if (standardise.covariates.for.rjmcmc) {
+    sds.before.standardisation <- NULL
+    for (v in predictors[!predictors %in% confounders]) {
+      if (sd(data[,v], na.rm=T) > 0) {
+        data[,v] <- data[,v]/sd(data[,v], na.rm=T) # Standardise
+        sds.before.standardisation <- c(sds.before.standardisation,sd(data[,v], na.rm=T))
+      } else {
+        cat("Did not (internally) standardise",v,"due to zero variance")
+        sds.before.standardisation <- c(sds.before.standardisation,1)
+      }
+    }
+    names(sds.before.standardisation) <- predictors[!predictors %in% confounders]
+  }
+  
   ### --- Write BGLiMS Arguments
   t1 <- proc.time()["elapsed"]
   # Set arguments
@@ -737,6 +776,12 @@ R2BGLiMS <- function(
   }
   # Fill in the summary table
   for (v in colnames(mcmc.output)) {
+    # Rescale parameter estimates after standardisation
+    if (standardise.covariates.for.rjmcmc) {
+      if (v %in% names(sds.before.standardisation)) {
+        mcmc.output[,v] <- mcmc.output[,v]/sds.before.standardisation[v]
+      }
+    }
     posterior.summary.table[v,c("CrI_Lower", "Median", "CrI_Upper")] <- quantile(mcmc.output[,v],c(0.025, 0.5, 0.975))
     posterior.summary.table[v,"Mean"] <- mean(mcmc.output[,v])
     if (v %in% unlist(lapply(model.space.priors, function(x) x$Variables))) {
