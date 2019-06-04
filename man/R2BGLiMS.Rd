@@ -87,7 +87,8 @@ in order to improve the likelihood of exchangeabile effect estimates, an asssump
 is required when using the (default) common effect prior with unknown variance. 
 Note that the standardisation is done invisibly to the user; parameter estimates 
 are re-scaled back to unit increases on the original scale of each covariate, before 
-producing posterior summaries. Default is TRUE.}
+producing posterior summaries. NB: This is currently only available for Logistic, Linear
+and Weibull regression. Default is TRUE.}
 
 \item{g.prior}{Whether to use a g-prior for the beta's, i.e. a multivariate normal 
 with correlation structure proportional to sigma^2*X'X^-1, which is thought to aid

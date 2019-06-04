@@ -5,7 +5,7 @@
 \title{JAMPred}
 \usage{
 JAMPred(marginal.betas = NULL, n.training = NULL,
-  marginal.logor.ses = NULL, n.cases.training = NULL, ref.geno = NULL,
+  marginal.logor.ses = NULL, p.cases.training = NULL, ref.geno = NULL,
   total.snps.genome.wide = NULL, n.cores = 2, n.mil = 0.2,
   beta.binom.b.lambda = 1, beta.binom.a = 1, snps.blocks = NULL,
   initial.block.size = 100, initial.snps.blocks = NULL, seed = NULL,
@@ -14,7 +14,7 @@ JAMPred(marginal.betas = NULL, n.training = NULL,
 \arguments{
 \item{marginal.betas}{Vector of named one-at-a-time SNP effects. NB: This must be a named vector; it is where.
 the SNP names are derived from. These could be from linear regressions, or log-Odds Ratios. 
-NB: If providing log-ORs, you must also provide marginal.logor.ses and n.cases.training so
+NB: If providing log-ORs, you must also provide marginal.logor.ses and p.cases.training so
 that a linear transformaiton can be applied.}
 
 \item{n.training}{The sample size in which the marginal.betas were calculated.}
@@ -22,7 +22,7 @@ that a linear transformaiton can be applied.}
 \item{marginal.logor.ses}{IF marginal log-ORs were provided, please provide a named vector of standard errors here.
 These are necessary to convert them to a linear scale. Do not set if providing linear regression estimates.}
 
-\item{n.cases.training}{IF marginal log-ORs were provided, please provide the number of cases in the sample in
+\item{p.cases.training}{IF marginal log-ORs were provided, please provide the proportion of cases in the sample in
 which they were calculated}
 
 \item{ref.geno}{Reference genotype matrix which will be used to calculate SNP-SNP correlations. Individual's genotype 
@@ -80,7 +80,7 @@ jam.pred.res <- JAMPred(
   marginal.betas = marginal.logors,
   n.training = n.training,
   marginal.logor.ses = marginal.logor.ses, # Default NULL - only necessary if passing log-ORs for a binary trait
-  n.cases.training = n.cases.training, # Default NULL - only necessary if passing log-ORs for a binary trait
+  p.cases.training = n.cases.training/n.training, # Default NULL - only necessary if passing log-ORs for a binary trait
   ref.geno = data.validation[,snps], # Only the SNP data is used (only need to provide SNPs)
   total.snps.genome.wide = 500000, # Total SNPs genomewide being analysed
   n.mil = 0.2

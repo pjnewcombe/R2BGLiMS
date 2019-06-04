@@ -11,7 +11,7 @@ jam.pred.res <- JAMPred(
   marginal.betas = marginal.logors,
   n.training = n.training,
   marginal.logor.ses = marginal.logor.ses, # Default NULL - only necessary if passing log-ORs for a binary trait
-  n.cases.training = n.cases.training, # Default NULL - only necessary if passing log-ORs for a binary trait
+  p.cases.training = n.cases.training/n.training, # Default NULL - only necessary if passing log-ORs for a binary trait
   ref.geno = data.validation[,snps], # Only the SNP data is used (only need to provide SNPs)
   total.snps.genome.wide = 500000, # Total SNPs genomewide being analysed
   n.mil = 0.2

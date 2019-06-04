@@ -5,12 +5,12 @@
 #' @inheritParams JAMPred_SplitIntoPositiveDefiniteBlocks
 #' @param marginal.betas Vector of named one-at-a-time SNP effects. NB: This must be a named vector; it is where.
 #' the SNP names are derived from. These could be from linear regressions, or log-Odds Ratios. 
-#' NB: If providing log-ORs, you must also provide marginal.logor.ses and n.cases.training so
+#' NB: If providing log-ORs, you must also provide marginal.logor.ses and p.cases.training so
 #' that a linear transformaiton can be applied.
 #' @param n.training The sample size in which the marginal.betas were calculated.
 #' @param marginal.logor.ses IF marginal log-ORs were provided, please provide a named vector of standard errors here.
 #' These are necessary to convert them to a linear scale. Do not set if providing linear regression estimates.
-#' @param n.cases.training IF marginal log-ORs were provided, please provide the number of cases in the sample in
+#' @param p.cases.training IF marginal log-ORs were provided, please provide the proportion of cases in the sample in
 #' which they were calculated
 #' @param ref.geno Reference genotype matrix which will be used to calculate SNP-SNP correlations. Individual's genotype 
 #' must be coded as a numeric risk allele count 0/1/2. Non-integer values reflecting imputation uncertaimnty may be given. 
@@ -49,7 +49,7 @@ JAMPred <- function(
   marginal.betas = NULL,
   n.training = NULL,
   marginal.logor.ses = NULL, # Default NULL - only necessary if passing log-ORs for a binary trait
-  n.cases.training = NULL, # Default NULL - only necessary if passing log-ORs for a binary trait
+  p.cases.training = NULL, # Default NULL - only necessary if passing log-ORs for a binary trait
   ref.geno = NULL,
   total.snps.genome.wide = NULL, # Total SNPs genomewide being analysed
   n.cores = 2, # Number of cores to parallelise over
@@ -71,17 +71,17 @@ JAMPred <- function(
   # --- Deriving the names of SNPs from marginal.betas
   snps <- names(marginal.betas)
   
-  # --- Map logistic to linear effects IF n.cases.training and ses are provided
-  if ( !is.null(marginal.logor.ses) | !is.null(n.cases.training) ) {
+  # --- Map logistic to linear effects IF p.cases.training and ses are provided
+  if ( !is.null(marginal.logor.ses) | !is.null(p.cases.training) ) {
     
-    if (is.null(marginal.logor.ses) | is.null(n.cases.training) ) stop("If providing log-ORs must provide both their SEs and the number of cases.")
+    if (is.null(marginal.logor.ses) | is.null(p.cases.training) ) stop("If providing log-ORs must provide both their SEs and the proportion of cases.")
     cat("\nLog-ORs provided. Applying linear transformation.\n")
     marginal.betas <- JAM_LogisticToLinearEffects(
       log.ors = marginal.betas,
       log.or.ses = marginal.logor.ses[snps],
       mafs = apply(ref.geno[,snps],MAR=2,mean)/2,
       n = n.training,
-      n.cases = n.cases.training
+      p.cases = p.cases.training
     )    
   }
   

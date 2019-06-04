@@ -68,7 +68,8 @@ NULL
 #' is required when using the (default) common effect prior with unknown variance. 
 #' Note that the standardisation is done invisibly to the user; parameter estimates 
 #' are re-scaled back to unit increases on the original scale of each covariate, before 
-#' producing posterior summaries. Default is TRUE.
+#' producing posterior summaries. NB: This is currently only available for Logistic, Linear
+#' and Weibull regression. Default is TRUE.
 #' @param g.prior Whether to use a g-prior for the beta's, i.e. a multivariate normal 
 #' with correlation structure proportional to sigma^2*X'X^-1, which is thought to aid
 #' variable selection in the presence of strong correlation. By default this is enabled.
@@ -528,7 +529,7 @@ R2BGLiMS <- function(
   }
   
   # --- Standardisation
-  if (standardise.covariates.for.rjmcmc) {
+  if (standardise.covariates.for.rjmcmc & likelihood %in% c("Logistic", "Weibull", "Gaussian", "GaussianConj") ) {
     sds.before.standardisation <- NULL
     for (v in predictors[!predictors %in% confounders]) {
       if (sd(data[,v], na.rm=T) > 0) {
@@ -777,7 +778,7 @@ R2BGLiMS <- function(
   # Fill in the summary table
   for (v in colnames(mcmc.output)) {
     # Rescale parameter estimates after standardisation
-    if (standardise.covariates.for.rjmcmc) {
+    if (standardise.covariates.for.rjmcmc & likelihood %in% c("Logistic", "Weibull", "Gaussian", "GaussianConj") ) {
       if (v %in% names(sds.before.standardisation)) {
         mcmc.output[,v] <- mcmc.output[,v]/sds.before.standardisation[v]
       }
