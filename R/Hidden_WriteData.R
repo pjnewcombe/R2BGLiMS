@@ -28,6 +28,7 @@
   ns.each.ethnicity=NULL,
   initial.model=NULL,
   trait.variance = NULL,
+  logistic.likelihood.weights = NULL,
   mrloss.w = 0,
   mrloss.function = "variance",
   mrloss.marginal.causal.effects = NULL,
@@ -158,7 +159,7 @@
 	}
 	
 	# Conjugate-only modelling options
-	if (likelihood %in% c("GaussianConj", "JAM")) {
+	if (likelihood %in% c("LinearConj", "JAM")) {
 	  write(paste("useGPrior", as.integer(g.prior)), file = data.file , ncolumns = 1, append = T)
 	  write(paste("tau",format(tau,sci=F)), file = data.file, ncolumns = 1, append = T)      
 	  write(paste("modelTau",as.integer(model.tau)), file = data.file , ncolumns = 1, append = T)      
@@ -213,8 +214,8 @@
     }
   } else { 
     # Write IPD Covariate data
-    if (likelihood == "GaussianConj") {
-      # Mean centre covariates for Gaussian conjugate model
+    if (likelihood == "LinearConj") {
+      # Mean centre covariates for Linear conjugate model
       data <- apply(data,MAR=2,function(x) x-mean(x))
     }
     write.table(data, row.names=F, col.names=F, file = data.file , append = T)    
@@ -223,8 +224,8 @@
   # Vector of outcomes
   if (likelihood %in% c("Logistic", "CLogLog", "Weibull")) {
     write(t(as.integer(outcome)), file = data.file , ncolumns = N, append = T)    
-  } else if (likelihood %in% c("Gaussian","GaussianConj")) {
-    if (likelihood == "GaussianConj") { outcome <- outcome - mean(outcome) }
+  } else if (likelihood %in% c("Linear","LinearConj")) {
+    if (likelihood == "LinearConj") { outcome <- outcome - mean(outcome) }
     write(t(outcome), file = data.file , ncolumns = N, append = T)        
   } else if (likelihood %in% c("JAM_MCMC")) {
     write(t(z), file = data.file , ncolumns = V, append = T)        
@@ -244,7 +245,15 @@
     }
     write(t(z_L), file = data.file , ncolumns = V, append = T)        
   }
-  if (likelihood=="Weibull") {
+	if (likelihood=="Logistic") {
+	  if (!is.null(logistic.likelihood.weights)) {
+	    write(1, file = data.file , ncolumns = 1, append = T)
+	    write(t(logistic.likelihood.weights), file = data.file , ncolumns = N, append = T)    
+	  } else {
+	    write(0, file = data.file , ncolumns = 1, append = T)
+	  }
+	}
+	if (likelihood=="Weibull") {
     write(t(times), file = data.file , ncolumns = N, append = T)    
   }
 

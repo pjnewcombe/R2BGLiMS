@@ -93,7 +93,7 @@ summary(prentice.res)
 
 data("LinearModelExample") # True effect at V1 only
 lm.results <- R2BGLiMS(
-  likelihood="Gaussian", 
+  likelihood="Linear", 
   data=data.cts.outcome, 
   outcome.var="y", 
   confounders="confounder", # Example of a variable to include always
@@ -111,7 +111,7 @@ lm.results@posterior.summary.table
 # Only models are sampled so mixing should be better
 data("LinearModelExample") # True effect at V1 only
 lm.conjugate.results <- R2BGLiMS(
-  likelihood="GaussianConj", 
+  likelihood="LinearConj", 
   data=data.cts.outcome, 
   outcome.var="y",
   confounders="confounder", # Example of a variable to include always
@@ -136,7 +136,7 @@ round(quantile(posterior.sample[,"V1"],c(0.5, 0.025, 0.975)),2) # Clearly exclud
 # Might want to explicitly specify these priors instead the priors (e.g. if there is prior information)
 data("LinearModelExample") # True effect at V1 only
 lm.results.fixed.priors <- R2BGLiMS(
-  likelihood="Gaussian", 
+  likelihood="Linear", 
   data=data.cts.outcome, 
   outcome.var="y", 
   confounders="confounder", # Example of a variable to include always
@@ -159,7 +159,7 @@ lm.results.fixed.priors@posterior.summary.table
 # Demonstrated below with two groups
 data("LinearModelExample") # True effect at V1 only
 lm.results.two.model.space.partitions <- R2BGLiMS(
-  likelihood="Gaussian", 
+  likelihood="Linear", 
   data=data.cts.outcome, 
   outcome.var="y", 
   confounders="confounder", # Example of a variable to include always

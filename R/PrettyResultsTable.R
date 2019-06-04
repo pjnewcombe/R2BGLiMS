@@ -46,9 +46,9 @@ PrettyResultsTable <- function(
     res.tab.new.names <- c("Scale", res.tab.new.names)
     res.tab["LogWeibullScale",effect.estimate.cols] <- exp(res.tab["LogWeibullScale",effect.estimate.cols])
   }
-  if ("LogGaussianResidual" %in% rownames(res.tab)) {
-    res.tab.keep <- c("LogGaussianResidual", res.tab.keep)
-    res.tab["LogGaussianResidual",] <- exp(res.tab["LogGaussianResidual",])
+  if ("LogResidual" %in% rownames(res.tab)) {
+    res.tab.keep <- c("LogResidual", res.tab.keep)
+    res.tab["LogResidual",] <- exp(res.tab["LogResidual",])
     res.tab.new.names <- c("Residual", res.tab.new.names)
   }
   if (results@bglims.arguments$nBetaHyperPriorComp>0) {
@@ -60,7 +60,7 @@ PrettyResultsTable <- function(
     }
   }
   predictors <- rownames(res.tab[!rownames(res.tab)%in%c(
-    "LogWeibullScale", "LogGaussianResidual", "alpha",
+    "LogWeibullScale", "LogResidual", "alpha",
     paste("LogBetaPriorSd",c(1:results@bglims.arguments$nBetaHyperPriorComp), sep=""),
     "LogLikelihood"),])
   res.tab.keep <- c(res.tab.keep,predictors)
@@ -115,7 +115,7 @@ PrettyResultsTable <- function(
   rownames(pretty.tab) <- rownames(res.tab)
   
   # Only keep posterior probablities and Bayes Factors for conjugate models
-  if (results@likelihood %in% c("JAM", "JAMv2", "GaussianConj")) {
+  if (results@likelihood %in% c("JAM", "JAMv2", "LinearConj")) {
     pretty.tab <- pretty.tab[predictors, c("Posterior Probability", "Bayes Factor")]
   }
 

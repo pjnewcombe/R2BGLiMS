@@ -14,7 +14,8 @@ R2BGLiMS(likelihood = NULL, data = NULL, outcome.var = NULL,
   thinning.interval = NULL, seed = NULL, extra.arguments = NULL,
   initial.model = NULL, max.model.dim = -1, results.label = NULL,
   save.path = NULL, burnin.fraction = 0.5, trait.variance = NULL,
-  mrloss.w = 0, mrloss.function = "variance", mrloss.marginal.by = NULL,
+  logistic.likelihood.weights = NULL, mrloss.w = 0,
+  mrloss.function = "variance", mrloss.marginal.by = NULL,
   mrloss.marginal.sy = NULL, mafs.if.independent = NULL,
   extra.java.arguments = NULL)
 }
@@ -23,8 +24,8 @@ R2BGLiMS(likelihood = NULL, data = NULL, outcome.var = NULL,
 "Logistic" (for binary data), 
 "CLogLog" complementary log-log link for binary data, 
 "Weibull" (for survival data), 
-"Gaussian" (for linear regression), 
-"GaussianConj" (linear regression exploiting conjugate results), 
+"Linear" (for linear regression), 
+"LinearConj" (linear regression exploiting conjugate results), 
 "JAM" (for conjugate linear regression using summary statistics, integrating out parameters) 
 and "JAM_MCMC" (for linear regression using summary statistics, with full MCMC of all parameters).}
 
@@ -143,6 +144,9 @@ after running R2BGLiMS. However, this option might help for debugging.}
 
 \item{burnin.fraction}{Initial fraction of the iterations to throw away, e.g. setting to 0 would mean no burn-in. The 
 default of 0.5 corresponds to the first half of iterations being discarded.}
+
+\item{logistic.likelihood.weights}{An optional vector of likelihood weights for logistic regression. These weights multiply the log-likeihood
+contribution of each individual. The order should match the order of rows in the data matrix.}
 
 \item{mrloss.w}{The relative weight of the MR log loss function for pleiotropy vs the log likelihood. Default 0.}
 
@@ -268,7 +272,7 @@ summary(prentice.res)
 
 data("LinearModelExample") # True effect at V1 only
 lm.results <- R2BGLiMS(
-  likelihood="Gaussian", 
+  likelihood="Linear", 
   data=data.cts.outcome, 
   outcome.var="y", 
   confounders="confounder", # Example of a variable to include always
@@ -286,7 +290,7 @@ lm.results@posterior.summary.table
 # Only models are sampled so mixing should be better
 data("LinearModelExample") # True effect at V1 only
 lm.conjugate.results <- R2BGLiMS(
-  likelihood="GaussianConj", 
+  likelihood="LinearConj", 
   data=data.cts.outcome, 
   outcome.var="y",
   confounders="confounder", # Example of a variable to include always
@@ -311,7 +315,7 @@ round(quantile(posterior.sample[,"V1"],c(0.5, 0.025, 0.975)),2) # Clearly exclud
 # Might want to explicitly specify these priors instead the priors (e.g. if there is prior information)
 data("LinearModelExample") # True effect at V1 only
 lm.results.fixed.priors <- R2BGLiMS(
-  likelihood="Gaussian", 
+  likelihood="Linear", 
   data=data.cts.outcome, 
   outcome.var="y", 
   confounders="confounder", # Example of a variable to include always
@@ -334,7 +338,7 @@ lm.results.fixed.priors@posterior.summary.table
 # Demonstrated below with two groups
 data("LinearModelExample") # True effect at V1 only
 lm.results.two.model.space.partitions <- R2BGLiMS(
-  likelihood="Gaussian", 
+  likelihood="Linear", 
   data=data.cts.outcome, 
   outcome.var="y", 
   confounders="confounder", # Example of a variable to include always

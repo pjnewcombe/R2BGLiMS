@@ -13,8 +13,8 @@ NULL
 #' "Logistic" (for binary data), 
 #' "CLogLog" complementary log-log link for binary data, 
 #' "Weibull" (for survival data), 
-#' "Gaussian" (for linear regression), 
-#' "GaussianConj" (linear regression exploiting conjugate results), 
+#' "Linear" (for linear regression), 
+#' "LinearConj" (linear regression exploiting conjugate results), 
 #' "JAM" (for conjugate linear regression using summary statistics, integrating out parameters) 
 #' and "JAM_MCMC" (for linear regression using summary statistics, with full MCMC of all parameters).
 #' @param data Matrix or dataframe containing the data to analyse. 
@@ -106,6 +106,8 @@ NULL
 #' after running R2BGLiMS. However, this option might help for debugging.
 #' @param burnin.fraction Initial fraction of the iterations to throw away, e.g. setting to 0 would mean no burn-in. The 
 #' default of 0.5 corresponds to the first half of iterations being discarded.
+#' @param logistic.likelihood.weights An optional vector of likelihood weights for logistic regression. These weights multiply the log-likeihood
+#' contribution of each individual. The order should match the order of rows in the data matrix.
 #' @param mrloss.w The relative weight of the MR log loss function for pleiotropy vs the log likelihood. Default 0.
 #' @param mrloss.function Choice of pleiotropic loss function from "steve", "variance" (default variance)
 #' @param mrloss.marginal.by Marginal associations between SNPs and outcome for the MR loss function model.
@@ -160,6 +162,7 @@ R2BGLiMS <- function(
   save.path=NULL,
   burnin.fraction=0.5,
   trait.variance = NULL,
+  logistic.likelihood.weights = NULL,
   mrloss.w=0,
   mrloss.function="variance",
   mrloss.marginal.by=NULL,
@@ -198,14 +201,16 @@ R2BGLiMS <- function(
   
   ### --- Basic input checks
   if (is.null(likelihood)) stop("No likelihood, i.e. the model type, has been specified; please specify as Logistic, CLogLog,
-                                Weibull, Gaussian, GaussianConj, JAM_MCMC or JAM")
+                                Weibull, Linear, LinearConj, JAM_MCMC or JAM")
   if (!is.null(likelihood)) {
-    if (!likelihood %in% c("Logistic", "CLogLog", "Weibull", "Gaussian", "GaussianConj", "JAM_MCMC", "JAM")) {
-      stop("Likelihood must be specified as Logistic, CLogLog, Weibull, Gaussian, GaussianConj, JAM_MCMC, or JAM")
+    if (!likelihood %in% c("Logistic", "CLogLog", "Weibull", "Linear", "LinearConj", "JAM_MCMC", "JAM")) {
+      stop("Likelihood must be specified as Logistic, CLogLog, Weibull, Linear, LinearConj, JAM_MCMC, or JAM")
     }
   }
   if (is.null(data)&is.null(X.ref)&is.null(mafs.if.independent)) stop("The data to analyse has not been specified")
   if (is.null(outcome.var)&is.null(marginal.betas)) stop("An outcome variable has not been specified")
+  if (!is.null(logistic.likelihood.weights) & likelihood != "Logistic") stop("Likelihood weights can currently
+                                                                             only be supplied for logistic regression.")
   
   ### --- Likelihood specific checks
   if (likelihood %in% c("Logistic", "CLogLog", "Weibull")) {
@@ -222,9 +227,9 @@ R2BGLiMS <- function(
       stop("Outcome variable only has one class")
     }
   }
-  if (likelihood %in% c("GaussianConj", "JAM") & is.null(tau)) {
+  if (likelihood %in% c("LinearConj", "JAM") & is.null(tau)) {
     if (g.prior) {
-      if (likelihood %in% c("GaussianConj")) {
+      if (likelihood %in% c("LinearConj")) {
         cat("tau was not provided. Since the g-prior is in use, setting to the recommended maximum of n and P^2\n")
         tau <- max(nrow(data), ncol(data)^2)        
       } else if (likelihood %in% c("JAM")) {
@@ -313,7 +318,7 @@ R2BGLiMS <- function(
   
   ### -- Beta prior error messages
   if (!is.null(beta.priors)) {
-    if (likelihood %in% c("GaussianConj", "JAM")) {stop("Fixed priors for the coefficients can not be specified for the conjugate model; the prior
+    if (likelihood %in% c("LinearConj", "JAM")) {stop("Fixed priors for the coefficients can not be specified for the conjugate model; the prior
                                                  is take as a function of X'X")}
     beta.priors.not.mat <- TRUE
     if (is.data.frame(beta.priors)) {beta.priors.not.mat <- FALSE}
@@ -325,7 +330,7 @@ R2BGLiMS <- function(
       if (sum(rownames(beta.priors)%in%colnames(data))!=nrow(beta.priors)) stop("One or more variables in beta.priors are not present in the data")
     }
   } else if (length(confounders)>0) {
-    if (!likelihood %in% c("GaussianConj")) { # Confounders are not modelled for GaussianConj
+    if (!likelihood %in% c("LinearConj")) { # Confounders are not modelled for LinearConj
       warning("beta.priors were not provided for the confounders (which should not be
             treated as exchangeable with covariates under model selection). Setting to N(0,1e6).")
       beta.priors <- data.frame(
@@ -336,7 +341,7 @@ R2BGLiMS <- function(
   
   ### --- Beta prior partition error messages
   if (!is.null(beta.prior.partitions)) {
-    if (likelihood %in% c("GaussianConj", "JAM")) {
+    if (likelihood %in% c("LinearConj", "JAM")) {
       stop("the beta.prior.partitions option is not available for the conjugate models.")
     }
     if (!is.list(beta.prior.partitions)) {beta.prior.partitions <- list(beta.prior.partitions)}
@@ -390,7 +395,7 @@ R2BGLiMS <- function(
            as exchangeable with covariates under model selection.")
     }
   } else {
-    if (!likelihood %in% c("GaussianConj", "JAM")) {
+    if (!likelihood %in% c("LinearConj", "JAM")) {
       all.covariates <- unique(c(unlist(lapply(model.space.priors,function(x) x$Variables)),rownames(beta.priors),confounders))
       # Create default single beta.prior.partitions with Uniform(0.01, 2) - SMMR
       if (is.null(beta.priors)) {
@@ -467,7 +472,7 @@ R2BGLiMS <- function(
   ###########################
   
   # Deal with confounders for conjugate model
-  if (!is.null(confounders)&(likelihood=="GaussianConj")) {
+  if (!is.null(confounders)&(likelihood=="LinearConj")) {
     cat("Obtaining confounder adjusted residuals...\n")
     data <- .ConfounderAdjustedResiduals(data, outcome.var, confounders)
     confounders <- NULL
@@ -529,7 +534,7 @@ R2BGLiMS <- function(
   }
   
   # --- Standardisation
-  if (standardise.covariates.for.rjmcmc & likelihood %in% c("Logistic", "Weibull", "Gaussian", "GaussianConj") ) {
+  if (standardise.covariates.for.rjmcmc & likelihood %in% c("Logistic", "Weibull", "Linear", "LinearConj") ) {
     sds.before.standardisation <- NULL
     for (v in predictors[!predictors %in% confounders]) {
       if (sd(data[,v], na.rm=T) > 0) {
@@ -651,6 +656,7 @@ R2BGLiMS <- function(
     ns.each.ethnicity=ns.each.ethnicity,
     initial.model=initial.model,
     trait.variance = trait.variance,
+    logistic.likelihood.weights = logistic.likelihood.weights,
     mrloss.w = mrloss.w,
     mrloss.function = mrloss.function,
     mrloss.marginal.causal.effects = mrloss.marginal.causal.effects,
@@ -778,7 +784,7 @@ R2BGLiMS <- function(
   # Fill in the summary table
   for (v in colnames(mcmc.output)) {
     # Rescale parameter estimates after standardisation
-    if (standardise.covariates.for.rjmcmc & likelihood %in% c("Logistic", "Weibull", "Gaussian", "GaussianConj") ) {
+    if (standardise.covariates.for.rjmcmc & likelihood %in% c("Logistic", "Weibull", "Linear", "LinearConj") ) {
       if (v %in% names(sds.before.standardisation)) {
         mcmc.output[,v] <- mcmc.output[,v]/sds.before.standardisation[v]
       }
