@@ -1,6 +1,8 @@
 #' @name R2BGLiMS_Results-methods
 #' @aliases show, R2BGLiMS_Results-method
 #' 
+#' @include Classes.R
+#' 
 #' @title 'show' method for \code{\link[R2BGLiMS]{R2BGLiMS_Results-class}} objects
 #' 
 #' @description Prints a summary of the \code{\link[R2BGLiMS]{R2BGLiMS_Results-class}} object.
