@@ -6,7 +6,7 @@
 \usage{
 JAMPred(marginal.betas = NULL, n.training = NULL,
   marginal.logor.ses = NULL, p.cases.training = NULL, ref.geno = NULL,
-  total.snps.genome.wide = NULL, n.cores = 2, n.mil = 0.2,
+  total.snps.genome.wide = NULL, n.cores = NULL, n.mil = 0.2,
   beta.binom.b.lambda = 1, beta.binom.a = 1, snps.blocks = NULL,
   initial.block.size = 100, initial.snps.blocks = NULL, seed = NULL,
   thinning.factor = round(1000/n.mil))
@@ -33,7 +33,8 @@ marginal.betas elements.}
 \item{total.snps.genome.wide}{Total number of SNPs being analysed across the genome. Used to determine the level of
 prior sparsity.}
 
-\item{n.cores}{Number of CPU cores to use. Default is 2.}
+\item{n.cores}{Number of CPU cores to parralelise the SNP blocks over. If unspecified the number available will be detected. NB: 
+On Windows systems this will be forced to 1, since mclapply does not yet support forking.}
 
 \item{n.mil}{Number of million iterations to run. In the paper we found 0.2 was sufficient to reach adequeate
 convergence.}
@@ -69,7 +70,7 @@ This function runs JAMPred by analysing many SNP blocks independently in paralle
 \examples{
 # --- Load libraries
 library(R2BGLiMS)
-data("JAMPRED_Example")
+data("JAMPred_Example")
 
 ###########################################################
 # --- Simple demonstation of syntax for binary traits --- #
@@ -78,23 +79,24 @@ data("JAMPRED_Example")
 
 # Run JAMPred
 snps <- chromosome.snps[[1]] # Only use chromosome 1 data
-jam.pred.res <- JAMPred(
+jampred.res.bin <- JAMPred(
   marginal.betas = marginal.logors[snps],
   n.training = n.training,
   marginal.logor.ses = marginal.logor.ses, # Only necessary for a binary trait
   p.cases.training = n.cases.training/n.training, # Only necessary for a binary trait
   ref.geno = data.validation[,snps],
   total.snps.genome.wide = 500000, # Total SNPs across all chromosomes
-  n.mil = 0.2
+  n.mil = 0.2,
+  seed = 1 # For re-producibility. If not set a random seed is used
 )
 
 # Generate predictions
 out.of.sample.predictions <- 
   data.validation[,jam.pred.res$snps] \%*\% 
-  jam.pred.res$step2.posterior.mean.snp.weights
+  jampred.res.bin$step2.posterior.mean.snp.weights
 
 # Predictive r2
-cor(out.of.sample.predictions, data.validation[,"d"])^2
+cor(out.of.sample.predictions, data.validation[,"d"])^2 # Should be 0.18
 
 ###########################################################
 # --- Simple demonstation of syntax for binary traits --- #
@@ -103,33 +105,34 @@ cor(out.of.sample.predictions, data.validation[,"d"])^2
 
 # Run JAMPred
 snps <- chromosome.snps[[1]] # Only use chromosome 1 data
-jam.pred.res <- JAMPred(
+jampred.res.lin <- JAMPred(
   marginal.betas = marginal.ctsbetas[snps],
   n.training = n.training,
   ref.geno = data.validation.cts[,snps],
   total.snps.genome.wide = 500000, # Total SNPs across all chromosomes
-  n.mil = 0.2
+  n.mil = 0.2,
+  seed = 1 # For re-producibility. If not set a random seed is used
 )
 
 # Generate predictions
 out.of.sample.predictions <- 
   0 + # NB: A trait mean could be set here (otherwise it is assumed the outcome is mean-centred)
   data.validation.cts[,jam.pred.res$snps] \%*\% 
-  jam.pred.res$step2.posterior.mean.snp.weights
+  jampred.res.lin$step2.posterior.mean.snp.weights
 
 # Predictive r2
-cor(out.of.sample.predictions, data.validation.cts[,"y"])^2
+cor(out.of.sample.predictions, data.validation.cts[,"y"])^2 # Should be 0.15
 
 ##################################################################################
 # --- Using JAMPred to model multiple chromosomes under different sparsities --- #
 ##################################################################################
 
 # Run JAMPred, looping over sparsities and chromosomes
-jam.pred.res <- list() # List to hold all the results
+jampred.res.loop <- list() # List to hold all the results
 for (lambda in c(0.01, 0.1, 1, 10)) { # Loop over lambda choices (see the paper)
-  jam.pred.res[[paste(lambda)]] <- list()
+  jampred.res.loop[[paste(lambda)]] <- list()
   for (chr in c(1:2)) { # Loop over chromosomes
-    jam.pred.res[[paste(lambda)]][[chr]] <- JAMPred(
+    jampred.res.loop[[paste(lambda)]][[chr]] <- JAMPred(
       marginal.betas = marginal.logors[chromosome.snps[[chr]]],
       n.training = n.training,
       marginal.logor.ses = marginal.logor.ses,
@@ -139,7 +142,7 @@ for (lambda in c(0.01, 0.1, 1, 10)) { # Loop over lambda choices (see the paper)
       n.mil = 0.2,
       beta.binom.b.lambda = lambda,
       initial.block.size = 100, # Default size of SNP blocks
-      n.cores = 2  # Number of cores on your computer 
+      seed = 1 # For re-producibility. If not set a random seed is used
     )
   }
 }
@@ -151,14 +154,14 @@ for (lambda in c(0.01, 0.1, 1, 10)) {
   for (chr in c(1:2)) {
     out.of.sample.predictions[[paste(lambda)]] <-
       out.of.sample.predictions[[paste(lambda)]] +
-      data.validation[,jam.pred.res[[paste(lambda)]][[chr]]$snps] \%*\% 
-      jam.pred.res[[paste(lambda)]][[chr]]$step2.posterior.mean.snp.weights
+      data.validation[,jampred.res.loop[[paste(lambda)]][[chr]]$snps] \%*\% 
+      jampred.res.loop[[paste(lambda)]][[chr]]$step2.posterior.mean.snp.weights
   }
 }
 
 # Predictive r2
 sapply(out.of.sample.predictions, function(preds) cor(preds,data.validation[,"d"])^2)
-# Predictive correlation highest at lambda = 0.01
+# Predictive correlation 0.37 and highest at lambda = 0.01
 }
 \seealso{
 See \code{\link{JAMPred_SplitIntoPositiveDefiniteBlocks}}; this is the function used to create an initial 

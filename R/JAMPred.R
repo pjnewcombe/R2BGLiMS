@@ -18,7 +18,8 @@
 #' marginal.betas elements.
 #' @param total.snps.genome.wide Total number of SNPs being analysed across the genome. Used to determine the level of
 #' prior sparsity.
-#' @param n.cores Number of CPU cores to use. Default is 2.
+#' @param n.cores Number of CPU cores to parralelise the SNP blocks over. If unspecified the number available will be detected. NB: 
+#' On Windows systems this will be forced to 1, since mclapply does not yet support forking.
 #' @param n.mil Number of million iterations to run. In the paper we found 0.2 was sufficient to reach adequeate
 #' convergence.
 #' @param beta.binom.b.lambda Spartisty tuning parameter. Suggest a range of values is tried, e.g. 0.01, 0.1, 1, 10.
@@ -48,11 +49,11 @@
 JAMPred <- function(
   marginal.betas = NULL,
   n.training = NULL,
-  marginal.logor.ses = NULL, # Default NULL - only necessary if passing log-ORs for a binary trait
-  p.cases.training = NULL, # Default NULL - only necessary if passing log-ORs for a binary trait
+  marginal.logor.ses = NULL,
+  p.cases.training = NULL,
   ref.geno = NULL,
-  total.snps.genome.wide = NULL, # Total SNPs genomewide being analysed
-  n.cores = 2, # Number of cores to parallelise over
+  total.snps.genome.wide = NULL,
+  n.cores = NULL,
   n.mil = 0.2,
   beta.binom.b.lambda = 1,
   beta.binom.a = 1,
@@ -97,8 +98,17 @@ JAMPred <- function(
   }
   
   # --- Derive parallel block indices
+  if (.Platform$OS.type=="windows") {
+    n.cores <- 1
+    cat("Forcing to the use of 1 core since mclapply can not fork jobs in Windows.\n")
+  } else {
+    if (is.null(n.cores)) {
+      n.cores <- detectCores(logical=FALSE)
+      cat("Detected",n.cores,"available to use.\n")
+    }
+  }
   parallel.block.indices <- JAMPred_ParallelBlockIndices(
-    n.cores = 2,
+    n.cores = n.cores,
     n.blocks.to.analyse = length(snps.blocks)
   )
   
