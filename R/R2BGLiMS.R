@@ -524,28 +524,37 @@ R2BGLiMS <- function(
   ###################################
   ###################################
   
-  # --- Mean value imputation
-  for (v in predictors) {
-    if (sum(is.na(data[,v]))>0) { 
-      cat("Performing mean value imputation for",sum(is.na(data[,v])),"values of",v,"\n")
-      data[is.na(data[,v]),v] <- mean(data[,v], na.rm = T)
-      } # Mean value Imputation
-    data[,v] <- data[,v] - mean(data[,v]) # Centre covariates
-  }
-  
-  # --- Standardisation
-  if (standardise.covariates.for.rjmcmc & likelihood %in% c("Logistic", "Weibull", "Linear", "LinearConj") ) {
-    sds.before.standardisation <- NULL
-    for (v in predictors[!predictors %in% confounders]) {
-      if (sd(data[,v], na.rm=T) > 0) {
-        data[,v] <- data[,v]/sd(data[,v], na.rm=T) # Standardise
-        sds.before.standardisation <- c(sds.before.standardisation,sd(data[,v], na.rm=T))
-      } else {
-        cat("Did not (internally) standardise",v,"due to zero variance")
-        sds.before.standardisation <- c(sds.before.standardisation,1)
+  # --- Mean value imputation centering and standardisation
+  if (likelihood %in% c("Logistic", "Weibull", "Linear", "LinearConj") ) {
+    
+    # --- Mean value imputation
+    for (v in predictors) {
+      if (sum(is.na(data[,v]))>0) { 
+        cat("Performing mean value imputation for",sum(is.na(data[,v])),"values of",v,"\n")
+        data[is.na(data[,v]),v] <- mean(data[,v], na.rm = T)
       }
     }
-    names(sds.before.standardisation) <- predictors[!predictors %in% confounders]
+    
+    # --- Centre covariates (after imputation) and place location extra argument for alpha
+#    cat("Centring covariates...\n")
+#    for (v in predictors) {
+#      data[,v] <- data[,v] - mean(data[,v])
+#    }
+    
+    # --- Standardise covariates for RJMCMC
+    if (standardise.covariates.for.rjmcmc) {
+      sds.before.standardisation <- NULL
+      for (v in predictors[!predictors %in% confounders]) {
+        if (sd(data[,v], na.rm=T) > 0) {
+          data[,v] <- data[,v]/sd(data[,v], na.rm=T) # Standardise
+          sds.before.standardisation <- c(sds.before.standardisation,sd(data[,v], na.rm=T))
+        } else {
+          cat("Did not (internally) standardise",v,"due to zero variance")
+          sds.before.standardisation <- c(sds.before.standardisation,1)
+        }
+      }
+      names(sds.before.standardisation) <- predictors[!predictors %in% confounders]
+    }
   }
   
   ### --- Write BGLiMS Arguments

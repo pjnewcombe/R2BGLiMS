@@ -9,7 +9,8 @@ JAMPred(marginal.betas = NULL, n.training = NULL,
   total.snps.genome.wide = NULL, n.cores = NULL, n.mil = 0.2,
   beta.binom.b.lambda = 1, beta.binom.a = 1, snps.blocks = NULL,
   initial.block.size = 100, initial.snps.blocks = NULL, seed = NULL,
-  thinning.factor = round(1000/n.mil))
+  thinning.factor = round(1000/n.mil), effect.sd.uniform.prior = c(0.05, 2),
+  residual.var.invgamma.prior = c(0.01, 0.01))
 }
 \arguments{
 \item{marginal.betas}{Vector of named one-at-a-time SNP effects. NB: This must be a named vector; it is where.
@@ -58,6 +59,12 @@ names that correspond to the columns of ref.geno. This could be defined, for exa
 
 \item{thinning.factor}{Determines every ith iteration to use from the RJMCMC sample. The more thinning that is applied
 the quicker the analysis will be, for the same number of iterations. Leaving at the default should be fine.}
+
+\item{effect.sd.uniform.prior}{Upper and lower uniform hyper-parameters for the prior on the standard deviation
+of SNP effects. Default is what we used in the paper, a Uniform(0.05, 2) distribution.}
+
+\item{residual.var.invgamma.prior}{Hyper-parameters for the inversegamma prior on the residual variance.
+Default is what we used in the paper, a Inverse-Gamma(0.01, 0.01) distribution.}
 }
 \value{
 A JAMPred results object, which is a list including as elements step1.posterior.mean.snp.weights 
@@ -87,12 +94,13 @@ jampred.res.bin <- JAMPred(
   ref.geno = data.validation[,snps],
   total.snps.genome.wide = 500000, # Total SNPs across all chromosomes
   n.mil = 0.2,
+  n.cores = 1,
   seed = 1 # For re-producibility. If not set a random seed is used
 )
 
 # Generate predictions
 out.of.sample.predictions <- 
-  data.validation[,jam.pred.res$snps] \%*\% 
+  data.validation[,jampred.res.bin$snps] \%*\% 
   jampred.res.bin$step2.posterior.mean.snp.weights
 
 # Predictive r2
@@ -117,7 +125,7 @@ jampred.res.lin <- JAMPred(
 # Generate predictions
 out.of.sample.predictions <- 
   0 + # NB: A trait mean could be set here (otherwise it is assumed the outcome is mean-centred)
-  data.validation.cts[,jam.pred.res$snps] \%*\% 
+  data.validation.cts[,jampred.res.lin$snps] \%*\% 
   jampred.res.lin$step2.posterior.mean.snp.weights
 
 # Predictive r2

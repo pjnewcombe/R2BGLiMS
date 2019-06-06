@@ -17,12 +17,13 @@ jampred.res.bin <- JAMPred(
   ref.geno = data.validation[,snps],
   total.snps.genome.wide = 500000, # Total SNPs across all chromosomes
   n.mil = 0.2,
+  n.cores = 1,
   seed = 1 # For re-producibility. If not set a random seed is used
 )
 
 # Generate predictions
 out.of.sample.predictions <- 
-  data.validation[,jam.pred.res$snps] %*% 
+  data.validation[,jampred.res.bin$snps] %*% 
   jampred.res.bin$step2.posterior.mean.snp.weights
 
 # Predictive r2
@@ -47,7 +48,7 @@ jampred.res.lin <- JAMPred(
 # Generate predictions
 out.of.sample.predictions <- 
   0 + # NB: A trait mean could be set here (otherwise it is assumed the outcome is mean-centred)
-  data.validation.cts[,jam.pred.res$snps] %*% 
+  data.validation.cts[,jampred.res.lin$snps] %*% 
   jampred.res.lin$step2.posterior.mean.snp.weights
 
 # Predictive r2

@@ -32,6 +32,10 @@
 #' @param seed An integer specifying the RJMCMC seed. If not set a random number will be used every time this is run.
 #' @param thinning.factor Determines every ith iteration to use from the RJMCMC sample. The more thinning that is applied
 #' the quicker the analysis will be, for the same number of iterations. Leaving at the default should be fine.
+#' @param effect.sd.uniform.prior Upper and lower uniform hyper-parameters for the prior on the standard deviation
+#' of SNP effects. Default is what we used in the paper, a Uniform(0.05, 2) distribution.
+#' @param residual.var.invgamma.prior Hyper-parameters for the inversegamma prior on the residual variance.
+#' Default is what we used in the paper, a Inverse-Gamma(0.01, 0.01) distribution.
 #' 
 #' @return A JAMPred results object, which is a list including as elements step1.posterior.mean.snp.weights 
 #' (which do not adjust for long range LD) and step2.posterior.mean.snp.weights (which do adjust for long 
@@ -61,8 +65,10 @@ JAMPred <- function(
   initial.block.size = 100,
   initial.snps.blocks = NULL,
   seed = NULL,
-  thinning.factor = round(1e3/n.mil)
-  ) {
+  thinning.factor = round(1e3/n.mil),
+  effect.sd.uniform.prior = c(0.05,2),
+  residual.var.invgamma.prior = c(0.01,0.01)
+) {
   
   library(parallel)
   
@@ -121,11 +127,14 @@ JAMPred <- function(
                               X.ref=lapply(snps.blocks[parallel.block.indices[[i]]], function(b) as.matrix(ref.geno[,b])),
                               n=n.training,
                               model.space.priors = list("a"=beta.binom.a,"b"=beta.binom.b.lambda*total.snps.genome.wide,"Variables"=unlist(snps.blocks[parallel.block.indices[[i]]])),
-                              beta.prior.partitions = list(list("UniformA"=0.05, "UniformB"=2, "Variables"=unlist(snps.blocks[parallel.block.indices[[i]]]))), # Same as Schizophrenia. Previously using 0.2 for T1D
+                              beta.prior.partitions = list(list("UniformA"=effect.sd.uniform.prior[1], "UniformB"=effect.sd.uniform.prior[2], "Variables"=unlist(snps.blocks[parallel.block.indices[[i]]]))),
                               full.mcmc.sampling = TRUE,
                               n.mil = n.mil,
                               thinning.interval = round(n.mil*thinning.factor),
-                              seed = seed
+                              seed = seed,
+                              extra.arguments = 
+                                list("GaussianResidualVarianceInvGammaPrior_a"=residual.var.invgamma.prior[1],
+                                     "GaussianResidualVarianceInvGammaPrior_b"=residual.var.invgamma.prior[2])
                             ), 
                           mc.cores=n.cores), recursive=F)
   
