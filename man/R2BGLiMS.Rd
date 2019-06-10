@@ -8,6 +8,7 @@ R2BGLiMS(likelihood = NULL, data = NULL, outcome.var = NULL,
   times.var = NULL, confounders = NULL, model.selection = TRUE,
   model.space.priors = NULL, beta.priors = NULL,
   beta.prior.partitions = NULL, standardise.covariates.for.rjmcmc = TRUE,
+  standardise.confounders = TRUE, empirical.intercept.prior.mean = TRUE,
   g.prior = TRUE, tau = NULL, xtx.ridge.term = 0,
   enumerate.up.to.dim = 0, X.ref = NULL, ns.each.ethnicity = NULL,
   marginal.betas = NULL, n = NULL, n.iter = 1e+06, n.mil.iter = NULL,
@@ -82,13 +83,17 @@ beta[v] | sigma_beta ~ N(0, sigma_beta^2) and
 sigma_beta ~ Unif("UniformA", "UniformB").}
 
 \item{standardise.covariates.for.rjmcmc}{Standardise covariates under variable 
-selection prior to RJMCMC such that they have a common (unit) standard deviation. 
+selection prior to RJMCMC such that they have a common (unit) standard deviation and mean zero. 
 This is particularly recommended when covariates have substantially different variances, 
 in order to improve the likelihood of exchangeabile effect estimates, an asssumption that
 is required when using the (default) common effect prior with unknown variance. 
 Note that the standardisation is done invisibly to the user; parameter estimates 
 are re-scaled back to unit increases on the original scale of each covariate, before 
 producing posterior summaries. NB: This is currently only available for Logistic, Linear
+and Weibull regression. Default is TRUE.}
+
+\item{standardise.confounders}{Standardise any confounders such that they have a common 
+(unit) standard deviation and mean zero. This is currently only available for Logistic, Linear
 and Weibull regression. Default is TRUE.}
 
 \item{g.prior}{Whether to use a g-prior for the beta's, i.e. a multivariate normal 
@@ -164,6 +169,15 @@ enumeration.}
 
 \item{extra.java.arguments}{A character string to be passed through to the java command line. E.g. to specify a
 different temporary directory by passing "-Djava.io.tmpdir=/Temp".}
+
+\item{empirical.intercept.prior.mean.and.initial.value}{Empirically set the intercept inital value
+and prior mean empirically according to the mean outcome value, i.e. the expected value when
+covariates are mean centred. This can markedly improve mixing. This is option is 
+available for Logistic, Linear and Weibull regression. After mean-centering covariates,
+the intercept initial value and prior mean is set to the mean outcome mean for linear regression, 
+to the logit(case fraction) for logistic regression,
+and according to estimates from a simple survreg fit for Weibull regression. 
+Default is TRUE.}
 }
 \value{
 An R2BGLiMS_Results class object is returned. See the slot 'posterior.summary.table' for a posterior summary of all parameters. 
