@@ -61,25 +61,25 @@ NULL
 #' partition, for v in "Variables", 
 #' beta[v] | sigma_beta ~ N(0, sigma_beta^2) and 
 #' sigma_beta ~ Unif("UniformA", "UniformB").
-#' @param standardise.covariates.for.rjmcmc Standardise covariates under variable 
-#' selection prior to RJMCMC such that they have a common (unit) standard deviation and mean zero. 
+#' @param standardise.covariates.for.rjmcmc Standardise covariates prior to RJMCMC such 
+#' that they have a common (unit) standard deviation and mean zero. 
 #' This is particularly recommended when covariates have substantially different variances, 
-#' in order to improve the likelihood of exchangeabile effect estimates, an asssumption that
-#' is required when using the (default) common effect prior with unknown variance. 
-#' Note that the standardisation is done invisibly to the user; parameter estimates 
-#' are re-scaled back to unit increases on the original scale of each covariate, before 
-#' producing posterior summaries. NB: This is currently only available for Logistic, Linear
+#' to improve the likelihood of exchangeable effect estimates, an asssumption that
+#' is required under the (default) common effect prior with unknown variance. 
+#' The standardisation is done invisibly to the user; parameter estimates 
+#' are re-scaled back to unit increases on the original scale before 
+#' producing posterior summaries. This is currently available for Logistic, Linear
 #' and Weibull regression. Default is TRUE.
 #' @param standardise.confounders Standardise any confounders such that they have a common 
-#' (unit) standard deviation and mean zero. This is currently only available for Logistic, Linear
+#' (unit) standard deviation and mean zero. This is currently available for Logistic, Linear
 #' and Weibull regression. Default is TRUE.
-#' @param empirical.intercept.prior.mean.and.initial.value Empirically set the intercept inital value
-#' and prior mean empirically according to the mean outcome value, i.e. the expected value when
-#' covariates are mean centred. This can markedly improve mixing. This is option is 
-#' available for Logistic, Linear and Weibull regression. After mean-centering covariates,
-#' the intercept initial value and prior mean is set to the mean outcome mean for linear regression, 
-#' to the logit(case fraction) for logistic regression,
-#' and according to estimates from a simple survreg fit for Weibull regression. 
+#' @param empirical.intercept.prior.mean.and.initial.value Empirically set the intercept 
+#' inital value and prior mean empirically, according to the mean outcome value, i.e. the 
+#' expected intercept value when covariates are mean-centred. This can markedly improve mixing
+#' and so is strongly recommended. For logistic regression, the intercept prior mean and initial
+#' value are set to the logit(case fraction), and for linear regression to the mean
+#' outcome. For Weibull regression both the intercept and scale parameters have their prior means
+#' and initial values set according to a simple NULL Weibull model fit using the survreg function.
 #' Default is TRUE.
 #' @param g.prior Whether to use a g-prior for the beta's, i.e. a multivariate normal 
 #' with correlation structure proportional to sigma^2*X'X^-1, which is thought to aid
@@ -155,7 +155,7 @@ R2BGLiMS <- function(
   beta.prior.partitions=NULL,
   standardise.covariates.for.rjmcmc=TRUE,
   standardise.confounders = TRUE,
-  empirical.intercept.prior.mean = TRUE,
+  empirical.intercept.prior.mean.and.initial.value = TRUE,
   g.prior=TRUE,
   tau=NULL,
   xtx.ridge.term=0,
@@ -581,24 +581,41 @@ R2BGLiMS <- function(
     
     # --- Empirical intercept prior mean
     if (empirical.intercept.prior.mean.and.initial.value & standardise.confounders & standardise.covariates.for.rjmcmc) {
+      if (!standardise.confounders | !standardise.covariates.for.rjmcmc) {
+        cat("Mean-centering covariates...")
+        for (v in predictors) {
+          data[,v] <- data[,v] - mean(data[,v])
+        }
+      }
       if (likelihood == "Logistic") {
+        logit.case.fraction <- log(mean(data[,outcome.var])/(1-mean(data[,outcome.var])))
         cat("Setting intercept prior mean and initial value to logit(case fraction)...\n")
         if (is.null(extra.arguments)) {
           extra.arguments=list(
-            "AlphaPriorMu"=log(mean(data[,outcome.var])/(1-mean(data[,outcome.var]))),
-            "Alpha_Initial_Value"=log(mean(data[,outcome.var])/(1-mean(data[,outcome.var])))
+            "AlphaPriorMu"=logit.case.fraction,
+            "Alpha_Initial_Value"=logit.case.fraction
           )          
         } else if (!"AlphaPriorMu" %in% names(extra.arguments)) {
-          extra.arguments[["AlphaPriorMu"]] <- log(mean(data[,outcome.var])/(1-mean(data[,outcome.var])))
-          extra.arguments[["Alpha_Initial_Value"]] <- log(mean(data[,outcome.var])/(1-mean(data[,outcome.var])))
+          extra.arguments[["AlphaPriorMu"]] <- logit.case.fraction
+          extra.arguments[["Alpha_Initial_Value"]] <- logit.case.fraction
         }
-      } else if (likeilhood == "Weibull") {
-        cat("Scaling survival times to between 0 and 1..\n")
+      } else if (likelihood == "Linear") {
+        cat("Setting intercept prior mean and initial value to outcome mean...\n")
+        if (is.null(extra.arguments)) {
+          extra.arguments=list(
+            "AlphaPriorMu"=mean(data[,outcome.var]),
+            "Alpha_Initial_Value"=mean(data[,outcome.var])
+          )          
+        } else if (!"AlphaPriorMu" %in% names(extra.arguments)) {
+          extra.arguments[["AlphaPriorMu"]] <- mean(data[,outcome.var])
+          extra.arguments[["Alpha_Initial_Value"]] <- mean(data[,outcome.var])
+        }
+      } else if (likelihood == "Weibull") {
+        cat("Scaling survival times to between 0 and 1, and setting prior means and initial values for the intercept 
+            and scale parameters according to a NULL model survreg Weibull fit...\n")
         data[,times.var] <- data[,times.var]/max(data[,times.var])
-        cat("Performing simple Weibull NULL model fit using survreg..\n")
-        cat("Setting intercept and scale prior means and initial values according to survreg Weibull fit...\n")
         library(survival)
-        survreg.res <- survreg(as.formula(paste0("Surv(",times.var, outcome.var,") ~ 1")), data, dist="weibull")
+        survreg.res <- survreg(as.formula(paste0("Surv(",times.var, ",", outcome.var,") ~ 1")), data, dist="weibull")
         alpha.survreg <- survreg.res$coefficients["(Intercept)"]
         k.survreg <- survreg.res$scale
         alpha.r2bglims <- log(1/exp(alpha.survreg))/k.survreg
@@ -615,17 +632,6 @@ R2BGLiMS <- function(
           extra.arguments[["Alpha_Initial_Value"]] <- alpha.r2bglims
           extra.arguments[["logWeibullScaleNormalPriorMean"]]=log(k.r2bglims)
           extra.arguments[["WeibullScale_Initial_Value"]]=k.r2bglims
-        }
-      } else if (likelihood == "Linear") {
-        cat("Setting intercept prior mean and initial value to logit(case fraction)...\n")
-        if (is.null(extra.arguments)) {
-          extra.arguments=list(
-            "AlphaPriorMu"=mean(data[,outcome.var]),
-            "Alpha_Initial_Value"=mean(data[,outcome.var])
-          )          
-        } else if (!"AlphaPriorMu" %in% names(extra.arguments)) {
-          extra.arguments[["AlphaPriorMu"]] <- mean(data[,outcome.var])
-          extra.arguments[["Alpha_Initial_Value"]] <- mean(data[,outcome.var])
         }
       }
       
