@@ -1,7 +1,7 @@
-#' Generates a PDF of chain plots for all variables from a Reversible Jump results object
+#' Generates posterior trace plots for a R2BGLiMS results object
 #' @export
-#' @title Coefficient history trace plots from a Reversible Jump results object
-#' @name ChainPlots
+#' @title Parameter posterior trace plots for a R2BGLiMS results object
+#' @name TracePlots
 #' @inheritParams ManhattanPlot
 #' @param predictors.only If true only chain plots for predictors are plotted (and intercept,
 #'  likelihood etc. are excluded). Default is FALSE.
@@ -12,8 +12,8 @@
 #' @param par.mfrow Allow passing the mfrow layout vector to par. Default par(mfrow=c(5,2))
 #' @return NA
 #' @author Paul Newcombe
-#' @example Examples/ChainPlots_Examples.R 
-ChainPlots <- function(
+#' @example Examples/TracePlots_Examples.R 
+TracePlots <- function(
   results,
   vars.to.include=NULL,
   var.dictionary=NULL,
@@ -74,7 +74,7 @@ ChainPlots <- function(
   if (!is.null(par.mfrow)) {
     par(mfrow=par.mfrow)
   } else {
-    par(mfrow=c(5,2))
+    par(mfrow=c(min(5,ceiling(length(cols.keep)/2)),2))
   }
   letter.ind <- 0
   for (v in colnames(results@mcmc.output)) {

@@ -137,7 +137,7 @@ NULL
 #' 
 #' @seealso Summary results are stored in the slot posterior.summary.table. See \code{\link{ManhattanPlot}} for a visual 
 #' summary of covariate selection probabilities. For posterior model space summaries see \code{\link{TopModels}}. For 
-#' convergence checks see \code{\link{ChainPlots}} and \code{\link{AutocorrelationPlot}}.
+#' convergence checks see \code{\link{TracePlots}} and \code{\link{AutocorrelationPlot}}.
 #' 
 #' @author Paul Newcombe
 #' 

@@ -15,7 +15,6 @@ RoxygenNote: 6.0.1
 Collate: 
     'AutocorrelationPlot.R'
     'BetaBinomialParameters.R'
-    'ChainPlots.R'
     'Classes.R'
     'ClassMethods.R'
     'CredibleSet.R'
@@ -40,3 +39,4 @@ Collate:
     'R2BGLiMS-package.R'
     'StrongestPairwiseCorrelation.R'
     'TopModels.R'
+    'TracePlots.R'
