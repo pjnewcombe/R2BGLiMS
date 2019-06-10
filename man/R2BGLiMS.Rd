@@ -69,7 +69,7 @@ variable names in the data, and include Guassian prior means and sds in the firs
 second columns respectively.}
 
 \item{beta.prior.partitions}{By default, covariates without informative priors are 
-ascribed a common Gaussian prior with a Unif(0.01,2) hyper-prior on the effect 
+ascribed a common Gaussian prior with a Unif(0.05,2) hyper-prior on the effect 
 standard deviation. beta.prior.partitions can be used to partition the covariates 
 into different prior groups, within each of which exchangeability can be assumed 
 and a common prior with an independently estimated variance is used. 

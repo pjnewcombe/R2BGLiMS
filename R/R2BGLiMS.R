@@ -50,7 +50,7 @@ NULL
 #' variable names in the data, and include Guassian prior means and sds in the first and 
 #' second columns respectively.
 #' @param beta.prior.partitions By default, covariates without informative priors are 
-#' ascribed a common Gaussian prior with a Unif(0.01,2) hyper-prior on the effect 
+#' ascribed a common Gaussian prior with a Unif(0.05,2) hyper-prior on the effect 
 #' standard deviation. beta.prior.partitions can be used to partition the covariates 
 #' into different prior groups, within each of which exchangeability can be assumed 
 #' and a common prior with an independently estimated variance is used. 
@@ -397,11 +397,11 @@ R2BGLiMS <- function(
   } else {
     if (!likelihood %in% c("LinearConj", "JAM")) {
       all.covariates <- unique(c(unlist(lapply(model.space.priors,function(x) x$Variables)),rownames(beta.priors),confounders))
-      # Create default single beta.prior.partitions with Uniform(0.01, 2) - SMMR
+      # Create default single beta.prior.partitions with Uniform(0.05, 2) - SMMR
       if (is.null(beta.priors)) {
-        beta.prior.partitions=list(list("UniformA"=0.01, "UniformB"=2, "Variables"=all.covariates, "Family"="Uniform", "Init"=1))
+        beta.prior.partitions=list(list("UniformA"=0.05, "UniformB"=2, "Variables"=all.covariates, "Family"="Uniform", "Init"=1))
       } else if (nrow(beta.priors)!=length(all.covariates)) {
-        beta.prior.partitions=list(list("UniformA"=0.01, "UniformB"=2,"Variables"=all.covariates[!all.covariates%in%rownames(beta.priors)], "Family"="Uniform", "Init"=1))
+        beta.prior.partitions=list(list("UniformA"=0.05, "UniformB"=2,"Variables"=all.covariates[!all.covariates%in%rownames(beta.priors)], "Family"="Uniform", "Init"=1))
       }
     }
   }
