@@ -4,12 +4,13 @@
 \alias{StrongestPairwiseCorrelation}
 \title{Strongest Pairwise Correlation}
 \usage{
-StrongestPairwiseCorrelation(data = NULL, covariates = NULL)
+StrongestPairwiseCorrelation(data = NULL, covariates = colnames(data))
 }
 \arguments{
 \item{data}{Data matrix (or data frame), within which pairwise correlations will be calculated.}
 
-\item{covariates}{Character vector indicating which columns of data should be considered.}
+\item{covariates}{Character vector indicating which columns of data should be considered. By 
+default all columns of data will be considered.}
 }
 \value{
 A character vector containing the names of the covariates between which the strongest

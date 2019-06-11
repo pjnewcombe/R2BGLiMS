@@ -3,7 +3,8 @@
 #' @title Strongest Pairwise Correlation
 #' @name StrongestPairwiseCorrelation
 #' @param data Data matrix (or data frame), within which pairwise correlations will be calculated.
-#' @param covariates Character vector indicating which columns of data should be considered.
+#' @param covariates Character vector indicating which columns of data should be considered. By 
+#' default all columns of data will be considered.
 #' 
 #' @return A character vector containing the names of the covariates between which the strongest
 #' pairwise correlation was observed.
@@ -11,7 +12,7 @@
 #' @author Paul Newcombe
 StrongestPairwiseCorrelation <- function(
   data=NULL,
-  covariates=NULL
+  covariates=colnames(data)
   ) {
   
   cat("Calculating correlation matrix...\n")

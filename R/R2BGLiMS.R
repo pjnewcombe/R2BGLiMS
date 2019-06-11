@@ -61,17 +61,14 @@ NULL
 #' partition, for v in "Variables", 
 #' beta[v] | sigma_beta ~ N(0, sigma_beta^2) and 
 #' sigma_beta ~ Unif("UniformA", "UniformB").
-#' @param standardise.covariates.for.rjmcmc Standardise covariates prior to RJMCMC such 
+#' @param standardise.covariates Standardise covariates prior to RJMCMC such 
 #' that they have a common (unit) standard deviation and mean zero. 
 #' This is particularly recommended when covariates have substantially different variances, 
 #' to improve the likelihood of exchangeable effect estimates, an asssumption that
-#' is required under the (default) common effect prior with unknown variance. 
+#' is required under the (default) common effect prior with unknown variance used in the RJMCMC. 
 #' The standardisation is done invisibly to the user; parameter estimates 
 #' are re-scaled back to unit increases on the original scale before 
 #' producing posterior summaries. This is currently available for Logistic, Linear
-#' and Weibull regression. Default is TRUE.
-#' @param standardise.confounders Standardise any confounders such that they have a common 
-#' (unit) standard deviation and mean zero. This is currently available for Logistic, Linear
 #' and Weibull regression. Default is TRUE.
 #' @param empirical.intercept.prior.mean.and.initial.value Empirically set the intercept 
 #' inital value and prior mean empirically, according to the mean outcome value, i.e. the 
@@ -153,8 +150,7 @@ R2BGLiMS <- function(
   model.space.priors=NULL,
   beta.priors=NULL,
   beta.prior.partitions=NULL,
-  standardise.covariates.for.rjmcmc=TRUE,
-  standardise.confounders = TRUE,
+  standardise.covariates=TRUE,
   empirical.intercept.prior.mean.and.initial.value = TRUE,
   g.prior=TRUE,
   tau=NULL,
@@ -548,40 +544,25 @@ R2BGLiMS <- function(
       }
     }
     
-    # --- Standardise covariates for RJMCMC
-    if (standardise.covariates.for.rjmcmc) {
+    # --- Standardise covariates
+    if (standardise.covariates) {
       sds.before.standardisation <- NULL
-      for (v in predictors[!predictors %in% confounders]) {
+      for (v in predictors) {
         if (sd(data[,v], na.rm=T) > 0) {
+          sds.before.standardisation <- c(sds.before.standardisation,sd(data[,v], na.rm=T))
           # Standardise
           data[,v] <- data[,v]/sd(data[,v], na.rm=T) 
           data[,v] <- data[,v] - mean(data[,v])
-          sds.before.standardisation <- c(sds.before.standardisation,sd(data[,v], na.rm=T))
         } else {
-          stop("Covariate",v,"has zero variance. Please remove from the analysis.")
+          stop("Covariate ",v," has zero variance. Please remove from the analysis.")
         }
       }
       names(sds.before.standardisation) <- predictors[!predictors %in% confounders]
     }
     
-    if (!is.null(confounders) & standardise.confounders) {
-      sds.confounders.before.standardisation <- NULL
-      for (v in confounders) {
-        if (sd(data[,v], na.rm=T) > 0) {
-          # Standardise
-          data[,v] <- data[,v]/sd(data[,v], na.rm=T) 
-          data[,v] <- data[,v] - mean(data[,v])
-          sds.confounders.before.standardisation <- c(sds.confounders.before.standardisation,sd(data[,v], na.rm=T))
-        } else {
-          stop("Covariate",v,"has zero variance. Please remove from the analysis.")
-        }
-      }
-      names(sds.confounders.before.standardisation) <- confounders
-    }
-    
     # --- Empirical intercept prior mean
-    if (empirical.intercept.prior.mean.and.initial.value & standardise.confounders & standardise.covariates.for.rjmcmc) {
-      if (!standardise.confounders | !standardise.covariates.for.rjmcmc) {
+    if (empirical.intercept.prior.mean.and.initial.value) {
+      if (!standardise.covariates) {
         cat("Mean-centering covariates...")
         for (v in predictors) {
           data[,v] <- data[,v] - mean(data[,v])
@@ -875,14 +856,9 @@ R2BGLiMS <- function(
   # Fill in the summary table
   for (v in colnames(mcmc.output)) {
     # Rescale parameter estimates after standardisation
-    if (standardise.covariates.for.rjmcmc & likelihood %in% c("Logistic", "Weibull", "Linear", "LinearConj") ) {
+    if (standardise.covariates & likelihood %in% c("Logistic", "Weibull", "Linear", "LinearConj") ) {
       if (v %in% names(sds.before.standardisation)) {
         mcmc.output[,v] <- mcmc.output[,v]/sds.before.standardisation[v]
-      }
-    }
-    if (!is.null(confounders) & standardise.confounders & likelihood %in% c("Logistic", "Weibull", "Linear", "LinearConj") ) {
-      if (v %in% names(sds.confounders.before.standardisation)) {
-        mcmc.output[,v] <- mcmc.output[,v]/sds.confounders.before.standardisation[v]
       }
     }
     posterior.summary.table[v,c("CrI_Lower", "Median", "CrI_Upper")] <- quantile(mcmc.output[,v],c(0.025, 0.5, 0.975))

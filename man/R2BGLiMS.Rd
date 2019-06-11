@@ -7,8 +7,7 @@
 R2BGLiMS(likelihood = NULL, data = NULL, outcome.var = NULL,
   times.var = NULL, confounders = NULL, model.selection = TRUE,
   model.space.priors = NULL, beta.priors = NULL,
-  beta.prior.partitions = NULL, standardise.covariates.for.rjmcmc = TRUE,
-  standardise.confounders = TRUE,
+  beta.prior.partitions = NULL, standardise.covariates = TRUE,
   empirical.intercept.prior.mean.and.initial.value = TRUE, g.prior = TRUE,
   tau = NULL, xtx.ridge.term = 0, enumerate.up.to.dim = 0, X.ref = NULL,
   ns.each.ethnicity = NULL, marginal.betas = NULL, n = NULL,
@@ -83,18 +82,14 @@ partition, for v in "Variables",
 beta[v] | sigma_beta ~ N(0, sigma_beta^2) and 
 sigma_beta ~ Unif("UniformA", "UniformB").}
 
-\item{standardise.covariates.for.rjmcmc}{Standardise covariates prior to RJMCMC such 
+\item{standardise.covariates}{Standardise covariates prior to RJMCMC such 
 that they have a common (unit) standard deviation and mean zero. 
 This is particularly recommended when covariates have substantially different variances, 
 to improve the likelihood of exchangeable effect estimates, an asssumption that
-is required under the (default) common effect prior with unknown variance. 
+is required under the (default) common effect prior with unknown variance used in the RJMCMC. 
 The standardisation is done invisibly to the user; parameter estimates 
 are re-scaled back to unit increases on the original scale before 
 producing posterior summaries. This is currently available for Logistic, Linear
-and Weibull regression. Default is TRUE.}
-
-\item{standardise.confounders}{Standardise any confounders such that they have a common 
-(unit) standard deviation and mean zero. This is currently available for Logistic, Linear
 and Weibull regression. Default is TRUE.}
 
 \item{empirical.intercept.prior.mean.and.initial.value}{Empirically set the intercept 
