@@ -71,13 +71,16 @@ NULL
 #' producing posterior summaries. This is currently available for Logistic, Linear
 #' and Weibull regression. Default is TRUE.
 #' @param empirical.intercept.prior.mean.and.initial.value Empirically set the intercept 
-#' inital value and prior mean empirically, according to the mean outcome value, i.e. the 
-#' expected intercept value when covariates are mean-centred. This can markedly improve mixing
-#' and so is strongly recommended. For logistic regression, the intercept prior mean and initial
-#' value are set to the logit(case fraction), and for linear regression to the mean
-#' outcome. For Weibull regression both the intercept and scale parameters have their prior means
-#' and initial values set according to a simple NULL Weibull model fit using the survreg function.
-#' Default is TRUE.
+#' inital value and prior mean according to the mean outcome value, i.e. the 
+#' expected intercept value when covariates are mean-centred. In some settings this can markedly 
+#' improve mixing but EXPERIMENTATION is encouraged. For Weibull regression this options leads 
+#' to both the intercept AND the scale parameter having their prior means and initial values set 
+#' according to a simple NULL Weibull model fit using the survreg function. In our experience this 
+#' always improved mixing under Weibull regression, so is enabled by default, but can be over-ridden
+#' by setting this option to FALSE. For logistic regression, setting this option to TRUE leads to
+#' the intercept prior mean and initial value being set to the logit(case fraction), and for linear regression 
+#' to the mean outcome. For linear and logistic regression the usefulness of this option is less clear,
+#' so it is off by default.
 #' @param g.prior Whether to use a g-prior for the beta's, i.e. a multivariate normal 
 #' with correlation structure proportional to sigma^2*X'X^-1, which is thought to aid
 #' variable selection in the presence of strong correlation. By default this is enabled.
@@ -151,7 +154,7 @@ R2BGLiMS <- function(
   beta.priors=NULL,
   beta.prior.partitions=NULL,
   standardise.covariates=TRUE,
-  empirical.intercept.prior.mean.and.initial.value = TRUE,
+  empirical.intercept.prior.mean.and.initial.value = NULL,
   g.prior=TRUE,
   tau=NULL,
   xtx.ridge.term=0,
@@ -558,6 +561,14 @@ R2BGLiMS <- function(
         }
       }
       names(sds.before.standardisation) <- predictors[!predictors %in% confounders]
+    }
+    
+    if (is.null(empirical.intercept.prior.mean.and.initial.value)) {
+      if (likelihood %in% c("Weibull") ) {
+        empirical.intercept.prior.mean.and.initial.value <- TRUE
+      } else {
+        empirical.intercept.prior.mean.and.initial.value <- FALSE
+      }
     }
     
     # --- Empirical intercept prior mean

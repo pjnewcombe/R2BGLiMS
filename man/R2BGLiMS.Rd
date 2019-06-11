@@ -8,7 +8,7 @@ R2BGLiMS(likelihood = NULL, data = NULL, outcome.var = NULL,
   times.var = NULL, confounders = NULL, model.selection = TRUE,
   model.space.priors = NULL, beta.priors = NULL,
   beta.prior.partitions = NULL, standardise.covariates = TRUE,
-  empirical.intercept.prior.mean.and.initial.value = TRUE, g.prior = TRUE,
+  empirical.intercept.prior.mean.and.initial.value = NULL, g.prior = TRUE,
   tau = NULL, xtx.ridge.term = 0, enumerate.up.to.dim = 0, X.ref = NULL,
   ns.each.ethnicity = NULL, marginal.betas = NULL, n = NULL,
   n.iter = 1e+06, n.mil.iter = NULL, thinning.interval = NULL,
@@ -93,13 +93,16 @@ producing posterior summaries. This is currently available for Logistic, Linear
 and Weibull regression. Default is TRUE.}
 
 \item{empirical.intercept.prior.mean.and.initial.value}{Empirically set the intercept 
-inital value and prior mean empirically, according to the mean outcome value, i.e. the 
-expected intercept value when covariates are mean-centred. This can markedly improve mixing
-and so is strongly recommended. For logistic regression, the intercept prior mean and initial
-value are set to the logit(case fraction), and for linear regression to the mean
-outcome. For Weibull regression both the intercept and scale parameters have their prior means
-and initial values set according to a simple NULL Weibull model fit using the survreg function.
-Default is TRUE.}
+inital value and prior mean according to the mean outcome value, i.e. the 
+expected intercept value when covariates are mean-centred. In some settings this can markedly 
+improve mixing but EXPERIMENTATION is encouraged. For Weibull regression this options leads 
+to both the intercept AND the scale parameter having their prior means and initial values set 
+according to a simple NULL Weibull model fit using the survreg function. In our experience this 
+always improved mixing under Weibull regression, so is enabled by default, but can be over-ridden
+by setting this option to FALSE. For logistic regression, setting this option to TRUE leads to
+the intercept prior mean and initial value being set to the logit(case fraction), and for linear regression 
+to the mean outcome. For linear and logistic regression the usefulness of this option is less clear,
+so it is off by default.}
 
 \item{g.prior}{Whether to use a g-prior for the beta's, i.e. a multivariate normal 
 with correlation structure proportional to sigma^2*X'X^-1, which is thought to aid
