@@ -343,8 +343,8 @@ R2BGLiMS <- function(
     }
   } else if (length(confounders)>0) {
     if (!likelihood %in% c("LinearConj")) { # Confounders are not modelled for LinearConj
-      warning("beta.priors were not provided for the confounders (which should not be
-            treated as exchangeable with covariates under model selection). Setting to N(0,1e6).")
+      #warning("beta.priors were not provided for the confounders (which should not be
+      #      treated as exchangeable with covariates under model selection). Setting to N(0,1e6).")
       beta.priors <- data.frame(
         cbind(rep(0,length(confounders)),rep(1000,length(confounders))),
         row.names=confounders)
@@ -867,22 +867,26 @@ R2BGLiMS <- function(
   # Fill in the summary table
   for (v in colnames(mcmc.output)) {
     # Rescale parameter estimates after standardisation
-    if (standardise.covariates & likelihood %in% c("Logistic", "Weibull", "Linear", "LinearConj") ) {
+    if (standardise.covariates & likelihood %in% c("Logistic", "Weibull", "Linear") ) {
       if (v %in% names(sds.before.standardisation)) {
         mcmc.output[,v] <- mcmc.output[,v]/sds.before.standardisation[v]
       }
     }
-    posterior.summary.table[v,c("CrI_Lower", "Median", "CrI_Upper")] <- quantile(mcmc.output[,v],c(0.025, 0.5, 0.975))
-    posterior.summary.table[v,"Mean"] <- mean(mcmc.output[,v])
+    if (!likelihood %in% c("LinearConj")) {
+      posterior.summary.table[v,c("CrI_Lower", "Median", "CrI_Upper")] <- quantile(mcmc.output[,v],c(0.025, 0.5, 0.975))
+      posterior.summary.table[v,"Mean"] <- mean(mcmc.output[,v])
+    }
     if (v %in% unlist(lapply(model.space.priors, function(x) x$Variables))) {
-      posterior.summary.table[v,c("CrI_Lower_Present", "Median_Present", "CrI_Upper_Present")] <- quantile(mcmc.output[,v][mcmc.output[,v]!=0],c(0.025, 0.5, 0.975) )
+      if (!likelihood %in% c("LinearConj")) {
+        posterior.summary.table[v,c("CrI_Lower_Present", "Median_Present", "CrI_Upper_Present")] <- quantile(mcmc.output[,v][mcmc.output[,v]!=0],c(0.025, 0.5, 0.975) )
+      }
       posterior.summary.table[v,"PostProb"] <- length( mcmc.output[,v][mcmc.output[,v]!=0] ) / nrow(mcmc.output)      
       if (enumerate.up.to.dim>0) {
         # Replace with enumeration probs
         posterior.summary.table[v,"PostProb"] <- enumerated.posterior.inference$marg.probs[v]
       }
       posterior.summary.table[v,"BF"] <- .BayesFactor(prior.probs[v], posterior.summary.table[v,"PostProb"])
-      if (likelihood %in% c("Weibull", "Cox", "CaseCohort_Prentice", "CaseCohort_Barlow", "Logistic", "CLogLog", "RocAUC_Anchoring") ) {
+      if (likelihood %in% c("Weibull", "Logistic") ) {
         # Exponentiate quantiles
         posterior.summary.table[v,c("CrI_Lower", "Median", "CrI_Upper","CrI_Lower_Present", "Median_Present","CrI_Upper_Present")] <- exp(posterior.summary.table[v,c("CrI_Lower", "Median", "CrI_Upper","CrI_Lower_Present", "Median_Present","CrI_Upper_Present")])
       }
