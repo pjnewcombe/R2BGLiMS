@@ -23,7 +23,6 @@ StrongestPairwiseCorrelation <- function(
   max.pairwise.cors <- apply(cor.mat, MAR=1, function(x) max(x, na.rm=T))
   max.max.pairwise.cors <- max(max.pairwise.cors)
   cat("The maximum pairwise correlation was",max.max.pairwise.cors,"\n")
-  cat("...returning list of covariates among which this correlation was observed")
   correlated.predictors <- names(which(max.pairwise.cors==max.max.pairwise.cors))
   
   return(correlated.predictors)
