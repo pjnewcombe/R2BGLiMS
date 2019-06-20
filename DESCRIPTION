@@ -1,15 +1,17 @@
 Package: R2BGLiMS
 Type: Package
 Title: R interface to the java package BGLiMS (Bayesian Generalised Linear Model Selection).
-Version: 0.1-19-06-2019
-Date: 19-06-2019
+Version: 0.1-20-06-2019
+Date: 20-06-2019
 Author: Paul J Newcombe <paul.newcombe@mrc-bsu.cam.ac.uk>
 Maintainer: Paul J Newcombe <paul.newcombe@mrc-bsu.cam.ac.uk>
 Imports: MendelianRandomization, jsonlite
-Description: Provides an R interface to a Java package for fitting Bayesian GLMs. Approximate posterior samples are drawn using an
-              MCMC sampler with a (Reversible Jump) Metropolis-Hastings acceptance ratio.  Currently, Logistic and Weibull, and
-              Linear regression models are available, as well as JAM for genetic summary data fine-mapping, JAMPred for polygenic
-              risk scores, and JAMMR for summary data Mendelian Randomization.
+Description: Provides an R interface to a Java package for fitting Bayesian GLMs. Approximate
+          posterior samples are drawn using an MCMC sampler with a (Reversible Jump)
+          Metropolis-Hastings acceptance ratio.  Currently, Logistic and Weibull, and Linear
+          regression models are available, as well as JAM for genetic summary data
+          fine-mapping, JAMPred for polygenic risk scores, and JAMMR for summary data Mendelian
+          Randomization.
 License: GPL (>=2)
 RoxygenNote: 6.0.1
 Collate: 
