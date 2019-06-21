@@ -44,28 +44,20 @@ NOTE: It is easy to specify different model space priors for different collectio
 covariates by providing a list of lists, each element of which is itself a model.space.prior
 list asm described above for a particular subset of the covariates.}
 
-\item{beta.priors}{There are three options: 
-1) Leave as null, in which case N(0, 1e6) priors are placed on the effects
-of confounders and any predictors included in model selection are assigned a
-common normal prior with unknown variance.
-2) Provide fixed priors for the confounders only. 
-3) Provide fixed priors for all covariates. 
-beta.priors (a matrix/data.frame) can be used to provide fixed priors; rows must be named with the corresponding 
-variable names in the data, and include Guassian prior means and sds in the first and 
-second columns respectively.}
+\item{beta.priors}{This allows specifying fixed (potentially informative) priors for the covariate 
+effect priors. A matrix must be passed, with named rows corresponding to parameters, and columns 
+corresponding to the prior mean and variance in that order. When using this option priors must 
+be specified for either just the confounders, which are otherwise given fixed N(0,1e6) priors, 
+or for all covariates.}
 
-\item{beta.prior.partitions}{By default, covariates without informative priors are 
-ascribed a common Gaussian prior with a Unif(0.05,2) hyper-prior on the effect 
-standard deviation. beta.prior.partitions can be used to partition the covariates 
-into different prior groups, within each of which exchangeability can be assumed 
-and a common prior with an independently estimated variance is used. 
-beta.prior.partitions must be a list with as many elements as desired 
-partitions. Each element must in turn be a list containing the following named 
-elements: "Variables" - a list of covariates to be included in this partition, 
-and "UniformA" and "UniformB" the Uniform hyper parameters. I.e., for a particular
-partition, for v in "Variables", 
-beta[v] | sigma_beta ~ N(0, sigma_beta^2) and 
-sigma_beta ~ Unif("UniformA", "UniformB").}
+\item{beta.prior.partitions}{Covariate effects under variable selection are ascribed, by default, 
+a common Normal prior, the standard deviation of which is treated as unknown, 
+with a Unif(0.05,2) hyper-prior. This option can be used to partition the covariate effects 
+into different prior groups, each with a seperate hierarchical normal prior. beta.prior.partitions 
+must be a list with as many elements as desired covariate groups. The element for a particular group 
+must in turn be a list containing the following named elements: "Variables" - a list of covariates 
+in the prior group, and "UniformA" and "UniformB" the Uniform hyper parameters for the standard 
+deviation of the normal prior across their effects.}
 
 \item{g.prior}{Whether to use a g-prior for the beta's, i.e. a multivariate normal 
 with correlation structure proportional to sigma^2*X'X^-1, which is thought to aid
@@ -95,17 +87,19 @@ faster runtimes for large numbers of covariates.}
 
 \item{seed}{Which random number seed to use in the RJMCMC sampler. If none is provided, a random seed is picked between 1 and 2^16.}
 
-\item{extra.arguments}{A named list of any additional arguments for BGLiMS. Type "data(DefaultArguments)" and look in the 
-"default.arguments" list to see the names (which must match) and default values of available extra arguments. Currently these 
-are not documented - please contact the package author, Paul Newcombe for details.}
+\item{extra.arguments}{A named list of additional arguments for which there are not currently dedicated options for. This can be used to 
+modify various "under the hood" settings, including all prior hyper-parameters, MCMC mixing parameters such as the probabilities of 
+add/delete/swap moves as well as the adaption settings. A list of all settings available for modification can be seen by typing 
+"data(DefaultArguments)" and then "default.arguments", which lists their names and default values.}
 
-\item{initial.model}{Optionally, an initial model can be provided as a vector of 0's and 1's. Default is NULL
-and the null model is used. If set to 1, the saturated model is used.}
+\item{initial.model}{An initial model for the covariates under selection can be specified as a vector of 0s and 1s. 
+If left un-specified the null (empty) model is used.}
 
-\item{save.path}{Optional path to save BGLiMS's data and results files. These are usually written as temporary files, and deleted
-after running R2BGLiMS. However, this option might help for debugging.}
+\item{save.path}{By default R2BGLiMS writes the posterior samples to a temporary file that is deleted after they have been read in to R. By 
+specifying a file path this can be kept, along with the temporary files used for the data and arguments, which can be useful sometimes for de-bugging.}
 
-\item{max.model.dim}{Optional specification of maximum model dimension (default -1 means no maximum is set).}
+\item{max.model.dim}{The maximum model dimension can be specified, therefore truncating the model space. We do not recommend using this option 
+but it might sometimes be useful for robust-ness checks. When left un-specified there is no restriction on the model size.}
 
 \item{burnin.fraction}{Initial fraction of the iterations to throw away, e.g. setting to 0 would mean no burn-in. The 
 default of 0.5 corresponds to the first half of iterations being discarded.}
