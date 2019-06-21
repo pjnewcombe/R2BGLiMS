@@ -8,4 +8,5 @@ NB: Must have a Java JDK installed in order to install and run R2BGLiMS.
 To install R2GBLiMS using the devtools library, run:
 
 library(devtools)
+
 install_github("pjnewcombe/R2BGLiMS")
