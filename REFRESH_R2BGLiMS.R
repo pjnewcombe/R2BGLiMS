@@ -1,6 +1,6 @@
 library(roxygen2)
 package.name <- 'R2BGLiMS'
-package.location <- '/Users/paul/Dropbox/Work Projects/R Packages'
+package.location <- '/Users/paul/Documents/Work Projects/R Packages'
 
 #######################################################
 # --- Copy in latest Java code and arguments file --- #
@@ -8,8 +8,8 @@ package.location <- '/Users/paul/Dropbox/Work Projects/R Packages'
 setwd(paste(package.location,"/",package.name,sep=""))
 system("rm DESCRIPTION")
 system("rm -rf inst/BGLiMS/*")
-system( paste("cp -rf '/Users/paul/Dropbox/Work Projects/RJ Java Package/Java Code/BGLiMS/dist/'* inst/BGLiMS/", sep="") )
-system( paste("cp '/Users/paul/Dropbox/Work Projects/RJ Java Package/Test/Arguments/Arguments_Package.txt' inst/BGLiMS/", sep="") )  
+system( paste("cp -rf '/Users/paul/Documents/Work Projects/RJ Java Package/Java Code/BGLiMS/dist/'* inst/BGLiMS/", sep="") )
+system( paste("cp '/Users/paul/Documents/Work Projects/RJ Java Package/Test/Arguments/Arguments_Package.txt' inst/BGLiMS/", sep="") )  
 
 ####################################
 # --- Write `DESCRIPTION' file --- #

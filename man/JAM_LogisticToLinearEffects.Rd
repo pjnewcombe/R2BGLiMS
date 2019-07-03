@@ -5,14 +5,18 @@
 \title{Logistic to linear effect conversion for JAM}
 \usage{
 JAM_LogisticToLinearEffects(log.ors = NULL, log.or.ses = NULL,
-  mafs = NULL, n = NULL, p.cases = NULL)
+  snp.genotype.sds = NULL, mafs = NULL, n = NULL, p.cases = NULL)
 }
 \arguments{
 \item{log.ors}{Vector of SNP summary log-odds ratios}
 
 \item{log.or.ses}{Vector of the standard errors of the SNP log-odds ratios}
 
-\item{mafs}{Vector of SNP minor allele frequencies}
+\item{snp.genotype.sds}{Vector of SNP genotype standard deviations. Please supply this or mafs. This is 
+the preferred option since an assumption of Hardy-Weinberg Equilibrium is not required when
+reverse-stamdardising the effects during the transform.}
+
+\item{mafs}{Vector of SNP minor allele frequencies. snp.sds if available would be the preferred option.}
 
 \item{n}{Size of dataset in which the log-odds ratios were calculated}
 
