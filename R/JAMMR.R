@@ -6,7 +6,6 @@
 #' The stochastic search provides posterior model probbilities and causal
 #' effect estimation is then performed by averaging the individual-model
 #' IVW estimates weighted by the model probabilities.
-#' @importFrom MendelianRandomization mr_ivw mr_input
 #' @export
 #' @title JAMMR
 #' @name JAMMR
