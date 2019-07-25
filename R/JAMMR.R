@@ -6,7 +6,6 @@
 #' The stochastic search provides posterior model probbilities and causal
 #' effect estimation is then performed by averaging the individual-model
 #' IVW estimates weighted by the model probabilities.
-#' @importFrom MendelianRandomization mr_ivw mr_input
 #' @export
 #' @title JAMMR
 #' @name JAMMR
@@ -65,7 +64,7 @@
 #' 
 #' @example Examples/JAMMR_Examples.R
 
-JAMMR <- function(
+JAMMR <- function (
   bx,
   sx,
   by,
@@ -74,12 +73,12 @@ JAMMR <- function(
   eafs = NULL,
   G.matrix = NULL,
   trait.var = NULL,
-  iter = 1e6,
-  w, 
+  iter = 1e6, w,
   initial.model = rep(1, length(bx)),
   n.models = 10,
-  jam.model.priors = c(1, length(bx)), 
+  jam.model.priors = c(1, length(bx)),
   loss.function = "variance",
+  random.effects = TRUE,
   jam.seed = NULL) {
   
   ## Decide if JAM should run with independent or correlated SNPs.
@@ -138,29 +137,31 @@ JAMMR <- function(
     models.visited <- as.matrix(TopModels(jam.results, n.top.models = iter, remove.empty.cols = FALSE))
     n.to.report <- min(nrow(models.visited), n.models)
     
-    ## If the null model is visited, drop it and do causal effect estimation based on the rest.
-    n.per.model <- rowSums(models.visited[, - (P + 1)])
-    if ( min(n.per.model) == 0) {
+    ## This checks if the null model was visited by JAM-MR.
+    if (nrow(models.visited) == 1) {
       
-      ## If only the zero model was visited, there is nothing we can do.
-      if (nrow(models.visited) == 1) {
-        
+      ## If the null model was the *only* model visited, there is little we can do.
+      n.per.model <- sum(models.visited[1:P])
+      if (n.per.model == 0) {
         theta <- NA
         sigma <- NA
         snp.probs <- rep(0, P)
         models.visited.backup <- models.visited
         warning("JAM-MR did not select any genetic variants. Genetic associations with the risk factor are probably very weak.")
-        
-      } else {
-        
-        ## If the null model was one of many, discard it and use the rest for causal effect estimation.
+      }
+      
+    } else {
+      
+      ## If the null model was one of many, discard it and use the rest for causal effect estimation.
+      n.per.model <- rowSums(models.visited[, - (P + 1)])
+      if ( min(n.per.model) == 0) {
         models.visited.backup <- models.visited
         zero.prob <- models.visited[which(n.per.model == 0), P + 1]
         models.visited <- models.visited[- which(n.per.model == 0), ]
         models.visited[, P + 1] <- models.visited[, P + 1] / (1 - zero.prob)
         warning("JAM-MR assigned non-zero probability to the null model.")
-        
       }
+      
     }
     
     ## This does causal effect estimation for "usual" JAMMR outputs.
@@ -176,9 +177,19 @@ JAMMR <- function(
       allerrors <- rep(0, nrow(models.visited))
       for (i in 1:nrow(models.visited)) {
         current.model.snps <- unname(which(models.visited[i, - (P + 1)] == 1)) 
-        current.model.ivw <- mr_ivw( mr_input(bx = unname(bx[current.model.snps]), bxse = sx[current.model.snps], by = by[current.model.snps], byse = sy[current.model.snps]) )
-        alleffects[i] <- current.model.ivw$Estimate
-        allerrors[i] <- current.model.ivw$StdError
+        current.thetas <- ( by / unname(bx) )[current.model.snps]
+        current.sigmas <- ( sy / abs(unname(bx)) )[current.model.snps]
+        
+        # OLD: Relied on MendelianRandomization package
+        #current.model.ivw <- mr_ivw( mr_input(bx = unname(bx[current.model.snps]), bxse = sx[current.model.snps], by = by[current.model.snps], byse = sy[current.model.snps]) )
+        #alleffects[i] <- current.model.ivw$Estimate
+        #allerrors[i] <- current.model.ivw$StdError
+        
+        # NEW: No longer depends on MendelianRandomization package
+        current.ivw <- sum(current.thetas / current.sigmas^2) / sum(1 / current.sigmas^2)
+        if (random.effects) current.phi <- max(1, sum( (current.thetas - current.ivw)^2 / (current.sigmas^2) ) / (length(current.model.snps) - 1) ) else current.phi <- 1
+        alleffects[i] <- current.ivw
+        allerrors[i] <- sqrt(current.phi) * sqrt( 1 / sum(1 / current.sigmas^2) ) 
       }
       
       ## Combine into an overall estimator and its standard error.
@@ -189,11 +200,18 @@ JAMMR <- function(
       
       ## This is the case when JAMMR assigns 100% probability to a single model. Done separately for numerical stability.
       single.model.snps <- models.visited[, - (P + 1)]
-      single.model.ivw <- mr_ivw( mr_input(bx = unname(bx[single.model.snps]), bxse = sx[single.model.snps], by = by[single.model.snps], byse = sy[single.model.snps]) )
-      
       snp.probs <- single.model.snps
-      theta <- single.model.ivw$Estimate
-      sigma <- single.model.ivw$StdError
+      
+      # OLD: Relied on MendelianRandomization package
+      #single.model.ivw <- mr_ivw( mr_input(bx = unname(bx[single.model.snps]), bxse = sx[single.model.snps], by = by[single.model.snps], byse = sy[single.model.snps]) )
+      
+      # NEW: No longer relies on MendelianRandomization package
+      single.model.thetas <- ( by / unname(bx) )[single.model.snps]
+      single.model.sigmas <- ( sy / abs(unname(bx)) )[single.model.snps]
+      single.model.ivw <- sum(single.model.thetas / single.model.sigmas^2) / sum(1 / single.model.sigmas^2)
+      if (random.effects) single.model.phi <- max(1, sum( (single.model.thetas - single.model.ivw)^2 / (single.model.sigmas^2) ) / (length(single.model.snps) - 1) ) else single.model.phi <- 1
+      theta <- single.model.ivw
+      sigma <- sqrt(single.model.phi) * sqrt( 1 / sum(1 / single.model.sigmas^2) ) 
       
     }
     
@@ -246,29 +264,31 @@ JAMMR <- function(
       models.visited <- as.matrix(TopModels(jam.results, n.top.models = iter, remove.empty.cols = FALSE))
       n.to.report <- min(nrow(models.visited), n.models)
       
-      ## If the null model is visited, drop it and do causal effect estimation based on the rest.
-      n.per.model <- rowSums(models.visited[, - (P + 1)])
-      if ( min(n.per.model) == 0) {
+      ## This checks if the null model was visited by JAM-MR.
+      if (nrow(models.visited) == 1) {
         
-        ## If only the zero model was visited, there is nothing we can do.
-        if (nrow(models.visited) == 1) {
-          
+        ## If the null model was the *only* model visited, there is little we can do.
+        n.per.model <- sum(models.visited[1:P])
+        if (n.per.model == 0) {
           theta <- NA
           sigma <- NA
           snp.probs <- rep(0, P)
           models.visited.backup <- models.visited
           warning("JAM-MR did not select any genetic variants. Genetic associations with the risk factor are probably very weak.")
-          
-        } else {
-          
-          ## If the null model was one of many, discard it and use the rest for causal effect estimation.
+        }
+        
+      } else {
+        
+        ## If the null model was one of many, discard it and use the rest for causal effect estimation.
+        n.per.model <- rowSums(models.visited[, - (P + 1)])
+        if ( min(n.per.model) == 0) {
           models.visited.backup <- models.visited
           zero.prob <- models.visited[which(n.per.model == 0), P + 1]
           models.visited <- models.visited[- which(n.per.model == 0), ]
           models.visited[, P + 1] <- models.visited[, P + 1] / (1 - zero.prob)
           warning("JAM-MR assigned non-zero probability to the null model.")
-          
         }
+        
       }
       
       ## This does causal effect estimation for "usual" JAMMR outputs.
@@ -283,10 +303,21 @@ JAMMR <- function(
         alleffects <- rep(0, nrow(models.visited))
         allerrors <- rep(0, nrow(models.visited))
         for (i in 1:nrow(models.visited)) {
+          
           current.model.snps <- unname(which(models.visited[i, - (P + 1)] == 1)) 
-          current.model.ivw <- mr_ivw( mr_input(bx = unname(bx[current.model.snps]), bxse = sx[current.model.snps], by = by[current.model.snps], byse = sy[current.model.snps]) )
-          alleffects[i] <- current.model.ivw$Estimate
-          allerrors[i] <- current.model.ivw$StdError
+          current.thetas <- ( by / unname(bx) )[current.model.snps]
+          current.sigmas <- ( sy / abs(unname(bx)) )[current.model.snps]
+          
+          # OLD: Relied on MendelianRandomization package
+          #current.model.ivw <- mr_ivw( mr_input(bx = unname(bx[current.model.snps]), bxse = sx[current.model.snps], by = by[current.model.snps], byse = sy[current.model.snps]) )
+          #alleffects[i] <- current.model.ivw$Estimate
+          #allerrors[i] <- current.model.ivw$StdError
+          
+          # NEW: No longer relies on MendelianRandomization package
+          current.ivw <- sum(current.thetas / current.sigmas^2) / sum(1 / current.sigmas^2)
+          if (random.effects) current.phi <- max(1, sum( (current.thetas - current.ivw)^2 / (current.sigmas^2) ) / (length(current.model.snps) - 1) ) else current.phi <- 1
+          alleffects[i] <- current.ivw
+          allerrors[i] <- sqrt(current.phi) * sqrt( 1 / sum(1 / current.sigmas^2) ) 
         }
         
         ## Combine into an overall estimator and its standard error.
@@ -298,11 +329,21 @@ JAMMR <- function(
         
         ## This is the case when JAMMR assigns 100% probability to a single model. Done separately for numerical stability.
         single.model.snps <- models.visited[, - (P + 1)]
-        single.model.ivw <- mr_ivw( mr_input(bx = unname(bx[single.model.snps]), bxse = sx[single.model.snps], by = by[single.model.snps], byse = sy[single.model.snps]) )
-        
         all.probs[jj, ] <- single.model.snps
-        all.thetas[jj] <- single.model.ivw$Estimate
-        all.sigmas[jj] <- single.model.ivw$StdError
+        
+        # OLD: Relied on MendelianRandomization package
+        #single.model.ivw <- mr_ivw( mr_input(bx = unname(bx[single.model.snps == 1]), bxse = sx[single.model.snps == 1], by = by[single.model.snps == 1], byse = sy[single.model.snps == 1]) )
+        #all.probs[jj, ] <- single.model.snps
+        #all.thetas[jj] <- single.model.ivw$Estimate
+        #all.sigmas[jj] <- single.model.ivw$StdError
+        
+        # NEW: No longer relies on MendelianRandomization package
+        single.model.thetas <- ( by / unname(bx) )[single.model.snps]
+        single.model.sigmas <- ( sy / abs(unname(bx)) )[single.model.snps]
+        single.model.ivw <- sum(single.model.thetas / single.model.sigmas^2) / sum(1 / single.model.sigmas^2)
+        if (random.effects) single.model.phi <- max(1, sum( (single.model.thetas - single.model.ivw)^2 / (single.model.sigmas^2) ) / (length(single.model.snps) - 1) ) else single.model.phi <- 1
+        all.thetas[jj] <- single.model.ivw
+        all.sigmas[jj] <- sqrt(single.model.phi) * sqrt( 1 / sum(1 / single.model.sigmas^2) ) 
         
       }
       

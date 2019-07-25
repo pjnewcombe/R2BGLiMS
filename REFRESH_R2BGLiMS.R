@@ -23,7 +23,7 @@ write.dcf(
     Date=format(Sys.time(), "%d-%m-%Y"),
     Author = "Paul J Newcombe <paul.newcombe@mrc-bsu.cam.ac.uk>",
     Maintainer = "Paul J Newcombe <paul.newcombe@mrc-bsu.cam.ac.uk>",
-#    Imports = "MendelianRandomization, jsonlite", # jsonlite for an error Frank Dudbridge saw.
+#    Imports = "MendelianRandomization, jsonlite", # No longer depends on MendelianRandomization
     Imports = "jsonlite", # jsonlite for an error Frank Dudbridge saw.
     Description = "Provides an R interface to a Java package for fitting 
     Bayesian GLMs. Approximate posterior samples are drawn using an MCMC 

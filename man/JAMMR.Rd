@@ -7,7 +7,7 @@
 JAMMR(bx, sx, by, sy, N1, eafs = NULL, G.matrix = NULL, trait.var = NULL,
   iter = 1e+06, w, initial.model = rep(1, length(bx)), n.models = 10,
   jam.model.priors = c(1, length(bx)), loss.function = "variance",
-  jam.seed = NULL)
+  random.effects = TRUE, jam.seed = NULL)
 }
 \arguments{
 \item{bx}{Univariate effect estimates between each SNP and the risk factor.}
