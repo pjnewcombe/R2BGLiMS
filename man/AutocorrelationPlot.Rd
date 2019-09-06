@@ -7,8 +7,9 @@ represented across all iterations as a black and white heatmap.}
 \usage{
 AutocorrelationPlot(results, plot.title = NULL, file = NULL,
   include.var.names.on.x.axis = TRUE, covariates.to.include = NULL,
-  var.dictionary = NULL, include.post.probs = TRUE, cex.x.axis.ticks = 1,
-  cex.y.axis.ticks = 1, cex.y.axis.labels = 1, mar.for.varnames = 8)
+  var.dictionary = NULL, include.post.probs = TRUE,
+  cex.x.axis.ticks = 1, cex.y.axis.ticks = 1, cex.y.axis.labels = 1,
+  mar.for.varnames = 8)
 }
 \arguments{
 \item{results}{A \code{\link[R2BGLiMS]{R2BGLiMS_Results-class}} object frum running the \code{\link[R2BGLiMS]{R2BGLiMS}} command.}

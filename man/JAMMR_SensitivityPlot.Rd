@@ -4,8 +4,8 @@
 \alias{JAMMR_SensitivityPlot}
 \title{JAMMR_SensitivityPlot}
 \usage{
-JAMMR_SensitivityPlot(jammr.results, adjust.se = TRUE, line.at.zero = TRUE,
-  show.n.snps = FALSE)
+JAMMR_SensitivityPlot(jammr.results, adjust.se = TRUE,
+  line.at.zero = TRUE, show.n.snps = FALSE)
 }
 \arguments{
 \item{jammr.results}{A \code{\link[R2BGLiMS]{JAMMR}} results object frum running the \code{\link[R2BGLiMS]{JAMMR}} command.}

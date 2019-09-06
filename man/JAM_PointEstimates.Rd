@@ -2,7 +2,6 @@
 % Please edit documentation in R/JAM_PointEstimates.R, R/JAM_PosteriorSampler.R
 \name{JAM_PointEstimates}
 \alias{JAM_PointEstimates}
-\alias{JAM_PointEstimates}
 \alias{JAM_PosteriorSampler}
 \title{JAM (Joint Analysis of Marginal statistics) multivariate point estimator.}
 \usage{

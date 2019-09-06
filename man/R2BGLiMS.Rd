@@ -8,17 +8,17 @@ R2BGLiMS(likelihood = NULL, data = NULL, outcome.var = NULL,
   times.var = NULL, confounders = NULL, model.selection = TRUE,
   model.space.priors = NULL, beta.priors = NULL,
   beta.prior.partitions = NULL, standardise.covariates = TRUE,
-  empirical.intercept.prior.mean.and.initial.value = NULL, g.prior = TRUE,
-  tau = NULL, xtx.ridge.term = 0, enumerate.up.to.dim = 0, X.ref = NULL,
-  ns.each.ethnicity = NULL, marginal.betas = NULL, n = NULL,
-  n.iter = 1e+06, n.mil.iter = NULL, thinning.interval = NULL,
-  seed = NULL, extra.arguments = NULL, initial.model = NULL,
-  max.model.dim = -1, save.path = NULL, results.label = NULL,
-  burnin.fraction = 0.5, trait.variance = NULL,
-  logistic.likelihood.weights = NULL, mrloss.w = 0,
-  mrloss.function = "variance", mrloss.marginal.by = NULL,
-  mrloss.marginal.sy = NULL, mafs.if.independent = NULL,
-  extra.java.arguments = NULL)
+  empirical.intercept.prior.mean.and.initial.value = NULL,
+  g.prior = TRUE, tau = NULL, xtx.ridge.term = 0,
+  enumerate.up.to.dim = 0, X.ref = NULL, ns.each.ethnicity = NULL,
+  marginal.betas = NULL, n = NULL, n.iter = 1e+06,
+  n.mil.iter = NULL, thinning.interval = NULL, seed = NULL,
+  extra.arguments = NULL, initial.model = NULL, max.model.dim = -1,
+  save.path = NULL, results.label = NULL, burnin.fraction = 0.5,
+  trait.variance = NULL, logistic.likelihood.weights = NULL,
+  mrloss.w = 0, mrloss.function = "variance",
+  mrloss.marginal.by = NULL, mrloss.marginal.sy = NULL,
+  mafs.if.independent = NULL, extra.java.arguments = NULL)
 }
 \arguments{
 \item{likelihood}{Type of model to fit. Current options are 
