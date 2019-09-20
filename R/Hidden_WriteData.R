@@ -33,7 +33,8 @@
   mrloss.function = "variance",
   mrloss.marginal.causal.effects = NULL,
   mrloss.marginal.causal.effect.ses = NULL,
-  mafs.if.independent = mafs.if.independent
+  mafs.if.independent = mafs.if.independent,
+  debug=FALSE
 ) {
 	### Pre-processing
   if (likelihood%in%c("JAM_MCMC", "JAM")) {
@@ -82,17 +83,22 @@
     V <- ncol(data)
     N <- nrow(data)
     var.names <- colnames(data)
-    cat(paste((n.start-N),"observations deleted due to missingness\n"))
+    if ((n.start-N) > 1) {
+      cat("Warning:",paste((n.start-N),"observations deleted due to missingness\n"))
+    }
     if (N==0) stop("All observations have been deleted due to missingness!\n")  
   }
   
 	### Writing
+
+  # V: Total number of variables
+  write(paste("outputDebuggingInfo", as.integer(debug) ), file = data.file , ncolumns = 1)
   
 	# Model
   if (likelihood == "JAM" & !is.null(trait.variance)) {
-    write("JAMv2", file = data.file , ncolumns = 1)
+    write("JAMv2", file = data.file , ncolumns = 1, append = T)
   } else {
-    write(likelihood, file = data.file , ncolumns = 1)
+    write(likelihood, file = data.file , ncolumns = 1, append = T)
   }
   
 	# V: Total number of variables
@@ -175,7 +181,6 @@
   # --- Covariate matrix --- #
 	############################
 	
-	cat("Writing data into an input file for BGLiMS...\n")
   # Covariate data - different if marginal setup
   if (likelihood %in% c("JAM", "JAM_MCMC")) { # Write summary data
     write(paste("nEthnicities",format(n.ethnicities,sci=F)), file = data.file , ncolumns = 1, append = T)
@@ -188,7 +193,6 @@
       }
     } else if (likelihood == "JAM") {
       if (!is.null(mafs.if.independent)) {
-        cat("Generating faux reference matrix (for independent SNPs) from provided MAFs")
         xTx <- list(matrix(0,length(mafs.if.independent), length(mafs.if.independent), 
                            dimnames=list(names(mafs.if.independent), names(mafs.if.independent))))
         diag(xTx[[1]]) <- n * 2 * mafs.if.independent * (1 - mafs.if.independent)
@@ -200,7 +204,9 @@
         }
         L <- chol(xTx[[b]]) # NB: UPPER triangle. So L'L = X'X (LIKE IN PAPER)
         write.table(L, row.names=F, col.names=F, file = data.file, append = T) # Multiply by L' (like in JAVA_test)
-        cat("Taking Cholesky decomposition of block",b,"...\n")
+        if (debug) {
+          cat("Taking Cholesky decomposition of block",b,"...\n")
+        }
         Lt_Inv[[b]] <- solve(t(L)) # Take TRANSPOSE inverse for below
       }      
     }

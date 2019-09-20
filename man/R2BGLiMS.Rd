@@ -18,7 +18,8 @@ R2BGLiMS(likelihood = NULL, data = NULL, outcome.var = NULL,
   trait.variance = NULL, logistic.likelihood.weights = NULL,
   mrloss.w = 0, mrloss.function = "variance",
   mrloss.marginal.by = NULL, mrloss.marginal.sy = NULL,
-  mafs.if.independent = NULL, extra.java.arguments = NULL)
+  mafs.if.independent = NULL, extra.java.arguments = NULL,
+  debug = FALSE)
 }
 \arguments{
 \item{likelihood}{Type of model to fit. Current options are 
@@ -174,6 +175,9 @@ enumeration.}
 
 \item{extra.java.arguments}{A character string to be passed through to the java command line. E.g. to specify a
 different temporary directory by passing "-Djava.io.tmpdir=/Temp".}
+
+\item{debug}{Whether to output extra information (such as final adaption proposal SDs) which might help with debugging 
+(default is FALSE).}
 }
 \value{
 An R2BGLiMS_Results class object is returned. See the slot 'posterior.summary.table' for a posterior summary of all parameters. 

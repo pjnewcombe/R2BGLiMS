@@ -127,6 +127,8 @@ NULL
 #' enumeration.
 #' @param extra.java.arguments A character string to be passed through to the java command line. E.g. to specify a
 #' different temporary directory by passing "-Djava.io.tmpdir=/Temp".
+#' @param debug Whether to output extra information (such as final adaption proposal SDs) which might help with debugging 
+#' (default is FALSE).
 #' 
 #' @return An R2BGLiMS_Results class object is returned. See the slot 'posterior.summary.table' for a posterior summary of all parameters. 
 #' See slot 'mcmc.output' for a matrix containing the raw MCMC output from the saved posterior samples (0 indicates a covariate is excluded 
@@ -177,7 +179,8 @@ R2BGLiMS <- function(
   mrloss.marginal.by=NULL,
   mrloss.marginal.sy=NULL,
   mafs.if.independent=NULL,
-  extra.java.arguments=NULL
+  extra.java.arguments=NULL,
+  debug=FALSE
 ) {
   
   ###########################
@@ -194,11 +197,9 @@ R2BGLiMS <- function(
   
   ### --- Number of iterations
   if (!is.null(n.mil.iter)) {
-    cat("Number of million iterations specified. Overriding n.iter.\n")
     n.iter <- n.mil.iter*1e6
   }
-  cat(n.iter,"iterations will be run...\n")
-  
+
   ### --- N - sometimes n is taken as a function from another package.
   if (!is.null(n)) {
     if (!is.numeric(n)) stop("n is not numeric. Have you correctly specified n?")  
@@ -239,10 +240,14 @@ R2BGLiMS <- function(
   if (likelihood %in% c("LinearConj", "JAM") & is.null(tau)) {
     if (g.prior) {
       if (likelihood %in% c("LinearConj")) {
-        cat("tau was not provided. Since the g-prior is in use, setting to the recommended maximum of n and P^2\n")
+        if (debug) {
+          cat("tau was not provided. Since the g-prior is in use, setting to the recommended maximum of n and P^2\n")
+        }
         tau <- max(nrow(data), ncol(data)^2)        
       } else if (likelihood %in% c("JAM")) {
-        cat("tau was not provided. Since the g-prior is in use, setting to the recommended maximum of n and P^2\n")
+        if (debug) {
+          cat("tau was not provided. Since the g-prior is in use, setting to the recommended maximum of n and P^2\n")
+        }
         if (is.null(ns.each.ethnicity)) {
           tau <- max(n,length(marginal.betas)^2)
         } else {
@@ -482,7 +487,6 @@ R2BGLiMS <- function(
   
   # Deal with confounders for conjugate model
   if (!is.null(confounders)&(likelihood=="LinearConj")) {
-    cat("Obtaining confounder adjusted residuals...\n")
     data <- .ConfounderAdjustedResiduals(data, outcome.var, confounders)
     confounders <- NULL
   }
@@ -537,11 +541,15 @@ R2BGLiMS <- function(
   if (likelihood %in% c("Logistic", "Weibull", "Linear", "LinearConj") ) {
     
     # --- Mean value imputation
+    need.mean.value.imputation <- FALSE
     for (v in predictors) {
       if (sum(is.na(data[,v]))>0) { 
-        cat("Performing mean value imputation for",sum(is.na(data[,v])),"values of",v,"\n")
+        need.mean.value.imputation <- TRUE
         data[is.na(data[,v]),v] <- mean(data[,v], na.rm = T)
       }
+    }
+    if (need.mean.value.imputation) {
+      cat("Warning: Mean value imputation was performed for 1 or more covariates\n")
     }
     
     # --- Standardise covariates
@@ -571,14 +579,15 @@ R2BGLiMS <- function(
     # --- Empirical intercept prior mean
     if (empirical.intercept.prior.mean.and.initial.value) {
       if (!standardise.covariates) {
-        cat("Mean-centering covariates...")
         for (v in predictors) {
           data[,v] <- data[,v] - mean(data[,v])
         }
       }
       if (likelihood == "Logistic") {
         logit.case.fraction <- log(mean(data[,outcome.var])/(1-mean(data[,outcome.var])))
-        cat("Setting intercept prior mean and initial value to logit(case fraction)...\n")
+        if (debug) {
+          cat("Setting intercept prior mean and initial value to logit(case fraction)...\n")
+        }
         if (is.null(extra.arguments)) {
           extra.arguments=list(
             "AlphaPriorMu"=logit.case.fraction,
@@ -589,7 +598,9 @@ R2BGLiMS <- function(
           extra.arguments[["Alpha_Initial_Value"]] <- logit.case.fraction
         }
       } else if (likelihood == "Linear") {
-        cat("Setting intercept prior mean and initial value to outcome mean...\n")
+        if (debug) {
+          cat("Setting intercept prior mean and initial value to outcome mean...\n")
+        }
         if (is.null(extra.arguments)) {
           extra.arguments=list(
             "AlphaPriorMu"=mean(data[,outcome.var]),
@@ -600,8 +611,10 @@ R2BGLiMS <- function(
           extra.arguments[["Alpha_Initial_Value"]] <- mean(data[,outcome.var])
         }
       } else if (likelihood == "Weibull") {
-        cat("Scaling survival times to between 0 and 1, and setting prior means and initial values for the intercept 
+        if (debug) {
+          cat("Scaling survival times to between 0 and 1, and setting prior means and initial values for the intercept 
             and scale parameters according to a NULL model survreg Weibull fit...\n")
+        }
         data[,times.var] <- data[,times.var]/max(data[,times.var])
         library(survival)
         survreg.res <- survreg(as.formula(paste0("Surv(",times.var, ",", outcome.var,") ~ 1")), data, dist="weibull")
@@ -634,7 +647,9 @@ R2BGLiMS <- function(
   load(file.path(pack.root, "data", "DefaultArguments.rda"))
   if (!is.null(extra.arguments)) {
     for (arg in names(extra.arguments)) {
-      cat("Setting user specified argument",arg,"\n")    
+      if (debug) {
+        cat("Setting user specified argument",arg,"\n")
+      }
       default.arguments[[arg]] <- extra.arguments[[arg]]
     }    
   }
@@ -741,14 +756,17 @@ R2BGLiMS <- function(
     mrloss.function = mrloss.function,
     mrloss.marginal.causal.effects = mrloss.marginal.causal.effects,
     mrloss.marginal.causal.effect.ses = mrloss.marginal.causal.effect.ses,
-    mafs.if.independent = mafs.if.independent
+    mafs.if.independent = mafs.if.independent,
+    debug=debug
   )
   t2 <- proc.time()["elapsed"]
   write.time <- t2-t1
   hrs <-floor( (t2-t1)/(60*60) )
   mins <- floor( (t2-t1-60*60*hrs)/60 )
   secs <- round(t2-t1-hrs*60*60 - mins*60)
-  cat(paste("Data written in",hrs,"hrs",mins,"mins and",secs,"seconds.\n"))
+  if (debug) {
+    cat(paste("Data written in",hrs,"hrs",mins,"mins and",secs,"seconds.\n"))
+  }
     
   ### --- Generate commands
   if (is.null(thinning.interval)) {
@@ -787,8 +805,10 @@ R2BGLiMS <- function(
   }
   
   ### --- Run commands
-  cat("Calling BGLiMS Java algorithm with command: \n")
-  cat(comm, "\n")
+  if (debug) {
+    cat("Calling BGLiMS Java algorithm with command: \n")
+    cat(comm, "\n")
+  }
   jobs <- list()  
   t1 <- proc.time()["elapsed"]
   system(comm)
@@ -797,7 +817,9 @@ R2BGLiMS <- function(
   hrs <-floor( (t2-t1)/(60*60) )
   mins <- floor( (t2-t1-60*60*hrs)/60 )
   secs <- round(t2-t1-hrs*60*60 - mins*60)
-  cat(paste("BGLiMS Java computation finished in",hrs,"hrs",mins,"mins and",secs,"seconds.\n"))
+  if (debug) {
+    cat(paste("BGLiMS Java computation finished in",hrs,"hrs",mins,"mins and",secs,"seconds.\n"))
+  }
   
   ##################################
   ##################################
@@ -807,7 +829,6 @@ R2BGLiMS <- function(
   ##################################
   ##################################
   
-  cat("Reading BGLiMS posterior output...\n")  
   t1 <- proc.time()["elapsed"]
   
   ### --- Read BGLiMS arguments
@@ -895,7 +916,9 @@ R2BGLiMS <- function(
   hrs <-floor( (t2-t1)/(60*60) )
   mins <- floor( (t2-t1-60*60*hrs)/60 )
   secs <- round(t2-t1-hrs*60*60 - mins*60)
-  cat(paste("Posterior output processed in",hrs,"hrs",mins,"mins and",secs,"seconds.\n"))
+  if (debug) {
+    cat(paste("Posterior output processed in",hrs,"hrs",mins,"mins and",secs,"seconds.\n"))
+  }
   
   ########################
   ########################
@@ -950,10 +973,5 @@ R2BGLiMS <- function(
     mcmc.output=mcmc.output
     )
   
-  ########################
-  ### --- Finished --- ###
-  ########################
-  
-  cat(paste("Finished.\n"))
   return(results)
 }

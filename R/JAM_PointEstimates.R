@@ -61,15 +61,13 @@ JAM_PointEstimates <- function(
   if (just.get.z) {
     vec.return <- z
   } else {
-    # 1) Get Cholesky decomposition L
+    # 1) Mean-centre X.ref
     for (v in 1:ncol(X.ref)) {
       X.ref[,v] <- X.ref[,v] - mean(X.ref[,v]) # MUST mean-center since z is constructed under 0 intercept 
     }
-    L <- chol(t(X.ref) %*% X.ref)
-    
-    # 2) Calculate MLE corresponding to the summary model, multipled through by L
-    z_L <- solve(t(L)) %*% z
-    multivariate.beta.hat <- t(solve(t(L) %*% L) %*% t(L) %*% z_L)
+
+    # 2) Calculate MLE corresponding to the summary model
+    multivariate.beta.hat <- solve(t(X.ref) %*% X.ref) %*% z
     vec.return <- multivariate.beta.hat
   }
   
