@@ -10,11 +10,11 @@ JAM(marginal.betas = NULL, n = NULL, ns.each.ethnicity = NULL,
   xtx.ridge.term = 0, enumerate.up.to.dim = 0,
   full.mcmc.sampling = FALSE, n.iter = 1e+06, n.mil.iter = NULL,
   thinning.interval = NULL, seed = NULL, extra.arguments = NULL,
-  initial.model = NULL, save.path = NULL, max.model.dim = -1,
-  burnin.fraction = 0.5, trait.variance = NULL, mrloss.w = 0,
-  mrloss.function = "variance", mrloss.marginal.by = NULL,
-  mrloss.marginal.sy = NULL, mafs.if.independent = NULL,
-  extra.java.arguments = NULL)
+  initial.model = NULL, save.path = NULL, debug = FALSE,
+  max.model.dim = -1, burnin.fraction = 0.5, trait.variance = NULL,
+  mrloss.w = 0, mrloss.function = "variance",
+  mrloss.marginal.by = NULL, mrloss.marginal.sy = NULL,
+  mafs.if.independent = NULL, extra.java.arguments = NULL)
 }
 \arguments{
 \item{marginal.betas}{Vector of (named) marginal effect estimates to re-analyse with JAM under multivariate models. 
@@ -98,6 +98,9 @@ If left un-specified the null (empty) model is used.}
 
 \item{save.path}{By default R2BGLiMS writes the posterior samples to a temporary file that is deleted after they have been read in to R. By 
 specifying a file path this can be kept, along with the temporary files used for the data and arguments, which can be useful sometimes for de-bugging.}
+
+\item{debug}{Whether to output extra information (such as final adaption proposal SDs) which might help with debugging 
+(default is FALSE).}
 
 \item{max.model.dim}{The maximum model dimension can be specified, therefore truncating the model space. We do not recommend using this option 
 but it might sometimes be useful for robust-ness checks. When left un-specified there is no restriction on the model size.}

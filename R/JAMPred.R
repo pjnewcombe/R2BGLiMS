@@ -36,6 +36,8 @@
 #' of SNP effects. Default is what we used in the paper, a Uniform(0.05, 2) distribution.
 #' @param residual.var.invgamma.prior Hyper-parameters for the inversegamma prior on the residual variance.
 #' Default is what we used in the paper, a Inverse-Gamma(0.01, 0.01) distribution.
+#' @param save.path Optional path for JAM to store and save its temporary files in. Can help with debugging (default NULL).
+#' @param debug An option passed to JAM requesting more verbose output (default FALSE).
 #' 
 #' @return A JAMPred results object, which is a list including as elements step1.posterior.mean.snp.weights 
 #' (which do not adjust for long range LD) and step2.posterior.mean.snp.weights (which do adjust for long 
@@ -67,7 +69,9 @@ JAMPred <- function(
   seed = NULL,
   thinning.factor = round(1e3/n.mil),
   effect.sd.uniform.prior = c(0.05,2),
-  residual.var.invgamma.prior = c(0.01,0.01)
+  residual.var.invgamma.prior = c(0.01,0.01),
+  save.path=NULL,
+  debug=FALSE
 ) {
   
   library(parallel)
@@ -134,7 +138,9 @@ JAMPred <- function(
                               seed = seed,
                               extra.arguments = 
                                 list("GaussianResidualVarianceInvGammaPrior_a"=residual.var.invgamma.prior[1],
-                                     "GaussianResidualVarianceInvGammaPrior_b"=residual.var.invgamma.prior[2])
+                                     "GaussianResidualVarianceInvGammaPrior_b"=residual.var.invgamma.prior[2]),
+                              save.path=save.path,
+                              debug=debug
                             ), 
                           mc.cores=n.cores), recursive=F)
   

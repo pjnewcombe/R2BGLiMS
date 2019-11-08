@@ -12,7 +12,8 @@ JAMPred(marginal.betas = NULL, n.training = NULL,
   initial.snps.blocks = NULL, seed = NULL,
   thinning.factor = round(1000/n.mil),
   effect.sd.uniform.prior = c(0.05, 2),
-  residual.var.invgamma.prior = c(0.01, 0.01))
+  residual.var.invgamma.prior = c(0.01, 0.01), save.path = NULL,
+  debug = FALSE)
 }
 \arguments{
 \item{marginal.betas}{Vector of named one-at-a-time SNP effects. NB: This must be a named vector; it is where.
@@ -67,6 +68,10 @@ of SNP effects. Default is what we used in the paper, a Uniform(0.05, 2) distrib
 
 \item{residual.var.invgamma.prior}{Hyper-parameters for the inversegamma prior on the residual variance.
 Default is what we used in the paper, a Inverse-Gamma(0.01, 0.01) distribution.}
+
+\item{save.path}{Optional path for JAM to store and save its temporary files in. Can help with debugging (default NULL).}
+
+\item{debug}{An option passed to JAM requesting more verbose output (default FALSE).}
 }
 \value{
 A JAMPred results object, which is a list including as elements step1.posterior.mean.snp.weights 

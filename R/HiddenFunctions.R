@@ -111,14 +111,6 @@
   return(return.mat)
 }
 
-#' Calculates FDR thresholds according to Algorithm 18.3 on P.689 of elemnts of statistical learning by Hastie et al.
-#' This is a conservative caclulation.
-#' @param obs.probs Posterior probabilities from analysis of actual data
-#' @param permuted.probs Posterior probabilties from analysis of permuted outcome analyses
-#' @param target.fdrs Vector of FDRs to estimate Posterior Probability thresholds for (defaults to 1%, 5% and 10%)
-#' @param n.cuts.order Order of magnitude for vector length of possible thresholds to explore
-#' @return Matrix of tagret FDRs, their estimated posterior probability thresholds, and the estimated FDR at each threshold
-#' @author Paul Newcombe
 .GetFdrThresholds <- function(
   obs.probs,
   permuted.probs,
