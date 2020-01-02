@@ -2,198 +2,172 @@
 % Please edit documentation in R/JAMMR.R
 \name{JAMMR}
 \alias{JAMMR}
-\title{JAMMR}
+\title{JAMMR - Bayesian variable selection for Mendelian randomization.}
 \usage{
 JAMMR(bx, sx, by, sy, N1, eafs = NULL, G.matrix = NULL,
-  trait.var = NULL, iter = 1e+06, w, initial.model = rep(1,
-  length(bx)), n.models = 10, jam.model.priors = c(1, length(bx)),
-  loss.function = "variance", random.effects = TRUE, jam.seed = NULL)
+  trait.var = NULL, iter = 1e+06, w = NULL, n.grid = 26,
+  grid.limits = NULL, initial.model = rep(1, length(bx)),
+  n.models = 10, mretn = TRUE, jam.model.priors = c(1, length(bx)),
+  loss.function = "steve", jam.seed = NULL)
 }
 \arguments{
-\item{bx}{Univariate effect estimates between each SNP and the risk factor.}
+\item{bx}{Univariate effect estimates between each genetic variant and the risk factor.}
 
-\item{sx}{Standard errors for the SNP-risk factor genetic effects.}
+\item{sx}{Standard errors for the varant-risk factor genetic effects.}
 
-\item{by}{Univariate effect estimates between each SNP and the outcome.}
+\item{by}{Univariate effect estimates between each genetic variant and the outcome.}
 
-\item{sy}{Standard errors for the SNP-outcome genetic effects.}
+\item{sy}{Standard errors for the variant-outcome genetic effects.}
 
 \item{N1}{Sample size of the study from which the bx effects were obtained.}
 
-\item{eafs}{A vector of effect allele frequencies of length same as bx. Must 
-be provided if genetic variants are assumed to be independent.}
+\item{eafs}{A vector of effect allele frequencies of length same as bx.
+Must be provided if genetic variants are assumed to be independent.}
 
 \item{G.matrix}{A reference matrix for the genetic variants used in the analysis.
-If present, will override eafs and force JAM-MR to model genetic 
-variants as correlated. If absent, JAM-MR will assume that genetic
-variants are independent. One of eafs ad G.matrix must be specified.}
+If present, will override eafs and force JAM-MR to model genetic variants as 
+correlated. If absent, JAM-MR will assume that genetic variants are independent. 
+One of eafs ad G.matrix must be specified. Note: the algorithm takes longer to
+run with coorrelated instruments, therefore when genetic variants are truly  
+independent it is better to specify eafs and not G.matrix.}
 
-\item{trait.var}{An estimate of the variance in risk factor measurements
-(can be obtained from the G-X GWAS and will be equal to 1
-if the GWAS estimates are reported based on standardized data).
-If not provided, it is internally estimated by JAM-MR.}
+\item{trait.var}{An estimate of the variance in risk factor measurements. Can be 
+obtained from the G-X GWAS and will be equal to 1 if the GWAS estimates are reported
+based on standardized data. If not provided, it is internally estimated by JAM-MR.}
 
 \item{iter}{The number of reversible-jump MCMC iterations to perform.}
 
 \item{w}{Tuning parameter(s) for pleiotropy penalization. If scalar, a single
-JAM-MR implementation will be run. If vector, one implementation
-will be run for each value and the minimum-causal-standard -error run
-will be selected. Values should typically be multiples of N1.
-Larger values encourage stronger penalization and smaller models.}
+JAM-MR implementation will be run. If vector, one implementation will be run 
+for each value and the minimum-causal-standard-error run will be selected. 
+Values should typically be multiples of N1. Larger values encourage stronger 
+penalization and smaller models.}
 
-\item{initial.model}{The model to be used in the first iteration of the stochastic search.}
+\item{n.grid}{If w is not specified, it is estimated by a grid search; n.grid is 
+the number of grid-points to visit during the grid search. Defaults to 26. 
+Redundant if w is specified.}
 
-\item{n.models}{The (maximum) number of highest-posterior-probability models to be reported
-by JAM-MR. If set to zero, no models will be reported.}
+\item{grid.limits}{Lower and upper limits for the w values to consider during the 
+grid search. The algorithm will create a grid of size n.grid by logarithmic
+interpolation between the limits, plus the value w = 0. The default is a grid  
+search between w = 0.01 N1 and w = 100 N1. Redundant if w is specified.}
 
-\item{jam.seed}{The seed to use for initializing the RJMCMC algorithm, if any.
-If multiple JAM-MR runs are implemented, these will be seeded using
-jam.seed, jam.seed + 1, jam.seed + 2, ...}
+\item{initial.model}{The model to be used in the first iteration of the stochastic 
+search. By default the algorithm starts from a model with all variants included. 
+It is recommended to change this to a smaller model when running applications with 
+large numbers of genetic variants and correlated data.}
+
+\item{n.models}{The (maximum) number of highest posterior probability models to be 
+reported by JAM-MR. If set to zero, no models will be reported.}
+
+\item{mretn}{Logical. If TRUE, the algorithm will fit a multiplicative random-effects
+truncated normal model in order to compute model-specific standard errors when 
+averaging across models. If FALSE, random-effects IVW estimates will be used instead.  
+Currently this is only implemented for independent genetic variants; with correlated 
+variants the algorithm will always use IVW as model-specific estimates.}
+
+\item{jam.model.priors}{Prior parameters for JAM's beta-binomial model space prior.}
+
+\item{loss.function}{The loss function to use. Weighted if "steve", unweighted if "variance".}
+
+\item{jam.seed}{The seed to use for initializing the RJMCMC algorithm, if any. If 
+a grid search for w is implemented, the implementations for different grid points  
+will be seeded using the values jam.seed, jam.seed + 1, jam.seed + 2, ...}
 }
 \value{
-A JAMMR results object, which is a list with the following components:
-\enumerate{
-\item causal: The estimated causal effect.  
-\item se: The corresponding standard error.  
-\item se.adj: Adjusted standard error (equal to se * 1.3178).  
-\item model.matrix: A matrix containing the highest posterior probability models 
-visited by JAM-MR during the variable selection procedure.
-See the function TopModels for more details.  
-\item snp.probs: Posterior inclusion probabilities for each SNP.  
-\item w: The value of the tuning parameter selected.
-\item all.causal: Causal effect estimates from all JAM-MR runs (for various w).
-\item all.se: Causal standard errors from all JAM-MR runs (for various w).
-\item all.w: All w values used.
-\item all.probs: SNP inclusion probabilities for all JAM-MR runs (for various w).
+A list with the following arguments:
+\itemize{
+  \item causal - Estimated causal effect.
+  \item se - Causal standard error.
+  \item model.matrix - If n.models > 0, a matrix containing the highest posterior
+  probability models visited by JAM-MR during the variable selection procedure. See
+  the function TopModels for more details.
+  \item snp.probs - Posterior inclusion probabilities for each genetic variant.
+  \item w - The value of the tuning parameter selected.
 }
-
-sensitivity plot
+In addition, if a grid search for w is implemented:
+\itemize{
+  \item all.causal - Causal effect estimates for each w value.
+  \item all.se - Causal standard errors for each w value.
+  \item all.probs - Posterior inclusion probabilities per genetic variant for each w value.
+  \item all.w - All w values used as part of the grid search.
+}
 }
 \description{
-JAM-MR does stochastic search (RJMCMC) to select instruments robustly associated with
-the risk factor, while penalizing pleiotropic sets
-of SNPs according to a heterogeneity loss function (similar to the
-het-pen approach of Burgess et al., 2018). The statistical framework for 
-combining Bayesian inference with loss functions is provided in Bissiri, Holmes and Walker (2016).
-The stochastic search provides posterior model probbilities and causal
-effect estimation is then performed by averaging the individual-model
-IVW estimates weighted by the model probabilities.
+This function implements the JAM-MR algorithm for Mendelian randomization.
+Given a set of genetic variants and corresponding summary statistics for
+associations with a risk factor and a disease outcome of interest, JAM-MR
+performs Bayesian stochastic search through a reversible-jump MCMC algorithm 
+to identify the most suitable variants for inclusion in a subsequent Mendelian
+randomization analysis. The algorithm prioritizes genetic variants with strong 
+associations with the risk factor while downweighting variants with heterogeneous 
+ratio estimates through the use of the general Bayesian framework and a heterogeneity-
+penalizing loss function. The stochastic search returns a list of models with 
+associated posterior probabilties. For each of them, JAM-MR obtains a model-specific
+causal effect estimate by fitting a normal or (if mretn = TRUE) a truncated normal
+multiplictive random-effects model. Finally, the algorithm averages across the 
+model-specific estimates to return an aggregate causal effect estimate and its 
+standard error.
 }
 \examples{
-# --- Load libraries
-library(R2BGLiMS)
-data("JAMMR_Example")
+# ## Using an artificial dataset.
+set.seed(21)
+P <- 50
+bx.sim <- rnorm(P, 0.15, 0.05)
+sx.sim <- abs(rnorm(P, 0.02, 0.008))
+which.pl <- rbinom(P, 1, 0.3)   ## Which SNPs are pleiotropic.
+by.sim <- bx.sim * 0.5 + rnorm(P, 0, 0.05)   ## True causal effect is 0.5.
+by.sim[which.pl == 1] <- by.sim[which.pl == 1] + rep(0.25, sum(which.pl))   ## Pleiotropic effects.
+sy.sim <- abs(rnorm(P, 0.04, 0.01))
 
-# APOSTOLOS SHORT DESCRIPTION OF LOADED DATA
+### Visualize the data.
+plot(bx.sim, by.sim, type = "p", pch = 19, xlim = c(0.00, 0.30), ylim = c(-0.10, 0.45), main = "Bx-By Plot")
+for (i in 1:50) lines(c(bx.sim[i], bx.sim[i]), c(by.sim[i] - 1.96 * sy.sim[i], by.sim[i] + 1.96 * sy.sim[i]))
+for (i in 1:50) lines(c(bx.sim[i] - 1.96 * sx.sim[i], bx.sim[i] + 1.96 * sx.sim[i]), c(by.sim[i], by.sim[i]))
+abline(a = 0, b = median(by.sim / bx.sim), col = "brown", lty = 2)
 
-########################################################################
-### --- Run JAM-MR with a single value of w and independent data --- ###
-########################################################################
 
-# Implement the algorithm.
-jammr.results1 <- JAMMR(bx.sim, sx.sim, by.sim, sy.sim, N1 = 5000, eafs = rep(0.3, 50),
-                        trait.var = 5, iter = 1e6, w = 5000, jam.seed = 22)
-
-# Diagnostics.
-jammr.results1$causal   ## Approximately 0.5 which is the correct value.
+### Run JAM-MR with a single value of w and independent data.
+jammr.results1 <- JAMMR(bx.sim, sx.sim, by.sim, sy.sim, N1 = 10000, eafs = rep(0.3, 50),
+                         iter = 1e6, w = 10000, jam.seed = 22)
+jammr.results1$causal
 jammr.results1$se
-jammr.results1$se.adj
 
 jammr.results1$snp.probs   ## Probabilities of inclusion per SNP.
 jammr.results1$snp.probs[which.pl == 0]   ## Probabilities for valid SNPs.
 jammr.results1$snp.probs[which.pl == 1]   ## Probabilities for pleiotropic SNPs.
 
-jammr.results1$model.matrix   ## The top models visited by JAMMR.
+### Run with multiple values of w.
+jammr.results1.1 <- JAMMR(bx.sim, sx.sim, by.sim, sy.sim, N1 = 10000, eafs = rep(0.3, 50),
+                           iter = 1e6, n.grid = 6, jam.seed = 22)
+jammr.results1.1$causal
+jammr.results1.1$se
+jammr.results1.1$all.causal
+jammr.results1.1$all.se
+jammr.results1.1$snp.probs
 
-# Plotting.
-JAMMR_ManhattanPlot(jammr.results1)
-JAMMR_SensitivityPlot(jammr.results1)
 
-# Run without the trait variance.
-jammr.results1.1 <- JAMMR(bx.sim, sx.sim, by.sim, sy.sim, N1 = 5000, eafs = rep(0.3, 50),
-                          iter = 1e6, w = 5000, jam.seed = 22)
-# Different results because trait variance estimate here was completely arbitrary.
+### Using a real dataset from the MendelianRandomization package.
+library(MendelianRandomization)
 
-#########################################################################
-### --- Run JAM-MR with a single w and dependent genetic variants --- ###
-#########################################################################
+### Run existing MR methods.
+mr_ivw( mr_input(bx = ldlc, bxse = ldlcse, by = chdlodds, byse = chdloddsse) )
+mr_egger( mr_input(bx = ldlc, bxse = ldlcse, by = chdlodds, byse = chdloddsse) )
+mr_median( mr_input(bx = ldlc, bxse = ldlcse, by = chdlodds, byse = chdloddsse) )
 
-# Simulate a reference genetic matrix for correlated-SNP analysis.
-G.sim <- matrix(rbinom(500000, 2, 0.3), 10000, 50)
-# This is just for testing purposes. The genetic matrix is based
-# on an independence assumption so the results should be very
-# similar to those obtained previously.
-
-# Run the algorithm.
-jammr.results2 <- JAMMR(bx.sim, sx.sim, by.sim, sy.sim, N1 = 5000, G.matrix = G.sim,
-                        trait.var = 5, iter = 1e6, w = 5000, jam.seed = 23)
-
-# Diagnostics.
-jammr.results2$causal
-jammr.results2$se
-jammr.results2$snp.probs
-
-# Plotting.
-JAMMR_ManhattanPlot(jammr.results2)
-JAMMR_SensitivityPlot(jammr.results2)
-
-#########################################################################
-### --- Run JAM-MR with multiple values of w and independent data --- ###
-#########################################################################
-
-# Implement the algorithm.
-jammr.results3 <- JAMMR(bx.sim, sx.sim, by.sim, sy.sim, N1 = 5000, eafs = rep(0.3, 50),
-                        trait.var = 5, iter = 1e6, jam.seed = 24, 
-                        w = c(0, 500, 1000, 2000, 5000, 10000, 20000, 50000))
-
-# Diagnostics.
-jammr.results3$causal
-jammr.results3$se
-jammr.results3$se.adj
-jammr.results3$snp.probs
-jammr.results3$w
-
-jammr.results3$all.causal
-jammr.results3$all.se
-jammr.results3$all.w
-jammr.results3$all.probs
-
-# Plotting.
-JAMMR_ManhattanPlot(jammr.results3)
-JAMMR_ManhattanPlot(jammr.results3, only.best = TRUE)
-JAMMR_SensitivityPlot(jammr.results3, adjust.se = TRUE, show.n.snps = TRUE)
-
-########################################################################
-### --- Run JAM-MR with multiple values of w and correlated data --- ###
-########################################################################
-
-# Implement the algorithm.
-jammr.results4 <- JAMMR(bx.sim, sx.sim, by.sim, sy.sim, N1 = 5000, G.matrix = G.sim,
-                        trait.var = 5, iter = 1e6, jam.seed = 24, 
-                        w = c(0, 500, 1000, 2000, 5000, 10000, 20000, 50000))
-
-# Diagnostics.
-jammr.results4$causal
-jammr.results4$se
-jammr.results4$se.adj
-jammr.results4$snp.probs
-jammr.results4$w
-
-jammr.results4$all.causal
-jammr.results4$all.se
-jammr.results4$all.w
-jammr.results4$all.probs
-
-# Plotting.
-JAMMR_ManhattanPlot(jammr.results4)
-JAMMR_ManhattanPlot(jammr.results4, only.best = TRUE)
-JAMMR_SensitivityPlot(jammr.results4, adjust.se = TRUE, show.n.snps = TRUE)
+### Run JAM-MR.
+jammr.results <- JAMMR(ldlc, ldlcse, chdlodds, chdloddsse, N1 = 17723, eafs = lipid_eaf, iter = 1e6,
+                        n.grid = 6, grid.limits = c(100, 20000), n.models = 0, jam.seed = 4189)
+jammr.results$causal
+jammr.results$se
+jammr.results$snp.probs
 }
 \seealso{
-See \code{\link{JAMMR_ManhattanPlot}} for a visual 
-summary of individual SNP selection probabilities and \code{\link{JAMMR_SensitivityPlot}}
-for producing sensitivity plots of causal effects and standard errors for various values of w.
+See \code{\link{JAMMR_ManhattanPlot}} for a visual summary of covariate
+selection probabilities and \code{\link{JAMMR_SensitivityPlot}} for a visual 
+comparison of results obtained using different w values. Also see \code{\link{JAM}} 
+for an implementation of the fine-mapping algorithm on which JAM-MR relies.
 }
 \author{
-Apostolos Gkatzionis
+Apostolos Gkatzionis and Paul Newcombe
 }

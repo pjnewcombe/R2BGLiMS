@@ -17,7 +17,8 @@ jampred.res.bin <- JAMPred(
   ref.geno = data.validation[,snps],
   total.snps.genome.wide = 500000, # Total SNPs across all chromosomes
   n.mil = 0.2,
-  seed = 1 # For re-producibility. If not set a random seed is used
+  seed = 1, # For re-producibility. If not set a random seed is used
+  debug=T
 )
 
 # Generate predictions
