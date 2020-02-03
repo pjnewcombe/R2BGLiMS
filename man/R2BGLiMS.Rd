@@ -10,16 +10,16 @@ R2BGLiMS(likelihood = NULL, data = NULL, outcome.var = NULL,
   beta.prior.partitions = NULL, standardise.covariates = TRUE,
   empirical.intercept.prior.mean.and.initial.value = NULL,
   g.prior = TRUE, tau = NULL, xtx.ridge.term = 0,
-  enumerate.up.to.dim = 0, X.ref = NULL, ns.each.ethnicity = NULL,
-  marginal.betas = NULL, n = NULL, n.iter = 1e+06,
-  n.mil.iter = NULL, thinning.interval = NULL, seed = NULL,
-  extra.arguments = NULL, initial.model = NULL, max.model.dim = -1,
-  save.path = NULL, results.label = NULL, burnin.fraction = 0.5,
-  trait.variance = NULL, logistic.likelihood.weights = NULL,
-  mrloss.w = 0, mrloss.function = "variance",
-  mrloss.marginal.by = NULL, mrloss.marginal.sy = NULL,
-  mafs.if.independent = NULL, extra.java.arguments = NULL,
-  debug = FALSE)
+  enumerate.up.to.dim = 0, X.ref = NULL, cor.ref = NULL,
+  mafs.ref = NULL, ns.each.ethnicity = NULL, marginal.betas = NULL,
+  n = NULL, n.iter = 1e+06, n.mil.iter = NULL,
+  thinning.interval = NULL, seed = NULL, extra.arguments = NULL,
+  initial.model = NULL, max.model.dim = -1, save.path = NULL,
+  results.label = NULL, burnin.fraction = 0.5, trait.variance = NULL,
+  logistic.likelihood.weights = NULL, mrloss.w = 0,
+  mrloss.function = "variance", mrloss.marginal.by = NULL,
+  mrloss.marginal.sy = NULL, mafs.if.independent = NULL,
+  extra.java.arguments = NULL, debug = FALSE)
 }
 \arguments{
 \item{likelihood}{Type of model to fit. Current options are 
@@ -118,6 +118,14 @@ analysed this should be a list containing reference genotype matrices for each r
 must be coded as a numeric risk allele count 0/1/2. Non-integer values reflecting imputation may be given.
 NB: The risk allele coding MUST correspond to that used in marginal.betas. These matrices must each be positive definite and
 the column names must correspond to the names of the marginal.betas vector.}
+
+\item{cor.ref}{Alternatively to a reference genotype matrix, a reference correlation matrix AND mafs may be supplied to JAM.
+NB: The risk allele coding MUST correspond to that used in marginal.betas. These matrices must each be positive definite and
+the column and row names must correspond to the names of the marginal.betas vector.}
+
+\item{mafs.ref}{Alternatively to a reference genotype matrix, a reference correlation matrix AND mafs may be supplied to JAM.
+NB: The risk allele coding MUST correspond to that used in marginal.betas. This must be a named vector with names correspond 
+to the names of the marginal.betas vector.}
 
 \item{ns.each.ethnicity}{For mJAM: A vector of the sizes of each ethnicity dataset in which the summary statistics were calculated.}
 

@@ -31,6 +31,8 @@ JAM <- function(
   n=NULL,
   ns.each.ethnicity=NULL,
   X.ref=NULL,
+  cor.ref=NULL,
+  mafs.ref=NULL,
   model.space.priors=NULL,
   beta.priors=NULL,
   beta.prior.partitions=NULL,
@@ -64,34 +66,7 @@ JAM <- function(
   
   # --- X.ref checks (if mafs.if.independent not provided)
   
-  if (is.null(mafs.if.independent)) {
-    
-    # Force to list
-    if (is.data.frame(X.ref)) {
-      X.ref <- data.matrix(X.ref) # convert to matrix
-    }
-    if (!is.list(X.ref)) {
-      X.ref <- list(X.ref) # convert to list if there is a single block
-    }
-    
-    # Check Rank
-    # for (ld.block in 1:length(X.ref)) {
-    #  qr.decomp <- qr(X.ref[[ld.block]])
-    #  if (qr.decomp$rank < ncol(X.ref[[ld.block]])) stop (
-    #    paste("The reference matrix for block",ld.block,"/",length(X.ref),"is not full rank.
-    #            Ideally a larger reference sample should be used, 
-    #            or you could try pruning correlated SNPs.")
-    #  )
-    #}
-    
-    # Check format
-    if (sum(unlist(lapply(X.ref, function(x) !is.numeric(x) )))>0) {stop("Reference genotype matrices must be numeric, coded as risk allele countsin the 0 to 2 range")}
-    if (max(unlist(X.ref))>2 | min(unlist(X.ref)) < 0) {stop("Reference genotype matrices must be coded coded as risk allele counts in the 0 to 2 range")}
-    for (ld.block in 1:length(X.ref)) {
-      if (is.null(colnames(X.ref[[ld.block]]))) stop ("All columns of the X reference matrice(s) must be named, corresponding to SNP effects in marginal.betas")
-    }
-    
-  } else if (!is.null(mafs.if.independent)) {
+  if (!is.null(mafs.if.independent)) {
     if (enumerate.up.to.dim > 0) { stop("When specifiying indepdent SNPs not yet possible to do enumeration.")}
   }
 
@@ -106,23 +81,6 @@ JAM <- function(
     if (is.null(n)) { stop("You must specificy the number of individuals the summary statistics were calculated in.") }
   }
 
-  #######################################################################
-  ### --- Take subset of X.refs correpsonding to elements of beta --- ###
-  #######################################################################
-  
-  # ATTEMPTS TO REMOVE MISTAKENLY EXTRA SNPS
-  #   Will not work for mJAM due to X.ref being ethnicities not blocks
-  #   This is not necessary anyway; error check better
-  
-#  for (ld.block in 1:length(X.ref)) {
-#    X.ref[[ld.block]] <- X.ref[[ld.block]][,colnames(X.ref[[ld.block]]) %in% names(marginal.betas)]
-#    original.n.snps <- ncol(X.ref[[ld.block]])
-#    final.n.snps <- ncol(X.ref[[ld.block]])
-#    if (final.n.snps!=original.n.snps) {
-#      cat((original.n.snps-final.n.snps),"extra SNPs removed from the reference matrix for LD block",ld.block,"\n")
-#    }
-#  }
-  
   #####################################################
   ### --- Whether to perform full MCMC sampling --- ###
   #####################################################
@@ -138,100 +96,48 @@ JAM <- function(
   ############################
   
   if (enumerate.up.to.dim > 0) {
+    if (
+      (is.list(X.ref) & length(X.ref>1)) |
+      (is.list(cor.ref) & length(cor.ref>1))
+    ) {stop("For enumeration please just supply one region at a time")}
     # Force not using JAM_MCMC
     which.blgims.jam.method <- "JAM"
     ### --- Enumeration
     n.iter <- 1 # Set to minimum number of iterations
-    if (!is.list(X.ref)|length(X.ref)==1) {
-      ######################################
-      ### --- Enumeration - 1 region --- ###
-      ######################################
-      results <- R2BGLiMS(
-        likelihood=which.blgims.jam.method,
-        marginal.betas=marginal.betas,
-        n=n,
-        X.ref=X.ref,
-        ns.each.ethnicity=ns.each.ethnicity,
-        model.space.priors=model.space.priors,
-        g.prior=g.prior,
-        tau=tau,
-        xtx.ridge.term=xtx.ridge.term,
-        enumerate.up.to.dim=enumerate.up.to.dim,
-        n.iter=n.iter,
-        n.mil.iter=n.mil.iter,
-        thinning.interval=thinning.interval,
-        seed=seed,
-        extra.arguments=extra.arguments,
-        initial.model=initial.model,
-        save.path=save.path,
-        debug=debug,
-        max.model.dim=max.model.dim,
-        burnin.fraction = burnin.fraction,
-        trait.variance = trait.variance,
-        mrloss.w = mrloss.w,
-        mrloss.function = mrloss.function,
-        mrloss.marginal.by = mrloss.marginal.by,
-        mrloss.marginal.sy = mrloss.marginal.sy,
-        mafs.if.independent = mafs.if.independent,
-        extra.java.arguments=extra.java.arguments
-      )
-    } else {
-      ##############################################
-      ### --- Enumeration - Multiple regions --- ###
-      ##############################################
-      model.space.priors.ld.block <- model.space.priors
-      for (ld.block in 1:length(X.ref)) {
-        cat("\n--------------------------\n")
-        cat("\n--------------------------\n")
-        cat("\nEnumeration for block",ld.block,"\n")        
-        cat("\n--------------------------\n")
-        cat("\n--------------------------\n")
-        vars.ld.block <- colnames(X.ref[[ld.block]])
-        model.space.priors.ld.block$Variables <- vars.ld.block
-        results.r2bglims.g <- R2BGLiMS(
-          likelihood=which.blgims.jam.method,
-          marginal.betas=marginal.betas[vars.ld.block],
-          n=n,
-          X.ref=X.ref[[ld.block]],
-          ns.each.ethnicity=ns.each.ethnicity,
-          model.space.priors=model.space.priors.ld.block,
-          g.prior=g.prior,
-          tau=tau,
-          xtx.ridge.term=xtx.ridge.term,
-          enumerate.up.to.dim=enumerate.up.to.dim,
-          n.iter=n.iter,
-          n.mil.iter=n.mil.iter,
-          thinning.interval=thinning.interval,
-          seed=seed,
-          extra.arguments=extra.arguments,
-          initial.model=initial.model,
-          save.path=save.path,
-          debug=debug,
-          max.model.dim=max.model.dim,
-          burnin.fraction = burnin.fraction,
-          trait.variance = trait.variance,
-          mrloss.w = mrloss.w,
-          mrloss.function = mrloss.function,
-          mrloss.marginal.by = mrloss.marginal.by,
-          mrloss.marginal.sy = mrloss.marginal.sy,
-          mafs.if.independent = mafs.if.independent,
-          extra.java.arguments=extra.java.arguments
-        )
-        if (ld.block==1) {
-          results <- results.r2bglims.g
-          results@posterior.summary.table <- results@posterior.summary.table[vars.ld.block,] # Only display SNPs
-          results@n.covariate.blocks.for.jam <- length(X.ref)
-          results@enumerated.posterior.inference <- list(results@enumerated.posterior.inference) # Setup as a list
-        } else {
-          results@posterior.summary.table <- rbind( # Append extra rows to posterior summary table
-            results@posterior.summary.table,
-            results.r2bglims.g@posterior.summary.table[vars.ld.block,]
-          )
-          results@model.space.priors[[ld.block]] <- model.space.priors.ld.block # Append extra model space components
-          results@enumerated.posterior.inference[[ld.block]] <- results.r2bglims.g@enumerated.posterior.inference # Add enumeration to the list
-        }
-      }
-    }
+    ######################################
+    ### --- Enumeration - 1 region --- ###
+    ######################################
+    results <- R2BGLiMS(
+      likelihood=which.blgims.jam.method,
+      marginal.betas=marginal.betas,
+      n=n,
+      X.ref=X.ref,
+      cor.ref=cor.ref,
+      mafs.ref=mafs.ref,
+      ns.each.ethnicity=ns.each.ethnicity,
+      model.space.priors=model.space.priors,
+      g.prior=g.prior,
+      tau=tau,
+      xtx.ridge.term=xtx.ridge.term,
+      enumerate.up.to.dim=enumerate.up.to.dim,
+      n.iter=n.iter,
+      n.mil.iter=n.mil.iter,
+      thinning.interval=thinning.interval,
+      seed=seed,
+      extra.arguments=extra.arguments,
+      initial.model=initial.model,
+      save.path=save.path,
+      debug=debug,
+      max.model.dim=max.model.dim,
+      burnin.fraction = burnin.fraction,
+      trait.variance = trait.variance,
+      mrloss.w = mrloss.w,
+      mrloss.function = mrloss.function,
+      mrloss.marginal.by = mrloss.marginal.by,
+      mrloss.marginal.sy = mrloss.marginal.sy,
+      mafs.if.independent = mafs.if.independent,
+      extra.java.arguments=extra.java.arguments
+    )
   } else {
     ### --- RJMCMC    
     results <- R2BGLiMS(
@@ -239,6 +145,8 @@ JAM <- function(
       marginal.betas=marginal.betas,
       n=n,
       X.ref=X.ref,
+      cor.ref=cor.ref,
+      mafs.ref=mafs.ref,
       ns.each.ethnicity=ns.each.ethnicity,
       model.space.priors=model.space.priors,
       beta.priors=beta.priors,

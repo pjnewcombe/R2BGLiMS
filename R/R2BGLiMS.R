@@ -90,6 +90,12 @@ NULL
 #' must be coded as a numeric risk allele count 0/1/2. Non-integer values reflecting imputation may be given.
 #' NB: The risk allele coding MUST correspond to that used in marginal.betas. These matrices must each be positive definite and
 #' the column names must correspond to the names of the marginal.betas vector.
+#' @param cor.ref Alternatively to a reference genotype matrix, a reference correlation matrix AND mafs may be supplied to JAM.
+#' NB: The risk allele coding MUST correspond to that used in marginal.betas. These matrices must each be positive definite and
+#' the column and row names must correspond to the names of the marginal.betas vector.
+#' @param mafs.ref Alternatively to a reference genotype matrix, a reference correlation matrix AND mafs may be supplied to JAM.
+#' NB: The risk allele coding MUST correspond to that used in marginal.betas. This must be a named vector with names correspond 
+#' to the names of the marginal.betas vector.
 #' @param ns.each.ethnicity For mJAM: A vector of the sizes of each ethnicity dataset in which the summary statistics were calculated.
 #' @param marginal.betas Vector of (named) marginal effect estimates to re-analyse with JAM under multivariate models. 
 #' For multi-ethnic "mJAM" please provide a list of vectors, each element of which is a vector of marginal effects
@@ -159,6 +165,8 @@ R2BGLiMS <- function(
   xtx.ridge.term=0,
   enumerate.up.to.dim=0,
   X.ref=NULL,
+  cor.ref=NULL,
+  mafs.ref=NULL,
   ns.each.ethnicity=NULL,
   marginal.betas=NULL,
   n=NULL,
@@ -217,7 +225,7 @@ R2BGLiMS <- function(
       stop("Likelihood must be specified as Logistic, CLogLog, Weibull, Linear, LinearConj, JAM_MCMC, or JAM")
     }
   }
-  if (is.null(data)&is.null(X.ref)&is.null(mafs.if.independent)) stop("The data to analyse has not been specified")
+#  if (is.null(data)&is.null(X.ref)&is.null(mafs.if.independent)) stop("The data to analyse has not been specified")
   if (is.null(outcome.var)&is.null(marginal.betas)) stop("An outcome variable has not been specified")
   if (!is.null(logistic.likelihood.weights) & likelihood != "Logistic") stop("Likelihood weights can currently
                                                                              only be supplied for logistic regression.")
@@ -420,38 +428,47 @@ R2BGLiMS <- function(
     }
   }
   
-  ### --- X.ref error message for JAM
-  if (!is.null(X.ref)) {
-    if (is.data.frame(X.ref)) {
-      X.ref <- matrix(X.ref) # convert to matrix
+  ### --- JAM specific error messages
+  if (!is.null(X.ref) | !is.null(cor.ref)) {
+    
+    # --- X.ref error messages
+    if (!is.null(X.ref)) {
+      if (!is.null(cor.ref)) {stop("Please only supply one of X.ref or cor.ref + mafs.ref")}
+      if (is.data.frame(X.ref)) {
+        X.ref <- matrix(X.ref) # convert to matrix
+      }
+      if (!is.list(X.ref)) {
+        X.ref <- list(X.ref) # convert to list if there is a single block
+      }
+      if (sum(unlist(lapply(X.ref, function(x) !is.numeric(x) )))>0) {stop("Reference genotype matrices must be numeric, coded as risk allele countsin the 0 to 2 range")}
+      if (max(unlist(X.ref))>2 | min(unlist(X.ref)) < 0) {stop("Reference genotype matrices must be coded coded as risk allele counts in the 0 to 2 range")}
+      if (!is.null(ns.each.ethnicity)) {
+        # mJAM error catches
+      } else {
+        if (sum(names(marginal.betas) %in% unlist(lapply(X.ref, colnames))) < length(marginal.betas)) {stop("Reference genotype matrices do not include all SNPs in the marginal.betas vector")}
+      }
     }
-    if (!is.list(X.ref)) {
-      X.ref <- list(X.ref) # convert to list if there is a single block
+
+    # --- cor.ref error messages
+    if (!is.null(cor.ref)) {
+      if (is.null(mafs.ref)) {stop("Reference MAFs must also be supplied when supplying JAM a reference correlation matrix")}
+      if (is.data.frame(cor.ref)) {
+        cor.ref <- matrix(cor.ref) # convert to matrix
+      }
+      if (!is.list(cor.ref)) {
+        cor.ref <- list(cor.ref) # convert to list if there is a single block
+      }
+      if (sum(unlist(lapply(cor.ref, function(x) !is.numeric(x) )))>0) {stop("Reference correlation matrices must be numeric")}
+      if (!is.null(ns.each.ethnicity)) {
+        # mJAM error catches
+      } else {
+        if (sum(names(marginal.betas) %in% unlist(lapply(cor.ref, colnames))) < length(marginal.betas)) {stop("Reference correlation matrices do not include all SNPs in the marginal.betas vector")}
+      }
     }
-    if (length(X.ref)==1) {
-      #qr.decomp <- qr(X.ref[[1]])
-      #if (qr.decomp$rank < ncol(X.ref[[1]])) stop ("The reference matrix is not full rank. 
-      #                                      Ideally a larger reference sample should be used, 
-      #                                      or you could try pruning correlated SNPs.")
-    } else {
-      #for (ld.block in 1:length(X.ref)) {
-      #  qr.decomp <- qr(X.ref[[ld.block]])
-      #  if (qr.decomp$rank < ncol(X.ref[[ld.block]])) stop (
-      #    paste("The reference matrix for block",ld.block,"is not full rank.
-      #        Ideally a larger reference sample should be used, 
-      #        or you could try pruning correlated SNPs.")
-      #  )
-      #}
-    }
+    
+    # --- Other JAM input
     if (is.null(marginal.betas)) { stop("For analysis with JAM you must provide a vector of marginal summary statistics") }
     if (is.null(n)) { stop("You must specificy the number of individuals the marginal effect estimates were calculated in.") }
-    if (sum(unlist(lapply(X.ref, function(x) !is.numeric(x) )))>0) {stop("Reference genotype matrices must be numeric, coded as risk allele countsin the 0 to 2 range")}
-    if (max(unlist(X.ref))>2 | min(unlist(X.ref)) < 0) {stop("Reference genotype matrices must be coded coded as risk allele counts in the 0 to 2 range")}
-    if (!is.null(ns.each.ethnicity)) {
-      # mJAM error catches
-    } else {
-      if (sum(names(marginal.betas) %in% unlist(lapply(X.ref, colnames))) < length(marginal.betas)) {stop("Reference genotype matrices do not include all SNPs in the marginal.betas vector")}
-    }
   }
   
   ##########################
@@ -673,7 +690,7 @@ R2BGLiMS <- function(
       if (!is.null(mafs.if.independent)) {
         if (is.null(names(mafs.if.independent))) stop("mafs.if.independent must be a named vector.")
         X.ref = list(NULL)
-      } else {
+      } else if (!is.null(X.ref)) {
         ### --- Generate X'X, after normalising X
         xTx <- list()
         for (ld.block in 1:length(X.ref)) {
@@ -684,28 +701,55 @@ R2BGLiMS <- function(
           # Scale up by n/n.ref
           xTx[[ld.block]] <- xTx[[ld.block]]*n/nrow(X.ref[[ld.block]]) # INTRODUCED ISSUE FOR JAM PREDICTION
         }
-      }
-      
-      ### --- Generate z = X'y for JAM
-      z <- NULL
-      for (ld.block in 1:length(X.ref)) {
-        if (!is.null(mafs.if.independent)) {
-          snps.in.block <- names(mafs.if.independent)
-        } else {
-          snps.in.block <- colnames(X.ref[[ld.block]])
+        ### --- Generate z = X'y for JAM
+        z <- NULL
+        for (ld.block in 1:length(X.ref)) {
+          if (!is.null(mafs.if.independent)) {
+            snps.in.block <- names(mafs.if.independent)
+          } else {
+            snps.in.block <- colnames(X.ref[[ld.block]])
+          }
+          # Use a common n
+          z <- c(z, JAM_PointEstimates(
+            marginal.betas = marginal.betas[snps.in.block],
+            X.ref=X.ref[[ld.block]],
+            n=n, just.get.z=TRUE,
+            mafs.if.independent=mafs.if.independent) )
         }
-        # Use a common n
-        z <- c(z, JAM_PointEstimates(
-          marginal.betas = marginal.betas[snps.in.block],
-          X.ref=X.ref[[ld.block]],
-          n=n, just.get.z=TRUE,
-          mafs.if.independent=mafs.if.independent) )
+      } else if (!is.null(cor.ref)) {
+        ### --- Generate X'X, from correlation matrix and MAFs
+        snp.sds <- sqrt(sapply(mafs.ref, function(p) 2*p*(1-p)))
+        xTx <- list()
+        for (ld.block in 1:length(cor.ref)) {
+          xTx[[ld.block]] <- cor.ref[[ld.block]]
+          # Scale by SDs
+          for (snp1 in colnames(xTx[[ld.block]])) {
+            for (snp2 in colnames(xTx[[ld.block]])) {
+              xTx[[ld.block]][snp1,snp2] <- xTx[[ld.block]][snp1,snp2]*(snp.sds[snp1]*snp.sds[snp2])
+            }
+          }
+          # Multiply by N
+          xTx[[ld.block]] <- xTx[[ld.block]]*n
+        }
+        ### --- Generate z = X'y for JAM
+        z <- NULL
+        for (ld.block in 1:length(cor.ref)) {
+          snps.in.block <- colnames(cor.ref[[ld.block]])
+          # Use a common n
+          z <- c(z, JAM_PointEstimates(
+            marginal.betas = marginal.betas[snps.in.block],
+            cor.ref=cor.ref[[ld.block]],
+            mafs.ref=mafs.ref,
+            n=n, just.get.z=TRUE,
+            mafs.if.independent=mafs.if.independent) )
+        }
       }
       
       ### --- MR loss function setup
       mrloss.marginal.causal.effects <- mrloss.marginal.by/marginal.betas
       mrloss.marginal.causal.effect.ses <- mrloss.marginal.sy/marginal.betas
     } else {
+      # UPDATE FOR MULTI-ETHNIC JAM WITH cor.ref
       ### --- Generate X'X, after normalising X
       xTx <- list()
       for (e in 1:length(X.ref)) {

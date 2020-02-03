@@ -5,7 +5,8 @@
 \title{JAM (Joint Analysis of Marginal statistics)}
 \usage{
 JAM(marginal.betas = NULL, n = NULL, ns.each.ethnicity = NULL,
-  X.ref = NULL, model.space.priors = NULL, beta.priors = NULL,
+  X.ref = NULL, cor.ref = NULL, mafs.ref = NULL,
+  model.space.priors = NULL, beta.priors = NULL,
   beta.prior.partitions = NULL, g.prior = TRUE, tau = NULL,
   xtx.ridge.term = 0, enumerate.up.to.dim = 0,
   full.mcmc.sampling = FALSE, n.iter = 1e+06, n.mil.iter = NULL,
@@ -30,6 +31,14 @@ analysed this should be a list containing reference genotype matrices for each r
 must be coded as a numeric risk allele count 0/1/2. Non-integer values reflecting imputation may be given.
 NB: The risk allele coding MUST correspond to that used in marginal.betas. These matrices must each be positive definite and
 the column names must correspond to the names of the marginal.betas vector.}
+
+\item{cor.ref}{Alternatively to a reference genotype matrix, a reference correlation matrix AND mafs may be supplied to JAM.
+NB: The risk allele coding MUST correspond to that used in marginal.betas. These matrices must each be positive definite and
+the column and row names must correspond to the names of the marginal.betas vector.}
+
+\item{mafs.ref}{Alternatively to a reference genotype matrix, a reference correlation matrix AND mafs may be supplied to JAM.
+NB: The risk allele coding MUST correspond to that used in marginal.betas. This must be a named vector with names correspond 
+to the names of the marginal.betas vector.}
 
 \item{model.space.priors}{Must be specified if model.selection is set to TRUE.
 Two options are available. 1) A fixed prior is placed on the proportion of causal 
@@ -139,9 +148,9 @@ Wrapper for JAM (Joint Analysis of Marginal statistics). See the Vignette.
 \examples{
 library(R2BGLiMS)
 
-#############################################
-# --- Example 1) One region with RJMCMC --- #
-#############################################
+######################################################################################
+# --- Example 1) One region with RJMCMC providing reference individual genotypes --- #
+######################################################################################
 
 # By default 1 million iterations are run
 library(R2BGLiMS) # Load package
@@ -150,12 +159,32 @@ jam.results <- JAM(
   marginal.betas=marginal.betas[snps.region1],
   X.ref=X.ref.region1,
   model.space.prior = list("a"=1, "b"=length(snps.region1), "Variables"=snps.region1),
-  n=n)
+  n=n,
+  trait.variance=var(ipd.continuous[,"y"])) # Optional - but improves performance if a good estimate is available
+jam.results@posterior.summary.table # SNP 5 was simulated as causal
+ManhattanPlot(jam.results)
+
+##################################################################################
+# --- Example 2) One region with RJMCMC using a reference correlation matrix --- #
+##################################################################################
+
+# By default 1 million iterations are run
+library(R2BGLiMS) # Load package
+data(JAM_Example) # Load example data
+cor.ref.region1 <- cor(X.ref.region1)
+mafs.ref.region1 <- apply(X.ref.region1, MAR=2, mean)/2
+jam.results <- JAM(
+  marginal.betas=marginal.betas[snps.region1],
+  cor.ref=cor.ref.region1,
+  mafs.ref=mafs.ref.region1, # NB: MAFs must also be provided if passing JAM cor.ref
+  model.space.prior = list("a"=1, "b"=length(snps.region1), "Variables"=snps.region1),
+  n=n,
+  trait.variance=var(ipd.continuous[,"y"])) # Optional - but improves performance if a good estimate is available
 jam.results@posterior.summary.table # SNP 5 was simulated as causal
 ManhattanPlot(jam.results)
 
 ###############################################################
-# --- Example 2) Two regions simultaneously (with RJMCMC) --- #
+# --- Example 3) Two regions simultaneously (with RJMCMC) --- #
 ###############################################################
 
 two.regions.results <- JAM(
