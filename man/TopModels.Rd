@@ -4,8 +4,12 @@
 \alias{TopModels}
 \title{Table of top models}
 \usage{
-TopModels(results, n.top.models = 20, covariates.to.include = NULL,
-  remove.empty.cols = TRUE)
+TopModels(
+  results,
+  n.top.models = 20,
+  covariates.to.include = NULL,
+  remove.empty.cols = TRUE
+)
 }
 \arguments{
 \item{results}{A \code{\link[R2BGLiMS]{R2BGLiMS_Results-class}} object frum running the \code{\link[R2BGLiMS]{R2BGLiMS}} command.}

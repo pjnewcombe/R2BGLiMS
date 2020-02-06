@@ -4,12 +4,21 @@
 \alias{ManhattanPlot}
 \title{Manhattan Plot}
 \usage{
-ManhattanPlot(results = NULL, plot.quantity = "PosteriorProbability",
-  results.vector = NULL, covariates.to.include = NULL,
-  var.dictionary = NULL, plot.title = "Manhattan Plot", y.max = NULL,
-  add.bonferroni = FALSE, top.hits = NULL, X.mat = NULL,
-  point.cols = NULL, point.labs = NULL,
-  include.var.names.on.x.axis = TRUE)
+ManhattanPlot(
+  results = NULL,
+  plot.quantity = "PosteriorProbability",
+  results.vector = NULL,
+  covariates.to.include = NULL,
+  var.dictionary = NULL,
+  plot.title = "Manhattan Plot",
+  y.max = NULL,
+  add.bonferroni = FALSE,
+  top.hits = NULL,
+  X.mat = NULL,
+  point.cols = NULL,
+  point.labs = NULL,
+  include.var.names.on.x.axis = TRUE
+)
 }
 \arguments{
 \item{results}{A \code{\link[R2BGLiMS]{R2BGLiMS_Results-class}} object frum running the \code{\link[R2BGLiMS]{R2BGLiMS}} command.}

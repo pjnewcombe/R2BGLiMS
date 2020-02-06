@@ -4,10 +4,18 @@
 \alias{NormInvGamPosteriorSample}
 \title{Generate conjugate posterior sample of coefficients for a particular linear model.}
 \usage{
-NormInvGamPosteriorSample(data = NULL, outcome.var = NULL,
-  confounders = NULL, model = NULL, tau = NULL, n.samples = 1000,
-  xTx = NULL, z = NULL, sigma2_invGamma_a = NULL,
-  sigma2_invGamma_b = NULL)
+NormInvGamPosteriorSample(
+  data = NULL,
+  outcome.var = NULL,
+  confounders = NULL,
+  model = NULL,
+  tau = NULL,
+  n.samples = 1000,
+  xTx = NULL,
+  z = NULL,
+  sigma2_invGamma_a = NULL,
+  sigma2_invGamma_b = NULL
+)
 }
 \arguments{
 \item{data}{Matrix or dataframe containing the data to analyse. 

@@ -4,9 +4,16 @@
 \alias{TracePlots}
 \title{Parameter posterior trace plots for a R2BGLiMS results object}
 \usage{
-TracePlots(results, vars.to.include = NULL, var.dictionary = NULL,
-  predictors.only = FALSE, file = NULL, add.to.title = NULL,
-  par.mfrow = NULL, add.panel.labels = FALSE)
+TracePlots(
+  results,
+  vars.to.include = NULL,
+  var.dictionary = NULL,
+  predictors.only = FALSE,
+  file = NULL,
+  add.to.title = NULL,
+  par.mfrow = NULL,
+  add.panel.labels = FALSE
+)
 }
 \arguments{
 \item{results}{A \code{\link[R2BGLiMS]{R2BGLiMS_Results-class}} object frum running the \code{\link[R2BGLiMS]{R2BGLiMS}} command.}

@@ -5,9 +5,15 @@
 \alias{JAM_PosteriorSampler}
 \title{JAM (Joint Analysis of Marginal statistics) multivariate point estimator.}
 \usage{
-JAM_PointEstimates(marginal.betas = NULL, X.ref = NULL,
-  cor.ref = NULL, mafs.ref = NULL, n = NULL, just.get.z = FALSE,
-  mafs.if.independent = NULL)
+JAM_PointEstimates(
+  marginal.betas = NULL,
+  X.ref = NULL,
+  cor.ref = NULL,
+  mafs.ref = NULL,
+  n = NULL,
+  just.get.z = FALSE,
+  mafs.if.independent = NULL
+)
 
 JAM_PosteriorSampler(marginal.betas = NULL, X.ref = NULL)
 }

@@ -4,11 +4,26 @@
 \alias{JAMMR}
 \title{JAMMR - Bayesian variable selection for Mendelian randomization.}
 \usage{
-JAMMR(bx, sx, by, sy, N1, eafs = NULL, G.matrix = NULL,
-  trait.var = NULL, iter = 1e+06, w = NULL, n.grid = 26,
-  grid.limits = NULL, initial.model = rep(1, length(bx)),
-  n.models = 10, mretn = TRUE, jam.model.priors = c(1, length(bx)),
-  loss.function = "steve", jam.seed = NULL)
+JAMMR(
+  bx,
+  sx,
+  by,
+  sy,
+  N1,
+  eafs = NULL,
+  G.matrix = NULL,
+  trait.var = NULL,
+  iter = 1e+06,
+  w = NULL,
+  n.grid = 26,
+  grid.limits = NULL,
+  initial.model = rep(1, length(bx)),
+  n.models = 10,
+  mretn = TRUE,
+  jam.model.priors = c(1, length(bx)),
+  loss.function = "steve",
+  jam.seed = NULL
+)
 }
 \arguments{
 \item{bx}{Univariate effect estimates between each genetic variant and the risk factor.}

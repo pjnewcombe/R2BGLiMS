@@ -4,18 +4,39 @@
 \alias{JAM}
 \title{JAM (Joint Analysis of Marginal statistics)}
 \usage{
-JAM(marginal.betas = NULL, n = NULL, ns.each.ethnicity = NULL,
-  X.ref = NULL, cor.ref = NULL, mafs.ref = NULL,
-  model.space.priors = NULL, beta.priors = NULL,
-  beta.prior.partitions = NULL, g.prior = TRUE, tau = NULL,
-  xtx.ridge.term = 0, enumerate.up.to.dim = 0,
-  full.mcmc.sampling = FALSE, n.iter = 1e+06, n.mil.iter = NULL,
-  thinning.interval = NULL, seed = NULL, extra.arguments = NULL,
-  initial.model = NULL, save.path = NULL, debug = FALSE,
-  max.model.dim = -1, burnin.fraction = 0.5, trait.variance = NULL,
-  mrloss.w = 0, mrloss.function = "variance",
-  mrloss.marginal.by = NULL, mrloss.marginal.sy = NULL,
-  mafs.if.independent = NULL, extra.java.arguments = NULL)
+JAM(
+  marginal.betas = NULL,
+  n = NULL,
+  ns.each.ethnicity = NULL,
+  X.ref = NULL,
+  cor.ref = NULL,
+  mafs.ref = NULL,
+  model.space.priors = NULL,
+  beta.priors = NULL,
+  beta.prior.partitions = NULL,
+  g.prior = TRUE,
+  tau = NULL,
+  xtx.ridge.term = 0,
+  enumerate.up.to.dim = 0,
+  full.mcmc.sampling = FALSE,
+  n.iter = 1e+06,
+  n.mil.iter = NULL,
+  thinning.interval = NULL,
+  seed = NULL,
+  extra.arguments = NULL,
+  initial.model = NULL,
+  save.path = NULL,
+  debug = FALSE,
+  max.model.dim = -1,
+  burnin.fraction = 0.5,
+  trait.variance = NULL,
+  mrloss.w = 0,
+  mrloss.function = "variance",
+  mrloss.marginal.by = NULL,
+  mrloss.marginal.sy = NULL,
+  mafs.if.independent = NULL,
+  extra.java.arguments = NULL
+)
 }
 \arguments{
 \item{marginal.betas}{Vector of (named) marginal effect estimates to re-analyse with JAM under multivariate models. 

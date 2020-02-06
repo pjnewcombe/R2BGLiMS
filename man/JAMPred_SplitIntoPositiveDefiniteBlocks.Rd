@@ -4,8 +4,12 @@
 \alias{JAMPred_SplitIntoPositiveDefiniteBlocks}
 \title{Splits a list of SNPs into positive definite blocks.}
 \usage{
-JAMPred_SplitIntoPositiveDefiniteBlocks(snps, initial.block.size = 100,
-  initial.snps.blocks = NULL, ref.geno)
+JAMPred_SplitIntoPositiveDefiniteBlocks(
+  snps,
+  initial.block.size = 100,
+  initial.snps.blocks = NULL,
+  ref.geno
+)
 }
 \arguments{
 \item{snps}{List of SNPs to be split into blocks}

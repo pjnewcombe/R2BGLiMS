@@ -5,9 +5,13 @@
 \title{A pretty summary results table for reports. NOTE: This function outputs a table formatted with character strings.
 A numeric representation of the results are stored in the slot 'posterior.summary.table'.}
 \usage{
-PrettyResultsTable(results, round.digits.betas = 2,
-  round.digits.postprob = 2, round.digits.bf = 1,
-  normalised.sds = NULL)
+PrettyResultsTable(
+  results,
+  round.digits.betas = 2,
+  round.digits.postprob = 2,
+  round.digits.bf = 1,
+  normalised.sds = NULL
+)
 }
 \arguments{
 \item{results}{A \code{\link[R2BGLiMS]{R2BGLiMS_Results-class}} object frum running the \code{\link[R2BGLiMS]{R2BGLiMS}} command.}

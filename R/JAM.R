@@ -65,6 +65,15 @@ JAM <- function(
   ##################################################################
   
   # --- X.ref checks (if mafs.if.independent not provided)
+  if (is.null(mafs.if.independent)) {
+    # Force to list
+    if (is.data.frame(X.ref)) {
+      X.ref <- data.matrix(X.ref) # convert to matrix
+    }
+    if (!is.list(X.ref)) {
+      X.ref <- list(X.ref) # convert to list if there is a single block
+    }    
+  }
   
   if (!is.null(mafs.if.independent)) {
     if (enumerate.up.to.dim > 0) { stop("When specifiying indepdent SNPs not yet possible to do enumeration.")}

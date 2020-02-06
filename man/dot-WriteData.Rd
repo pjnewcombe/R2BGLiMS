@@ -4,17 +4,36 @@
 \alias{.WriteData}
 \title{Write Java MCMC format data file}
 \usage{
-.WriteData(data.file, likelihood, data, outcome.var = NULL,
-  times.var = NULL, confounders = NULL, predictors = NULL,
-  model.space.priors, beta.priors = NULL, beta.prior.partitions = NULL,
-  g.prior = FALSE, model.tau = FALSE, tau = NULL,
-  xtx.ridge.term = 0, enumerate.up.to.dim = 0, n = n, xTx = NULL,
-  z = NULL, ns.each.ethnicity = NULL, initial.model = NULL,
-  trait.variance = NULL, logistic.likelihood.weights = NULL,
-  mrloss.w = 0, mrloss.function = "variance",
+.WriteData(
+  data.file,
+  likelihood,
+  data,
+  outcome.var = NULL,
+  times.var = NULL,
+  confounders = NULL,
+  predictors = NULL,
+  model.space.priors,
+  beta.priors = NULL,
+  beta.prior.partitions = NULL,
+  g.prior = FALSE,
+  model.tau = FALSE,
+  tau = NULL,
+  xtx.ridge.term = 0,
+  enumerate.up.to.dim = 0,
+  n = n,
+  xTx = NULL,
+  z = NULL,
+  ns.each.ethnicity = NULL,
+  initial.model = NULL,
+  trait.variance = NULL,
+  logistic.likelihood.weights = NULL,
+  mrloss.w = 0,
+  mrloss.function = "variance",
   mrloss.marginal.causal.effects = NULL,
   mrloss.marginal.causal.effect.ses = NULL,
-  mafs.if.independent = mafs.if.independent, debug = FALSE)
+  mafs.if.independent = mafs.if.independent,
+  debug = FALSE
+)
 }
 \arguments{
 \item{data.file}{Desired path for .txt data file to be written to}

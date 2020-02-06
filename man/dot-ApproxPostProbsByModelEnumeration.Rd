@@ -4,8 +4,11 @@
 \alias{.ApproxPostProbsByModelEnumeration}
 \title{Enumertated approximate posterior probabilities}
 \usage{
-.ApproxPostProbsByModelEnumeration(enumerated.model.likelihood.scores,
-  model.space.priors, enumerate.up.to.dim)
+.ApproxPostProbsByModelEnumeration(
+  enumerated.model.likelihood.scores,
+  model.space.priors,
+  enumerate.up.to.dim
+)
 }
 \arguments{
 \item{enumerate.up.to.dim}{Maxmimum dimension to truncate space too (can be less than or equal to

@@ -4,8 +4,14 @@
 \alias{JAM_LogisticToLinearEffects}
 \title{Logistic to linear effect conversion for JAM}
 \usage{
-JAM_LogisticToLinearEffects(log.ors = NULL, log.or.ses = NULL,
-  snp.genotype.sds = NULL, mafs = NULL, n = NULL, p.cases = NULL)
+JAM_LogisticToLinearEffects(
+  log.ors = NULL,
+  log.or.ses = NULL,
+  snp.genotype.sds = NULL,
+  mafs = NULL,
+  n = NULL,
+  p.cases = NULL
+)
 }
 \arguments{
 \item{log.ors}{Vector of SNP summary log-odds ratios}

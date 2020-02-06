@@ -688,9 +688,23 @@ R2BGLiMS <- function(
   if (likelihood %in% c("JAM", "JAM_MCMC")) {
     if (is.null(ns.each.ethnicity)) {
       if (!is.null(mafs.if.independent)) {
+        # Independent MAFs have been specified
         if (is.null(names(mafs.if.independent))) stop("mafs.if.independent must be a named vector.")
         X.ref = list(NULL)
+
+        ### --- Generate z = X'y for JAM
+        z <- NULL
+        for (ld.block in 1:length(X.ref)) {
+          snps.in.block <- names(mafs.if.independent)
+          # Use a common n
+          z <- c(z, JAM_PointEstimates(
+            marginal.betas = marginal.betas[snps.in.block],
+            X.ref=X.ref[[ld.block]],
+            n=n, just.get.z=TRUE,
+            mafs.if.independent=mafs.if.independent) )
+        }                
       } else if (!is.null(X.ref)) {
+        # X.ref is given (not cor.ref)
         ### --- Generate X'X, after normalising X
         xTx <- list()
         for (ld.block in 1:length(X.ref)) {
@@ -704,11 +718,7 @@ R2BGLiMS <- function(
         ### --- Generate z = X'y for JAM
         z <- NULL
         for (ld.block in 1:length(X.ref)) {
-          if (!is.null(mafs.if.independent)) {
-            snps.in.block <- names(mafs.if.independent)
-          } else {
-            snps.in.block <- colnames(X.ref[[ld.block]])
-          }
+          snps.in.block <- colnames(X.ref[[ld.block]])
           # Use a common n
           z <- c(z, JAM_PointEstimates(
             marginal.betas = marginal.betas[snps.in.block],
@@ -717,6 +727,7 @@ R2BGLiMS <- function(
             mafs.if.independent=mafs.if.independent) )
         }
       } else if (!is.null(cor.ref)) {
+        # Cor.ref given (not X.ref)
         ### --- Generate X'X, from correlation matrix and MAFs
         snp.sds <- sqrt(sapply(mafs.ref, function(p) 2*p*(1-p)))
         xTx <- list()

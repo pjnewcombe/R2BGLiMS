@@ -4,8 +4,7 @@
 \alias{.ReweightSnpEffectsAccordingToBlockCorrelations}
 \title{This function is used by JAMPred_Step2AdjustmentAndPredictions}
 \usage{
-.ReweightSnpEffectsAccordingToBlockCorrelations(iteration, snp.blocks,
-  X.ref)
+.ReweightSnpEffectsAccordingToBlockCorrelations(iteration, snp.blocks, X.ref)
 }
 \description{
 This function is used by JAMPred_Step2AdjustmentAndPredictions

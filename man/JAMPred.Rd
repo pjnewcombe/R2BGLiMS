@@ -4,16 +4,27 @@
 \alias{JAMPred}
 \title{JAMPred}
 \usage{
-JAMPred(marginal.betas = NULL, n.training = NULL,
-  marginal.logor.ses = NULL, p.cases.training = NULL,
-  ref.geno = NULL, total.snps.genome.wide = NULL, n.cores = NULL,
-  n.mil = 0.2, beta.binom.b.lambda = 1, beta.binom.a = 1,
-  snps.blocks = NULL, initial.block.size = 100,
-  initial.snps.blocks = NULL, seed = NULL,
+JAMPred(
+  marginal.betas = NULL,
+  n.training = NULL,
+  marginal.logor.ses = NULL,
+  p.cases.training = NULL,
+  ref.geno = NULL,
+  total.snps.genome.wide = NULL,
+  n.cores = NULL,
+  n.mil = 0.2,
+  beta.binom.b.lambda = 1,
+  beta.binom.a = 1,
+  snps.blocks = NULL,
+  initial.block.size = 100,
+  initial.snps.blocks = NULL,
+  seed = NULL,
   thinning.factor = round(1000/n.mil),
   effect.sd.uniform.prior = c(0.05, 2),
-  residual.var.invgamma.prior = c(0.01, 0.01), save.path = NULL,
-  debug = FALSE)
+  residual.var.invgamma.prior = c(0.01, 0.01),
+  save.path = NULL,
+  debug = FALSE
+)
 }
 \arguments{
 \item{marginal.betas}{Vector of named one-at-a-time SNP effects. NB: This must be a named vector; it is where.
