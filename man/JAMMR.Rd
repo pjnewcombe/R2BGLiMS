@@ -12,12 +12,13 @@ JAMMR(
   N1,
   eafs = NULL,
   G.matrix = NULL,
+  G.cor = NULL,
   trait.var = NULL,
   iter = 1e+06,
   w = NULL,
   n.grid = 26,
   grid.limits = NULL,
-  initial.model = rep(1, length(bx)),
+  initial.model = NULL,
   n.models = 10,
   mretn = TRUE,
   jam.model.priors = c(1, length(bx)),
@@ -46,6 +47,10 @@ One of eafs ad G.matrix must be specified. Note: the algorithm takes longer to
 run with coorrelated instruments, therefore when genetic variants are truly  
 independent it is better to specify eafs and not G.matrix.}
 
+\item{G.cor}{The genetic correlation matrix. If an analysis with correlated SNPs 
+is implemented but the matrix of raw genetic data (G.matrix) is unavailable or is too 
+big to store in memory, JAM-MR can be run by providing both eafs and G.cor instead.}
+
 \item{trait.var}{An estimate of the variance in risk factor measurements. Can be 
 obtained from the G-X GWAS and will be equal to 1 if the GWAS estimates are reported
 based on standardized data. If not provided, it is internally estimated by JAM-MR.}
@@ -68,9 +73,9 @@ interpolation between the limits, plus the value w = 0. The default is a grid
 search between w = 0.01 N1 and w = 100 N1. Redundant if w is specified.}
 
 \item{initial.model}{The model to be used in the first iteration of the stochastic 
-search. By default the algorithm starts from a model with all variants included. 
-It is recommended to change this to a smaller model when running applications with 
-large numbers of genetic variants and correlated data.}
+search. By default the algorithm starts from a model with all genetic variants 
+included, when running on independent variants, and a model with only the smallest
+p-value genetic variant included, when running on correlated variants.}
 
 \item{n.models}{The (maximum) number of highest posterior probability models to be 
 reported by JAM-MR. If set to zero, no models will be reported.}
@@ -125,7 +130,8 @@ model-specific estimates to return an aggregate causal effect estimate and its
 standard error.
 }
 \examples{
-# ## Using an artificial dataset.
+
+### Using an artificial dataset.
 set.seed(21)
 P <- 50
 bx.sim <- rnorm(P, 0.15, 0.05)
@@ -140,7 +146,6 @@ plot(bx.sim, by.sim, type = "p", pch = 19, xlim = c(0.00, 0.30), ylim = c(-0.10,
 for (i in 1:50) lines(c(bx.sim[i], bx.sim[i]), c(by.sim[i] - 1.96 * sy.sim[i], by.sim[i] + 1.96 * sy.sim[i]))
 for (i in 1:50) lines(c(bx.sim[i] - 1.96 * sx.sim[i], bx.sim[i] + 1.96 * sx.sim[i]), c(by.sim[i], by.sim[i]))
 abline(a = 0, b = median(by.sim / bx.sim), col = "brown", lty = 2)
-
 
 ### Run JAM-MR with a single value of w and independent data.
 jammr.results1 <- JAMMR(bx.sim, sx.sim, by.sim, sy.sim, N1 = 10000, eafs = rep(0.3, 50),
@@ -160,6 +165,7 @@ jammr.results1.1$se
 jammr.results1.1$all.causal
 jammr.results1.1$all.se
 jammr.results1.1$snp.probs
+
 
 
 ### Using a real dataset from the MendelianRandomization package.

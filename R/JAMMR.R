@@ -28,6 +28,9 @@
 #' One of eafs ad G.matrix must be specified. Note: the algorithm takes longer to
 #' run with coorrelated instruments, therefore when genetic variants are truly  
 #' independent it is better to specify eafs and not G.matrix.
+#' @param G.cor The genetic correlation matrix. If an analysis with correlated SNPs 
+#' is implemented but the matrix of raw genetic data (G.matrix) is unavailable or is too 
+#' big to store in memory, JAM-MR can be run by providing both eafs and G.cor instead.
 #' @param trait.var An estimate of the variance in risk factor measurements. Can be 
 #' obtained from the G-X GWAS and will be equal to 1 if the GWAS estimates are reported
 #' based on standardized data. If not provided, it is internally estimated by JAM-MR.
@@ -45,9 +48,9 @@
 #' interpolation between the limits, plus the value w = 0. The default is a grid  
 #' search between w = 0.01 N1 and w = 100 N1. Redundant if w is specified.
 #' @param initial.model The model to be used in the first iteration of the stochastic 
-#' search. By default the algorithm starts from a model with all variants included. 
-#' It is recommended to change this to a smaller model when running applications with 
-#' large numbers of genetic variants and correlated data.
+#' search. By default the algorithm starts from a model with all genetic variants 
+#' included, when running on independent variants, and a model with only the smallest
+#' p-value genetic variant included, when running on correlated variants.
 #' @param n.models The (maximum) number of highest posterior probability models to be 
 #' reported by JAM-MR. If set to zero, no models will be reported.
 #' @param mretn Logical. If TRUE, the algorithm will fit a multiplicative random-effects
@@ -89,8 +92,8 @@
 #'
 #' @example Examples/JAMMR_Examples.R
 
-JAMMR <- function (bx, sx, by, sy, N1, eafs = NULL, G.matrix = NULL, trait.var = NULL, iter = 1e6, w = NULL, 
-                   n.grid = 26, grid.limits = NULL, initial.model = rep(1, length(bx)), n.models = 10, 
+JAMMR <- function (bx, sx, by, sy, N1, eafs = NULL, G.matrix = NULL, G.cor = NULL, trait.var = NULL, iter = 1e6, 
+                   w = NULL, n.grid = 26, grid.limits = NULL, initial.model = NULL, n.models = 10, 
                    mretn = TRUE, jam.model.priors = c(1, length(bx)), loss.function = "steve", jam.seed = NULL) {
   
   ## ---------- SETUP ---------- ##
@@ -121,7 +124,7 @@ JAMMR <- function (bx, sx, by, sy, N1, eafs = NULL, G.matrix = NULL, trait.var =
   sigma.univ <- sy / abs(bx)
   
   ## Decide if JAM should run with independent or correlated SNPs.
-  are.snps.independent <- is.null(G.matrix)
+  are.snps.independent <- is.null(G.matrix) & is.null(G.cor)
   
   
   
@@ -139,6 +142,9 @@ JAMMR <- function (bx, sx, by, sy, N1, eafs = NULL, G.matrix = NULL, trait.var =
       residual.var <- sx^2 * 2 * N1 * eafs * (1 - eafs)
       trait.var <- median(2 * bx^2 * eafs * (1 - eafs) + residual.var)
     }
+    
+    ## If the initial model is not provided, use the full model.
+    if (is.null(initial.model)) initial.model <- rep(1, length(bx))
     
     ## JAM needs to have SNP names, so generate some.
     P <-  length(bx)   ## Number of SNPs.
@@ -186,9 +192,9 @@ JAMMR <- function (bx, sx, by, sy, N1, eafs = NULL, G.matrix = NULL, trait.var =
         if ( min(n.per.model) == 0) {
           models.visited.backup <- models.visited
           zero.prob <- models.visited[which(n.per.model == 0), P + 1]
+          if (zero.prob > 0.2) warning("Genetic associations with the risk factor are probably fairly weak.")
           models.visited <- models.visited[- which(n.per.model == 0), ]
           models.visited[, P + 1] <- models.visited[, P + 1] / (1 - zero.prob)
-          warning("JAM-MR assigned non-zero probability to the null model.")
         }
         
       }
@@ -225,9 +231,9 @@ JAMMR <- function (bx, sx, by, sy, N1, eafs = NULL, G.matrix = NULL, trait.var =
             ## Fit the model by maximum likelihood estimation.
             suppressWarnings({
               try({
-                mt.fit <- constrOptim(theta = c(mean(current.thetas), 1.1), f = mt.lik, grad = mt.grad, ui = matrix(c(0, 1), 1, 2), ci = 1, 
+                mt.fit <- constrOptim(theta = c(mean(current.thetas), 1.1), f = .mt.lik, grad = .mt.grad, ui = matrix(c(0, 1), 1, 2), ci = 1, 
                                       method = "BFGS", l = left.cutoff, u = right.cutoff, thetas = current.thetas, sigmas = current.sigmas)
-                mt.fit.hessian <- mt.hess(mt.fit$par, l = left.cutoff, u = right.cutoff, thetas = current.thetas, sigmas = current.sigmas)
+                mt.fit.hessian <- .mt.hess(mt.fit$par, l = left.cutoff, u = right.cutoff, thetas = current.thetas, sigmas = current.sigmas)
                 alleffects[i] <- mt.fit$par[1]
                 allerrors[i] <- sqrt( solve(mt.fit.hessian)[1, 1] )
               }, silent = TRUE)
@@ -276,9 +282,9 @@ JAMMR <- function (bx, sx, by, sy, N1, eafs = NULL, G.matrix = NULL, trait.var =
           ## Fit the model by maximum likelihood estimation.
           suppressWarnings({
             try({
-              mt.fit <- constrOptim(theta = c(mean(single.model.thetas), 1.1), f = mt.lik, grad = mt.grad, ui = matrix(c(0, 1), 1, 2), ci = 1, 
+              mt.fit <- constrOptim(theta = c(mean(single.model.thetas), 1.1), f = .mt.lik, grad = .mt.grad, ui = matrix(c(0, 1), 1, 2), ci = 1, 
                                     method = "BFGS", l = left.cutoff, u = right.cutoff, thetas = single.model.thetas, sigmas = single.model.sigmas)
-              mt.fit.hessian <- mt.hess(mt.fit$par, l = left.cutoff, u = right.cutoff, thetas = single.model.thetas, sigmas = single.model.sigmas)
+              mt.fit.hessian <- .mt.hess(mt.fit$par, l = left.cutoff, u = right.cutoff, thetas = single.model.thetas, sigmas = single.model.sigmas)
               theta <- mt.fit$par[1]
               sigma <- sqrt( solve(mt.fit.hessian)[1, 1] )
             }, silent = TRUE)
@@ -291,7 +297,7 @@ JAMMR <- function (bx, sx, by, sy, N1, eafs = NULL, G.matrix = NULL, trait.var =
             single.model.phi <- max(1, sum( (single.model.thetas - single.model.ivw)^2 / (single.model.sigmas^2) ) / (length(single.model.snps) - 1) )
             theta <- single.model.ivw
             sigma <- sqrt(single.model.phi) * sqrt( 1 / sum(1 / single.model.sigmas^2) ) 
-            warning("The truncated normal fit was untable -  standard IVW has been used instead.")
+            warning("The truncated normal fit was unstable -  standard IVW has been used instead.")
             
           } 
           
@@ -336,6 +342,9 @@ JAMMR <- function (bx, sx, by, sy, N1, eafs = NULL, G.matrix = NULL, trait.var =
       current.min.stderr <- Inf
       current.top.models <- 0
       
+      ## This stores warning signs when JAM visits the null model.
+      warning.signs <- rep(0, nw)
+      
       ## Get the loop going.
       for (jj in 1:nw) {
         
@@ -362,7 +371,7 @@ JAMMR <- function (bx, sx, by, sy, N1, eafs = NULL, G.matrix = NULL, trait.var =
             sigma <- NA
             snp.probs <- rep(0, P)
             models.visited.backup <- models.visited
-            warning("JAM-MR did not select any genetic variants. Genetic associations with the risk factor are probably very weak.")
+            warning.signs[jj] <- 2
           }
           
         } else {
@@ -374,7 +383,7 @@ JAMMR <- function (bx, sx, by, sy, N1, eafs = NULL, G.matrix = NULL, trait.var =
             zero.prob <- models.visited[which(n.per.model == 0), P + 1]
             models.visited <- models.visited[- which(n.per.model == 0), ]
             models.visited[, P + 1] <- models.visited[, P + 1] / (1 - zero.prob)
-            warning("JAM-MR assigned non-zero probability to the null model.")
+            if (zero.prob > 0.2) warning.signs[jj] <- 1
           }
           
         }
@@ -411,9 +420,9 @@ JAMMR <- function (bx, sx, by, sy, N1, eafs = NULL, G.matrix = NULL, trait.var =
               ## Fit the model by maximum likelihood estimation.
               suppressWarnings({
                 try({
-                  mt.fit <- constrOptim(theta = c(mean(current.thetas), 1.1), f = mt.lik, grad = mt.grad, ui = matrix(c(0, 1), 1, 2), ci = 1, 
+                  mt.fit <- constrOptim(theta = c(mean(current.thetas), 1.1), f = .mt.lik, grad = .mt.grad, ui = matrix(c(0, 1), 1, 2), ci = 1, 
                                         method = "BFGS", l = left.cutoff, u = right.cutoff, thetas = current.thetas, sigmas = current.sigmas)
-                  mt.fit.hessian <- mt.hess(mt.fit$par, l = left.cutoff, u = right.cutoff, thetas = current.thetas, sigmas = current.sigmas)
+                  mt.fit.hessian <- .mt.hess(mt.fit$par, l = left.cutoff, u = right.cutoff, thetas = current.thetas, sigmas = current.sigmas)
                   alleffects[i] <- mt.fit$par[1]
                   allerrors[i] <- sqrt( solve(mt.fit.hessian)[1, 1] )
                 }, silent = TRUE)
@@ -464,9 +473,9 @@ JAMMR <- function (bx, sx, by, sy, N1, eafs = NULL, G.matrix = NULL, trait.var =
             ## Fit the model by maximum likelihood estimation.
             suppressWarnings({
               try({
-                mt.fit <- constrOptim(theta = c(mean(single.model.thetas), 1.1), f = mt.lik, grad = mt.grad, ui = matrix(c(0, 1), 1, 2), ci = 1, 
+                mt.fit <- constrOptim(theta = c(mean(single.model.thetas), 1.1), f = .mt.lik, grad = .mt.grad, ui = matrix(c(0, 1), 1, 2), ci = 1, 
                                       method = "BFGS", l = left.cutoff, u = right.cutoff, thetas = single.model.thetas, sigmas = single.model.sigmas)
-                mt.fit.hessian <- mt.hess(mt.fit$par, l = left.cutoff, u = right.cutoff, thetas = single.model.thetas, sigmas = single.model.sigmas)
+                mt.fit.hessian <- .mt.hess(mt.fit$par, l = left.cutoff, u = right.cutoff, thetas = single.model.thetas, sigmas = single.model.sigmas)
                 all.thetas[jj] <- mt.fit$par[1]
                 all.sigmas[jj] <- sqrt( solve(mt.fit.hessian)[1, 1] )
               }, silent = TRUE)
@@ -521,6 +530,14 @@ JAMMR <- function (bx, sx, by, sy, N1, eafs = NULL, G.matrix = NULL, trait.var =
         sigma <- min(all.sigmas, na.rm = TRUE)
         snp.probs <- all.probs[which.min(all.sigmas), ]
         
+        ## If the best w corresponds to a JAM-MR run that visited the null model, warn.
+        if (warning.signs[which.min(all.sigmas)] == 2) {
+          warning("JAM-MR did not select any genetic variants. Genetic associations with the risk factor are probably very weak.")
+        }
+        if (warning.signs[which.min(all.sigmas)] == 1) {
+          warning("Genetic associations with the risk factor are probably fairly weak.")
+        }
+
       }
       
       ## Return a list of results. This ends the nw > 1 case.
@@ -538,23 +555,48 @@ JAMMR <- function (bx, sx, by, sy, N1, eafs = NULL, G.matrix = NULL, trait.var =
     ## ------------------------------------------------- ##
     
     
+    ## Is a full genetic matrix provided?
+    is.G.provided <- !(is.null(G.matrix))
+    
     ## If the trait variance is not provided, estimate it.
     if (is.null(trait.var)) {
-      G.centered <- t(t(G.matrix) - colMeans(G.matrix))
-      snp.variances <- diag(t(G.centered) %*% G.centered) / nrow(G.centered)
-      residual.var <- sx^2 * snp.variances * N1
-      trait.var <- median(bx^2 * snp.variances + residual.var)
-      rm(G.centered)   ## To save memory.
+      
+      if (is.G.provided) {
+        
+        G.centered <- t(t(G.matrix) - colMeans(G.matrix))
+        snp.variances <- diag(t(G.centered) %*% G.centered) / nrow(G.centered)
+        residual.var <- sx^2 * snp.variances * N1
+        trait.var <- median(bx^2 * snp.variances + residual.var)
+        rm(G.centered)   ## To save memory.
+        
+      } else {
+        
+        residual.var <- sx^2 * 2 * N1 * eafs * (1 - eafs)
+        trait.var <- median(2 * bx^2 * eafs * (1 - eafs) + residual.var)
+        
+      }
     }
     
+    ## If the initial model is not provided, use a 1-SNP model.
+    if (is.null(initial.model)) {
+      initial.model <- rep(0, length(bx))
+      initial.model[which.max(abs(bx / sx))] <- 1
+    }
+      
     ## JAM needs to have SNP names, so generate some.
     P <-  length(bx)   ## Number of SNPs.
     snp.names <-  paste("SNP", c(1:P), sep = "")
     names(bx) <- snp.names
-    colnames(G.matrix) <- snp.names
+    if (is.G.provided) {
+      colnames(G.matrix) <- snp.names
+    } else {
+      colnames(G.cor) <- snp.names
+      rownames(G.cor) <- snp.names
+      names(eafs) <- snp.names
+    }
     
     ## Compute genetic correlations from the reference matrix.
-    Rho <- cor(G.matrix)
+    if (is.G.provided) Rho <- cor(G.matrix) else Rho <- G.cor
     
     
     ## If nw = 1 run the algorithm with no grid search (a single w) otherwise run it multiple times.
@@ -568,10 +610,17 @@ JAMMR <- function (bx, sx, by, sy, N1, eafs = NULL, G.matrix = NULL, trait.var =
       print(paste("---------- w = ", w, " ----------"))
       
       ## Run JAM.
-      jam.results <- JAM( marginal.betas = bx, n = N1, X.ref = G.matrix, initial.model = initial.model,
-                          model.space.prior = list("a" = jam.model.priors[1], "b" = jam.model.priors[2], "Variables" = snp.names), 
-                          n.iter = iter, seed = jam.seed, trait.variance = trait.var, mrloss.w = w, 
-                          mrloss.function = loss.function, mrloss.marginal.by = by, mrloss.marginal.sy = sy )
+      if (is.G.provided) {
+        jam.results <- JAM( marginal.betas = bx, n = N1, X.ref = G.matrix, initial.model = initial.model,
+                            model.space.prior = list("a" = jam.model.priors[1], "b" = jam.model.priors[2], "Variables" = snp.names), 
+                            n.iter = iter, seed = jam.seed, trait.variance = trait.var, mrloss.w = w, 
+                            mrloss.function = loss.function, mrloss.marginal.by = by, mrloss.marginal.sy = sy )
+      } else {
+        jam.results <- JAM( marginal.betas = bx, n = N1, cor.ref = G.cor, mafs.ref = eafs, initial.model = initial.model,
+                            model.space.prior = list("a" = jam.model.priors[1], "b" = jam.model.priors[2], "Variables" = snp.names), 
+                            n.iter = iter, seed = jam.seed, trait.variance = trait.var, mrloss.w = w, 
+                            mrloss.function = loss.function, mrloss.marginal.by = by, mrloss.marginal.sy = sy )
+      }
       
       ## Generate a table with all models visited and their posterior probabilities.
       models.visited <- as.matrix(TopModels(jam.results, n.top.models = iter, remove.empty.cols = FALSE))
@@ -599,7 +648,7 @@ JAMMR <- function (bx, sx, by, sy, N1, eafs = NULL, G.matrix = NULL, trait.var =
           zero.prob <- models.visited[which(n.per.model == 0), P + 1]
           models.visited <- models.visited[- which(n.per.model == 0), ]
           models.visited[, P + 1] <- models.visited[, P + 1] / (1 - zero.prob)
-          warning("JAM-MR assigned non-zero probability to the null model.")
+          if (zero.prob > 0.2) warning("Genetic associations with the risk factor are probably fairly weak.")
         }
         
       }
@@ -685,16 +734,26 @@ JAMMR <- function (bx, sx, by, sy, N1, eafs = NULL, G.matrix = NULL, trait.var =
       current.min.stderr <- Inf
       current.top.models <- 0
       
+      ## This stores warning signs when JAM visits the null model.
+      warning.signs <- rep(0, nw)
+      
       ## Get the loop going.
       for (jj in 1:nw) {
         
         print(paste("---------- w = ", w[jj], " ----------"))
         
         ## Run JAM.
-        jam.results <- JAM( marginal.betas = bx, n = N1, X.ref = G.matrix, initial.model = initial.model,
-                            model.space.prior = list("a" = jam.model.priors[1], "b" = jam.model.priors[2], "Variables" = snp.names), 
-                            n.iter = iter, seed = jam.seed + jj - 1, trait.variance = trait.var, mrloss.w = w[jj], 
-                            mrloss.function = loss.function, mrloss.marginal.by = by, mrloss.marginal.sy = sy )
+        if (is.G.provided) {
+          jam.results <- JAM( marginal.betas = bx, n = N1, X.ref = G.matrix, initial.model = initial.model,
+                              model.space.prior = list("a" = jam.model.priors[1], "b" = jam.model.priors[2], "Variables" = snp.names), 
+                              n.iter = iter, seed = jam.seed + jj - 1, trait.variance = trait.var, mrloss.w = w[jj], 
+                              mrloss.function = loss.function, mrloss.marginal.by = by, mrloss.marginal.sy = sy )
+        } else {
+          jam.results <- JAM( marginal.betas = bx, n = N1, cor.ref  = G.cor, mafs.ref = eafs, initial.model = initial.model,
+                              model.space.prior = list("a" = jam.model.priors[1], "b" = jam.model.priors[2], "Variables" = snp.names), 
+                              n.iter = iter, seed = jam.seed + jj - 1, trait.variance = trait.var, mrloss.w = w[jj], 
+                              mrloss.function = loss.function, mrloss.marginal.by = by, mrloss.marginal.sy = sy )
+        }
         
         
         ## Generate a table with all models visited and their posterior probabilities.
@@ -711,7 +770,7 @@ JAMMR <- function (bx, sx, by, sy, N1, eafs = NULL, G.matrix = NULL, trait.var =
             sigma <- NA
             snp.probs <- rep(0, P)
             models.visited.backup <- models.visited
-            warning("JAM-MR did not select any genetic variants. Genetic associations with the risk factor are probably very weak.")
+            warning.signs[jj] <- 2
           }
           
         } else {
@@ -723,7 +782,7 @@ JAMMR <- function (bx, sx, by, sy, N1, eafs = NULL, G.matrix = NULL, trait.var =
             zero.prob <- models.visited[which(n.per.model == 0), P + 1]
             models.visited <- models.visited[- which(n.per.model == 0), ]
             models.visited[, P + 1] <- models.visited[, P + 1] / (1 - zero.prob)
-            warning("JAM-MR assigned non-zero probability to the null model.")
+            if (zero.prob > 0.2) warning.signs[jj] <- 1
           }
           
         }
@@ -811,6 +870,14 @@ JAMMR <- function (bx, sx, by, sy, N1, eafs = NULL, G.matrix = NULL, trait.var =
       sigma <- min(all.sigmas, na.rm = TRUE)
       snp.probs <- all.probs[which.min(all.sigmas), ]
       
+      ## If the best w corresponds to a JAM-MR run that visited the null model, warn.
+      if (warning.signs[which.min(all.sigmas)] == 2) {
+        warning("JAM-MR did not select any genetic variants. Genetic associations with the risk factor are probably very weak.")
+      }
+      if (warning.signs[which.min(all.sigmas)] == 1) {
+        warning("Genetic associations with the risk factor are probably fairly weak.")
+      }
+      
       ## Return a list of results. This ends the nw > 1 case.
       return(list("causal" = theta, "se" = sigma, "model.matrix" = current.top.models, "snp.probs" = snp.probs, 
                   "w" = best.w, "all.causal" = all.thetas, "all.se" = all.sigmas, "all.w" = w, "all.probs" = all.probs))
@@ -822,3 +889,42 @@ JAMMR <- function (bx, sx, by, sy, N1, eafs = NULL, G.matrix = NULL, trait.var =
   ## Goodbye!
   
 }
+
+
+
+## Auxiliary functions for fitting the multiplicative random-effects truncated normal model.
+
+## Compute the multiplicative random-effects truncated normal likelihood.
+.mt.lik <- function (pars, l, u, thetas, sigmas) {
+  dPhi <- pnorm( (u - pars[1]) / (sigmas * sqrt(pars[2])) ) - pnorm( (l - pars[1]) / (sigmas * sqrt(pars[2])) )
+  if (min(dPhi) <= 0) lik <- Inf else  lik <- 1/2 * length(thetas) * log(pars[2]) + 1/2 * sum( log(sigmas^2) ) + 1/2 * 1 / pars[2] * sum( (thetas - pars[1])^2 / sigmas^2 ) + sum( log( dPhi ) )
+  lik
+}
+
+## Compute the corresponding Gradient.
+.mt.grad <- function (pars, l, u, thetas, sigmas) {
+  Phi1 <- pnorm( (u - pars[1]) / (sigmas * sqrt(pars[2])) )
+  Phi2 <- pnorm( (l - pars[1]) / (sigmas * sqrt(pars[2])) )
+  phi1 <- dnorm( (u - pars[1]) / (sigmas * sqrt(pars[2])) )
+  phi2 <- dnorm( (l - pars[1]) / (sigmas * sqrt(pars[2])) )
+  if (u == Inf) arg.u <- rep(0, length(sigmas)) else arg.u <- (u - pars[1]) / (sigmas * sqrt(pars[2]))
+  if (l == - Inf) arg.l <- rep(0, length(sigmas)) else arg.l <- (l - pars[1]) / (sigmas * sqrt(pars[2]))
+  g1 <- - sum( (phi1 - phi2) / (sigmas * sqrt(pars[2]) * (Phi1 - Phi2)) ) - sum( (thetas - pars[1]) / (sigmas^2 * pars[2]) )
+  g2 <- 1/2 * length(thetas) / pars[2] - 1/2 * 1 / (pars[2])^2 * sum( (thetas - pars[1])^2 / sigmas^2) - 1/2 *  1/pars[2] * sum( (arg.u * phi1 - arg.l * phi2) / (Phi1 - Phi2) )
+  c(g1, g2)
+}
+
+## Compute the corresponding Hessian.
+.mt.hess <- function (pars, l, u, thetas, sigmas) {
+  Phi1 <- pnorm( (u - pars[1]) / (sigmas * sqrt(pars[2])) )
+  Phi2 <- pnorm( (l - pars[1]) / (sigmas * sqrt(pars[2])) )
+  phi1 <- dnorm( (u - pars[1]) / (sigmas * sqrt(pars[2])) )
+  phi2 <- dnorm( (l - pars[1]) / (sigmas * sqrt(pars[2])) )
+  if (u == Inf) arg.u <- rep(0, length(sigmas)) else arg.u <- (u - pars[1]) / (sigmas * sqrt(pars[2]))
+  if (l == - Inf) arg.l <- rep(0, length(sigmas)) else arg.l <- (l - pars[1]) / (sigmas * sqrt(pars[2]))
+  H11 <- sum(1 / (sigmas^2 * pars[2])) - sum( 1 / (sigmas^2 * pars[2]) * ( (arg.u * phi1 - arg.l * phi2) * (Phi1 - Phi2) + (phi1 - phi2)^2 ) / (Phi1 - Phi2)^2 )
+  H12 <- sum( (thetas - pars[1]) / (sigmas^2 * pars[2]^2) ) - sum( 1 / (2 * sigmas * pars[2]^(3/2)) * ( ((arg.u^2 - 1) * phi1 - (arg.l^2 - 1) * phi2) * (Phi1 - Phi2) + (phi1 - phi2) * (arg.u * phi1 - arg.l * phi2) ) / (Phi1 - Phi2)^2 )
+  H22 <- - length(thetas) / (2 * pars[2]^2) + 1 / pars[2]^3 * sum( (thetas - pars[1])^2 / sigmas^2 ) - 1 / (4 * pars[2]^2) * sum( ( (arg.u^3 * phi1 - arg.l^3 * phi2) / (Phi1 - Phi2) ) - 3 * ( (arg.u * phi1 - arg.l * phi2) / (Phi1 - Phi2) ) + ( (arg.u * phi1 - arg.l * phi2)^2 / (Phi1 - Phi2)^2 ) )
+  matrix(c(H11, H12, H12, H22), 2, 2)
+}
+
