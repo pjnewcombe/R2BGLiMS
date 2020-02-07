@@ -60,20 +60,7 @@ JAM <- function(
   extra.java.arguments=NULL
 ) {
   
-  ##################################################################
-  ### --- Error messages (moved from R2BGLiMS on 2016-01-29) --- ###
-  ##################################################################
-  
-  # --- X.ref checks (if mafs.if.independent not provided)
-  if (is.null(mafs.if.independent)) {
-    # Force to list
-    if (is.data.frame(X.ref)) {
-      X.ref <- data.matrix(X.ref) # convert to matrix
-    }
-    if (!is.list(X.ref)) {
-      X.ref <- list(X.ref) # convert to list if there is a single block
-    }    
-  }
+  if (!is.null(cor.ref) & !is.null(X.ref)) {stop("Please only supply one of X.ref or cor.ref + mafs.ref")}
   
   if (!is.null(mafs.if.independent)) {
     if (enumerate.up.to.dim > 0) { stop("When specifiying indepdent SNPs not yet possible to do enumeration.")}

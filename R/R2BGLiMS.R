@@ -433,7 +433,6 @@ R2BGLiMS <- function(
     
     # --- X.ref error messages
     if (!is.null(X.ref)) {
-      if (!is.null(cor.ref)) {stop("Please only supply one of X.ref or cor.ref + mafs.ref")}
       if (is.data.frame(X.ref)) {
         X.ref <- matrix(X.ref) # convert to matrix
       }
